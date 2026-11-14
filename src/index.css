@@ -222,3 +222,28 @@ table.data td:last-child {
     display: none !important;
   }
 }
+
+/* Karşılama sayfası: manzara her iki temada da gündüz; metin renkleri sabit */
+.hero {
+  background: #f8f9fb;
+}
+.hero-ink {
+  color: #2b2f36;
+}
+.hero-blue {
+  color: #1f6fd6;
+}
+.hero-sub {
+  color: #4a5160;
+}
+.hero-pill {
+  background: #e9ebef;
+  color: #3a404b;
+}
+.hero-cta {
+  background: #0b0b0b;
+  color: #fff;
+}
+.hero-cta:hover {
+  background: #2b2f36;
+}

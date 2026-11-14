@@ -3,6 +3,7 @@ import { Empty, Tag } from './components/ui';
 import { COOP_NAME, PRESET_POINTS } from './data/defaults';
 import { CommitmentScreen } from './screens/CommitmentScreen';
 import { CoopScreen } from './screens/CoopScreen';
+import { Landing } from './screens/Landing';
 import { MemberScreen } from './screens/MemberScreen';
 import { MethodScreen } from './screens/MethodScreen';
 import { useStore, type Tab } from './state';
@@ -100,37 +101,58 @@ export default function App() {
   const s = useStore();
   return (
     <div className="min-h-screen">
-      <header className="no-print sticky top-0 z-20 border-b border-line bg-surface">
-        <div className="mx-auto flex max-w-[1240px] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2.5">
-          <div className="mr-auto min-w-0">
-            <div className="text-[19px] font-bold leading-tight tracking-tight">Nöbet</div>
-            <div className="truncate text-[12px] text-ink2">Su bütçesi ve ekim planı · prototip</div>
+      <header className="no-print sticky top-0 z-20 border-b border-line bg-surface/90 backdrop-blur">
+        <div className="mx-auto flex max-w-[1240px] flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2.5">
+          <button
+            type="button"
+            onClick={() => {
+              s.setTab('giris');
+              window.scrollTo({ top: 0 });
+            }}
+            className="cursor-pointer border-0 bg-transparent p-0 text-[15px] font-semibold tracking-[0.18em] text-water"
+            aria-label="Nöbet: karşılama sayfası"
+          >
+            NÖBET
+          </button>
+          <nav className="order-3 flex w-full gap-1 overflow-x-auto md:order-none md:mx-auto md:w-auto" aria-label="Ekranlar">
+            {TABS.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => {
+                  s.setTab(t.id);
+                  window.scrollTo({ top: 0 });
+                }}
+                aria-current={s.tab === t.id ? 'page' : undefined}
+                className={`cursor-pointer whitespace-nowrap rounded-lg border-0 px-3 py-1.5 text-[14px] ${
+                  s.tab === t.id ? 'bg-sunken font-semibold text-ink' : 'bg-transparent text-ink2 hover:text-ink'
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </nav>
+          <div className="ml-auto flex items-center gap-2 md:ml-0">
+            <PointPicker />
+            <ThemeToggle />
+            {s.tab === 'giris' && (
+              <button
+                type="button"
+                className="btn btn-primary !rounded-lg"
+                onClick={() => {
+                  s.setTab('uye');
+                  window.scrollTo({ top: 0 });
+                }}
+              >
+                Başla
+              </button>
+            )}
           </div>
-          <PointPicker />
-          <ThemeToggle />
         </div>
-        <nav className="mx-auto flex max-w-[1240px] gap-1 overflow-x-auto px-4" aria-label="Ekranlar">
-          {TABS.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => {
-                s.setTab(t.id);
-                window.scrollTo({ top: 0 });
-              }}
-              aria-current={s.tab === t.id ? 'page' : undefined}
-              className={`cursor-pointer whitespace-nowrap border-0 border-b-[3px] bg-transparent px-3 py-2 text-[14px] ${
-                s.tab === t.id ? 'border-ink font-semibold text-ink' : 'border-transparent text-ink2 hover:text-ink'
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
-        </nav>
       </header>
 
       <main className="mx-auto max-w-[1240px] px-4 py-4">
-        <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border border-line bg-sunken px-3 py-2 text-[12.5px] text-ink2">
+        <div className={`mb-4 flex-wrap items-center gap-x-3 gap-y-1 rounded-md border border-line bg-sunken px-3 py-2 text-[12.5px] text-ink2 ${s.tab === 'giris' ? 'hidden' : 'flex'}`}>
           <span>
             <Tag kind="kurgusal" /> {COOP_NAME} ve üyeleri gerçek değildir.
           </span>
@@ -168,6 +190,7 @@ export default function App() {
         {s.weather && s.model && (
           <div className={s.weatherStatus === 'loading' ? 'pointer-events-none opacity-50' : ''} aria-busy={s.weatherStatus === 'loading'}>
             {s.weatherStatus === 'loading' && <div className="mb-3 text-[13.5px] font-semibold">Yeni nokta için NASA POWER verisi indiriliyor… (5-30 saniye sürebilir)</div>}
+            {s.tab === 'giris' && <Landing />}
             {s.tab === 'uye' && <MemberScreen />}
             {s.tab === 'kooperatif' && <CoopScreen />}
             {s.tab === 'taahhut' && <CommitmentScreen />}

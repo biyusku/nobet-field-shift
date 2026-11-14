@@ -53,3 +53,5 @@ Belirsiz kalan yerlerde verilen kararlar, her biri tek satır.
 - Kullanıcının değişiklikleri localStorage'da saklanır; "Kurgusal örneğe dön" düğmesi başlangıca döndürür.
 - Sayı girişlerinde binlik ayırıcı yok; virgül de nokta da ondalık kabul edilir.
 - Ürün tablosunda ad, baklagil ve küçük pazar işaretleri sabit; ekim tarihi, evre süreleri, Kc, Ky, verim ve fiyat değiştirilebilir.
+- Sonradan istenen görsele göre karşılama sayfası eklendi (ortalanmış başlık, tek düğme, elle çizilmiş SVG tarla manzarası); ilk tanımdaki "süslü hero yok" kuralı bu istekle değişti. Rozetteki "500+ ajans" gibi bir sosyal kanıt uydurulmadı; yerine veri kaynağı yazıldı.
+- Karşılama manzarası iki temada da gündüzdür; koyu temada yalnız çevresi kararır.

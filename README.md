@@ -56,6 +56,7 @@ Dikkat: `dist/index.html` dosyasını çift tıklayıp `file://` ile açmak çal
 
 ## Ekranlar
 
+0. **Karşılama**: tek cümlelik tanıtım ve ekranlara giriş (açılış sayfası).
 1. **Üye**: tarla, kota (mm ya da m³), sulama yöntemi, bugünkü ekim. Solda bugünkü ekim, sağda önerilen plan; her birinde su bitiş tarihi (en büyük sayı), kümülatif sulama ve kota çizgisi, 20 yılın bitiş tarihi aralığı, brüt gelir, kullanılan su, toprak puanı ve üç yıllık nöbet tablosu.
 2. **Kooperatif**: üye listesi (ekle, sil, düzenle), ürün başına toplam alan, üretim ve gelir, fiyat riski uyarısı, plan ayarları.
 3. **Taahhüt**: ürün başına ton taahhüdü, dağıtım tablosu, ayrılan su, geçmişte deneme şeridi (yeşil/sarı/kırmızı). Taahhüt karşılanamıyorsa seçenekler ve bedelleri.
