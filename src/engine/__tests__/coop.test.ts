@@ -79,15 +79,22 @@ describe('üç dağıtım (300 ton mısır)', () => {
       if (!mv.member.beetContract) expect(by.has('pancar')).toBe(false);
     }
   });
-  it('gelişigüzel dağıtımda söz yalnız görevlendirilen üyelerle ölçülür; özet sayıları tutarlı', () => {
-    const s = m.scenarios.scatter;
-    expect(s.growers).toBe(m.members.filter((mv) => mv.scatterCrop === 'misir').length);
-    expect(s.growers).toBeGreaterThan(0);
-    const direct = m.members.filter((mv) => mv.scatterCrop).reduce((x, mv) => x + mv.scatter.years.reduce((a, y) => a + (y.productionT.misir ?? 0), 0) / mv.scatter.years.length, 0);
-    expect(s.deliveredT.misir).toBeCloseTo(direct, 6);
-    expect(s.yieldLevel).toBeGreaterThan(0);
-    expect(s.yieldLevel).toBeLessThanOrEqual(1);
-    expect(m.scenarios.planned.total).toBe(20);
+  it('üç senaryo aynı ölçüyle: söz kooperatifin o üründeki TOPLAM üretimine bakar', () => {
+    const modes = { today: 'current', scatter: 'scatter', planned: 'planned' } as const;
+    for (const [mode, key] of Object.entries(modes) as [keyof typeof modes, (typeof modes)[keyof typeof modes]][]) {
+      const sc = m.scenarios[mode];
+      expect(sc.total).toBe(20);
+      sc.backtest.forEach((y, yi) => {
+        const total = m.members.reduce((x, mv) => x + (mv[key].years[yi]?.productionT.misir ?? 0), 0);
+        expect(y.productionT.misir ?? 0).toBeCloseTo(total, 4);
+        expect(y.ratio).toBeCloseTo(total / 300, 6);
+      });
+      expect(sc.held).toBe(sc.backtest.filter((y) => (y.productionT.misir ?? 0) >= 300 - 1e-6).length);
+      expect(sc.exceeded).toBe(m.members.filter((mv) => mv[key].yearsExceeded > 0).length);
+    }
+    // gelişigüzel dağıtımda görevlendirilmeyen üyeler bugünkü ekimini sürdürür
+    for (const mv of m.members) if (!mv.scatterCrop) expect(mv.scatter).toBe(mv.current);
+    expect(m.members.some((mv) => mv.scatterCrop === 'misir')).toBe(true);
   });
   it('çözüm 3 saniyenin altında', () => {
     expect(m.timing.totalMs).toBeLessThan(3000);

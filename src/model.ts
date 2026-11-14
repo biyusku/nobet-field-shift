@@ -8,9 +8,7 @@ import { buildCurves, type Curves } from './engine/curves';
 import { combineFarms, evaluateFarm, waterStats, type FarmEvaluation, type WaterStats } from './engine/farm';
 import {
   backtest,
-  commitmentRatio,
   solvePlan,
-  statusOf,
   summarize,
   type Allocation,
   type PlanInput,
@@ -70,7 +68,7 @@ export interface PlanOption {
 
 /** Bir dağıtımın kooperatif düzeyindeki altı karşılaştırma sayısı. */
 export interface ScenarioSummary {
-  /** sözleşme ürününü (söz için) eken üye sayısı */
+  /** sözleşme ürününü eken üye sayısı (kooperatifin tamamında) */
   growers: number;
   /** sözleşme ürününde alan ağırlıklı ortalama verim, tam sulanana göre (0-1) */
   yieldLevel: number;
@@ -242,12 +240,11 @@ export function computeModel(weathers: Record<string, Weather>, fallbackId: stri
     .map(([id]) => id);
   const isCommitted = (id: string) => committed.includes(id);
   const mean = (a: number[]) => (a.length ? a.reduce((s, v) => s + v, 0) / a.length : 0);
-  const summaryOf = (mode: Mode, bt: YearOutcome[], counts: (mv: MemberView) => boolean): ScenarioSummary => {
+  const summaryOf = (mode: Mode, bt: YearOutcome[]): ScenarioSummary => {
     let area = 0;
     let relArea = 0;
     let growers = 0;
     for (const mv of members) {
-      if (!counts(mv)) continue;
       const { parcels, water } = modeParts(mv, mode);
       let grows = false;
       parcels.forEach((p, k) => {
@@ -272,29 +269,17 @@ export function computeModel(weathers: Record<string, Weather>, fallbackId: stri
       backtest: bt,
     };
   };
-  // Gelişigüzel dağıtımda söz yalnız görevlendirilen üyelerin teslimatıyla ölçülür; gelir ve su bütün kooperatifindir.
-  const scatterAll = combineFarms(
+  // Üç senaryo aynı ölçüyle ölçülür: söz, kooperatifin o üründeki TOPLAM üretimine bakar
+  // (gelişigüzel dağıtımda görevlendirilenler + bugünkü ekimini sürdüren öbür üyeler).
+  const scatterBacktest = combineFarms(
     members.map((m) => m.scatter),
     inp.settings.commitments,
   );
-  const scatterBacktest: YearOutcome[] = scatterAll.map((y, yi) => {
-    const productionT: Record<string, number> = {};
-    for (const mv of members) {
-      if (!mv.scatterCrop) continue;
-      const t = mv.scatter.years[yi]?.productionT[mv.scatterCrop] ?? 0;
-      productionT[mv.scatterCrop] = (productionT[mv.scatterCrop] ?? 0) + t;
-    }
-    const ratio = commitmentRatio(productionT, inp.settings.commitments);
-    return { ...y, productionT, ratio, status: statusOf(ratio) };
-  });
   const scenarios: Record<Mode, ScenarioSummary> = {
-    today: summaryOf('today', currentBacktest, () => true),
-    scatter: summaryOf('scatter', scatterBacktest, (mv) => mv.scatterCrop !== null),
-    planned: summaryOf('planned', planBacktest, () => true),
+    today: summaryOf('today', currentBacktest),
+    scatter: summaryOf('scatter', scatterBacktest),
+    planned: summaryOf('planned', planBacktest),
   };
-  // planlı dağıtımda su ve gelir, plan özetiyle aynı kaynaktan (seçenek ortalamaları) okunur
-  scenarios.planned.usedM3 = planSummary.meanUsedM3;
-  scenarios.planned.revenue = planSummary.revenue;
 
   return {
     crops,

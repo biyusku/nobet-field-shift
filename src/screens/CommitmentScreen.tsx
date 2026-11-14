@@ -87,8 +87,10 @@ export function CommitmentScreen() {
   const committed = Object.entries(st.commitments).filter(([id, t]) => t > 0 && model.cropById.has(id));
   const ps = model.planSummary;
   const planCrops = [...model.crops.map((c) => c.id), FALLOW].filter((id) => (ps.areaByCrop[id] ?? 0) >= 0.05);
-  const bt = model.planBacktest;
-  const held = bt.filter((y) => y.status === 'green').length;
+  // Pano ile aynı kaynak: model.scenarios (üç senaryo da kooperatifin toplam üretimiyle ölçülür)
+  const sc = model.scenarios;
+  const bt = sc.planned.backtest;
+  const held = sc.planned.held;
   const worst = bt.length ? bt.reduce((a, b) => (b.ratio < a.ratio ? b : a)) : null;
 
   return (
@@ -169,8 +171,9 @@ export function CommitmentScreen() {
               </div>
             </div>
             <div className="flex flex-col gap-4">
-              <BacktestStrip outcomes={bt} commitments={st.commitments} names={names} title="Önerilen plan" />
-              <BacktestStrip outcomes={model.currentBacktest} commitments={st.commitments} names={names} title="Bugünkü ekim (karşılaştırma)" />
+              <BacktestStrip outcomes={bt} commitments={st.commitments} names={names} title="Planlı dağıtım" />
+              <BacktestStrip outcomes={sc.scatter.backtest} commitments={st.commitments} names={names} title="Gelişigüzel dağıtım" />
+              <BacktestStrip outcomes={sc.today.backtest} commitments={st.commitments} names={names} title="Bugünkü ekim" />
             </div>
           </div>
         </Card>
@@ -232,8 +235,8 @@ export function CommitmentScreen() {
         <H2 right={<Tag kind="hesap" />}>Dağıtım: hangi üye ne kadar eker</H2>
         <div className="mb-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
           <Stat label="Dağıtılan toplam su" tag="hesap" value={m3(ps.reservedM3)} sub={`toplam kotanın ${pct(model.totalQuotaM3 > 0 ? ps.reservedM3 / model.totalQuotaM3 : 0)} kadarı`} />
-          <Stat label="Ortalama kullanılan su" tag="hesap" value={m3(ps.meanUsedM3)} sub="20 yıl ortalaması" />
-          <Stat label="Brüt gelir" tag="hesap" value={tlShort(ps.revenue)} sub="20 yıl ortalaması; girdiler düşülmedi" />
+          <Stat label="Ortalama kullanılan su" tag="hesap" value={m3(sc.planned.usedM3)} sub="20 yıl ortalaması" />
+          <Stat label="Kooperatif brüt geliri" tag="hesap" value={tlShort(sc.planned.revenue)} sub="20 yıl ortalaması; girdiler düşülmedi" />
           <Stat label="Toplam su hakkı" tag="kurgusal" value={m3(model.totalQuotaM3)} />
         </div>
         <div className="overflow-x-auto">

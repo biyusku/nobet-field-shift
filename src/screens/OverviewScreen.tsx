@@ -313,7 +313,6 @@ export function OverviewScreen() {
                     </tr>
                   </thead>
                   <tbody>
-                    <Row label={`${cropName(cId, names)} eken üye`} a={sc.scatter.growers} b={sc.planned.growers} active={mode} />
                     <Row
                       label="Ortalama verim (tam sulanana göre)"
                       a={pct(sc.scatter.yieldLevel)}
@@ -341,8 +340,8 @@ export function OverviewScreen() {
                 </table>
               </div>
               <p className="mb-0 mt-2 text-[11.5px] text-ink2">
-                20 yılın (2006–2025) ortalaması. Gelişigüzel dağıtımda söz yalnız görevlendirilen üyelerin teslimatıyla ölçülür; öbür üyeler bugünkü ekimini sürdürür. Planlı dağıtım kooperatif gelirini en
-                yükseğe çıkardığı için sözden fazlasını üretebilir. Gelir brüttür; girdiler düşülmedi. Bugünkü ekimde {int(sc.today.exceeded)} üyenin suyu sezon ortasında bitiyor.
+                20 yılın (2006–2025) ortalaması. Söz, her dağıtımda kooperatifin o üründeki toplam üretimiyle ölçülür. Gelişigüzel dağıtımda görevlendirilen üyeler bütün tarlasına sözleşme ürününü eker; öbür
+                üyeler bugünkü ekimini sürdürür. Gelir brüttür; girdiler düşülmedi. Bugünkü ekimde {int(sc.today.exceeded)} üyenin suyu sezon ortasında bitiyor.
               </p>
               {model.plan.status === 'partial' && (
                 <div className="mt-3">
