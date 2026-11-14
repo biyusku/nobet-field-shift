@@ -22,6 +22,8 @@ const LAYERS: Record<Base, { url: string; options: L.TileLayerOptions }> = {
     options: { attribution: 'NASA EOSDIS GIBS · MODIS Terra gerçek renk', maxNativeZoom: 9, maxZoom: 15 },
   },
 };
+const LABEL_PANE = 'hucre-etiketleri';
+const LABEL_H = 20;
 /** Bu yakınlaştırma düzeyinden itibaren daireler yerine tarla dikdörtgenleri çizilir. */
 const FIELD_ZOOM = 12;
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
@@ -87,6 +89,8 @@ export default function CoopMap({
   const fields = useRef<L.LayerGroup | null>(null);
   const [base, setBase] = useState<Base>('osm');
   const [zoom, setZoom] = useState(8);
+  /** harita kaydıkça artar: etiketlerin kenara taşma düzeltmesi yeniden hesaplansın */
+  const [view, setView] = useState(0);
   const [tileError, setTileError] = useState(false);
   const cb = useRef({ onDistrict, onMember });
   cb.current = { onDistrict, onMember };
@@ -108,16 +112,22 @@ export default function CoopMap({
 
   useEffect(() => {
     if (!el.current) return;
-    const m = L.map(el.current, { zoomControl: true, scrollWheelZoom: true, minZoom: 6, maxZoom: 15, zoomSnap: 0.25 });
+    const m = L.map(el.current, { zoomControl: false, scrollWheelZoom: true, minZoom: 7.5, maxZoom: 15, zoomSnap: 0.25 });
+    // hücre etiketleri üye dairelerinin (markerPane, 600) üstünde, ipucunun (650) altında dursun
+    L.control.zoom({ position: 'topright' }).addTo(m);
+    m.createPane(LABEL_PANE).style.zIndex = '640';
+    m.getPane(LABEL_PANE)!.style.pointerEvents = 'none';
     map.current = m;
     cellsLayer.current = L.layerGroup().addTo(m);
     pies.current = L.layerGroup().addTo(m);
     fields.current = L.layerGroup();
     // Konya'ya ortalı: bütün hücreler görünsün
     const all = L.latLngBounds(cells.flatMap((c) => [L.latLng(c.bounds.south, c.bounds.west), L.latLng(c.bounds.north, c.bounds.east)]));
-    m.fitBounds(all.pad(0.03));
+    // üstte etiketlere yer kalsın
+    m.fitBounds(all, { paddingTopLeft: [10, LABEL_H + 12], paddingBottomRight: [10, 10] });
     setZoom(m.getZoom());
     m.on('zoomend', () => setZoom(m.getZoom()));
+    m.on('moveend zoomend resize', () => setView((v) => v + 1));
     setTimeout(() => m.invalidateSize(), 60);
     return () => {
       m.remove();
@@ -153,18 +163,31 @@ export default function CoopMap({
         fillOpacity: selected ? 0.1 : 0.04,
       }).addTo(g);
       rect.on('click', () => cb.current.onDistrict(c.ids[0]));
-      // etiket hücrenin dışına taşmasın: genişliği hücrenin ekrandaki genişliğiyle sınırla
+      // Etiket: dikdörtgenin dışında, sol üst köşesinin hemen üstünde; beyaz yarı saydam kutu; dairelerin üstündeki katmanda.
+      // Metin hep tam yazılır. Köşe görünümün dışına çıkarsa etiket, hücre görünürken haritanın içinde kalacak
+      // biçimde kaydırılır (sağda yakınlaştırma düğmelerine yer bırakılır); hücre hiç görünmüyorsa etiket çizilmez.
       const m = map.current;
-      const px = m ? Math.abs(m.latLngToLayerPoint([c.bounds.north, c.bounds.east]).x - m.latLngToLayerPoint([c.bounds.north, c.bounds.west]).x) : 200;
-      const text = px >= 230 ? `NASA hücresi · ${c.names.join(' + ')}` : c.names.join(' + ');
+      const text = `NASA hücresi · ${c.names.join(' + ')}`;
+      const estWidth = Math.ceil(text.length * 6.4) + 14;
+      let dx = 0;
+      let dy = -(LABEL_H + 3); // köşenin hemen üstü
+      if (m) {
+        const nw = m.latLngToContainerPoint([c.bounds.north, c.bounds.west]);
+        const se = m.latLngToContainerPoint([c.bounds.south, c.bounds.east]);
+        const size = m.getSize();
+        if (se.x < 0 || nw.x > size.x || se.y < 0 || nw.y > size.y) continue;
+        dx = Math.min(0, size.x - 50 - (nw.x + estWidth));
+        if (nw.x + dx < 6) dx = 6 - nw.x;
+        if (nw.y + dy < 4) dy = 4 - nw.y;
+      }
       const label = L.divIcon({
         className: '',
         iconSize: [0, 0],
-        html: `<div title="NASA POWER hücresi: ${esc(c.names.join(' + '))}" style="transform:translate(6px,4px);box-sizing:border-box;display:inline-block;width:max-content;max-width:${Math.max(40, Math.round(px) - 12)}px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:600 11px Inter,system-ui,sans-serif;color:${dark ? '#fff' : '#00408f'};text-shadow:0 0 3px ${dark ? '#000' : '#fff'},0 0 3px ${dark ? '#000' : '#fff'}">${esc(text)}</div>`,
+        html: `<div class="cell-label" title="NASA POWER hücresi: ${esc(c.names.join(' + '))}" style="position:absolute;left:${dx}px;top:${dy}px;box-sizing:border-box;height:${LABEL_H}px;padding:0 6px;white-space:nowrap;border-radius:5px;background:rgba(255,255,255,.86);border:1px solid rgba(0,64,143,.35);box-shadow:0 1px 2px rgba(0,0,0,.12);font:600 11px/${LABEL_H - 2}px Inter,system-ui,sans-serif;color:#00408f">${esc(text)}</div>`,
       });
-      L.marker([c.bounds.north, c.bounds.west], { icon: label, interactive: false, keyboard: false }).addTo(g);
+      L.marker([c.bounds.north, c.bounds.west], { icon: label, interactive: false, keyboard: false, pane: LABEL_PANE }).addTo(g);
     }
-  }, [cells, districtId, base, zoom]);
+  }, [cells, districtId, base, zoom, view]);
 
   // üyeler: pasta daireler ve tarla dikdörtgenleri
   useEffect(() => {
@@ -235,20 +258,20 @@ export default function CoopMap({
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-2">
+      <div className="flex justify-end">
+        <Segmented
+          label="Harita altlığı"
+          value={base}
+          options={[
+            { id: 'osm', label: 'Harita' },
+            { id: 'uydu', label: 'Uydu' },
+            { id: 'modis', label: 'NASA MODIS' },
+          ]}
+          onChange={setBase}
+        />
+      </div>
       <div className="relative min-h-0 flex-1 overflow-hidden rounded-lg">
         <div ref={el} className="absolute inset-0 z-0" />
-        <div className="absolute right-2 top-2 z-[500]">
-          <Segmented
-            label="Harita altlığı"
-            value={base}
-            options={[
-              { id: 'osm', label: 'Harita' },
-              { id: 'uydu', label: 'Uydu' },
-              { id: 'modis', label: 'NASA MODIS' },
-            ]}
-            onChange={setBase}
-          />
-        </div>
       </div>
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11.5px] text-ink2">
         <span className="flex items-center gap-1.5">

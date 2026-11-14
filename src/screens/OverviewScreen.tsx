@@ -19,6 +19,8 @@ import { useStore } from '../state';
 const CoopMap = lazy(() => import('../components/CoopMap'));
 
 const MODE_LABEL: Record<Mode, string> = { today: 'Bugün', scatter: 'Gelişigüzel dağıtım', planned: 'Planlı dağıtım' };
+/** Dağıtım tablosunda varsayılan olarak gösterilen üye sayısı. */
+const TABLE_PREVIEW = 5;
 const districtName = (id?: string) => DISTRICTS.find((d) => d.id === id)?.name ?? '–';
 
 /** Üst satırdaki büyük sayı: bugün → planlı. */
@@ -58,6 +60,8 @@ export function OverviewScreen() {
   const [mode, setMode] = useState<Mode>('today');
   const [panel, setPanel] = useState<'dagitim' | 'iklim'>('dagitim');
   const [editing, setEditing] = useState<string | null>(null);
+  /** dağıtım tablosu: false = ilk 5 üye, true = hepsi (kendi içinde kaydırılır) */
+  const [showAll, setShowAll] = useState(false);
 
   // taahhüt taslağı: "Dağıt" ile uygulanır
   const first = Object.entries(s.settings.commitments).find(([, t]) => t > 0);
@@ -264,7 +268,7 @@ export function OverviewScreen() {
                 <div className="text-ink2">Taahhüt girilince hangi üyenin ne kadar ekeceği burada görünür.</div>
               ) : (
                 <>
-                  <div className="max-h-[188px] overflow-auto">
+                  <div className={showAll ? 'max-h-[400px] overflow-auto' : ''}>
                     <table className="data">
                       <thead className="sticky top-0 z-10">
                         <tr>
@@ -285,7 +289,7 @@ export function OverviewScreen() {
                         </tr>
                       </thead>
                       <tbody>
-                        {rows.map((r) => (
+                        {(showAll ? rows : rows.slice(0, TABLE_PREVIEW)).map((r) => (
                           <tr key={r.mv.member.id} className="cursor-pointer" onClick={() => openMember(r.mv.member.id)}>
                             <td>
                               <button type="button" className="cursor-pointer border-0 bg-transparent p-0 text-left font-semibold text-ink" onClick={() => openMember(r.mv.member.id)}>
@@ -317,6 +321,13 @@ export function OverviewScreen() {
                       </tbody>
                     </table>
                   </div>
+                  {rows.length > TABLE_PREVIEW && (
+                    <div>
+                      <button type="button" className="btn" aria-expanded={showAll} onClick={() => setShowAll((v) => !v)}>
+                        {showAll ? `Yalnız ilk ${TABLE_PREVIEW} üyeyi göster` : `${rows.length} üyenin tümünü göster`}
+                      </button>
+                    </div>
+                  )}
                   <BacktestStrip outcomes={sc[tableMode].backtest} commitments={s.settings.commitments} names={names} title={MODE_LABEL[tableMode]} />
                 </>
               )
