@@ -136,6 +136,7 @@ export default function App() {
           </span>
           <span>Gelir brüttür: tohum, gübre, elektrik düşülmedi.</span>
           <span>NASA POWER verisi yaklaşık 55 km çözünürlüklüdür: tarlayı değil yöre iklimini gösterir.</span>
+          {s.weather && <span>İklim noktası: {s.weather.name}.</span>}
         </div>
 
         {s.notice && (
