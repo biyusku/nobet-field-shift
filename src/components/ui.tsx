@@ -31,7 +31,7 @@ export function Tag({ kind, className = '', compact = false }: { kind: TagKind; 
 }
 
 // ---------- Ürün renkleri (sabit sıra; renk ürünü izler) ----------
-const ORDER = ['misir', 'pancar', 'aycicegi', 'bugday', 'arpa', 'nohut'];
+const ORDER = ['misir', 'pancar', 'aycicegi', 'bugday', 'arpa', 'nohut', 'mercimek'];
 export function cropColor(id: string): string {
   if (id === FALLOW) return 'var(--fallow)';
   const i = ORDER.indexOf(id);

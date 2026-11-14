@@ -1,7 +1,7 @@
 // Kooperatif panosu (açılış): solda harita, sağda taahhüt paneli.
 // "Aynı söz, aynı su: gelişigüzel dağıtınca ne oluyor, planlı dağıtınca ne oluyor?"
 import { LayoutDashboard, Plus, RotateCcw, Send } from 'lucide-react';
-import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { BacktestStrip, cropName, HonestyBanner } from '../components/bits';
 import { ClimateCard } from '../components/ClimateCard';
 import { Confirm, Select } from '../components/kit';
@@ -10,6 +10,7 @@ import { Card, H2, Note, NumInput, PageHeader, Segmented, Swatch, Tag } from '..
 import { COOP_NAME } from '../data/defaults';
 import { DISTRICTS } from '../data/members';
 import { levelLabel } from '../engine/curves';
+import { maxCropScenario, mixedScenario, reachedInAtLeast, yearsReached } from '../engine/promise';
 import { da, inSuffix, int, m3, pct, tlShort, ton } from '../lib/format';
 import type { MemberView, Mode, ScenarioSummary } from '../model';
 import { useStore } from '../state';
@@ -53,7 +54,23 @@ export function OverviewScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [s.settings.commitments, s.buyer]);
 
-  if (!model) return null;
+  // "Söz vermeden önce": seçili ürüne öncelik veren plan ve geliri en yükseğe çıkaran karma plan, 20 yılda denenir
+  const [need, setNeed] = useState<'14' | '16' | '18'>('16');
+  const promise = useMemo(() => {
+    if (!model) return null;
+    return { single: maxCropScenario(model.planInput, crop), mixed: mixedScenario(model.planInput) };
+  }, [model, crop]);
+
+  if (!model || !promise) return null;
+  const K = Number(need);
+  const singleYears = promise.single.yearly[crop] ?? [];
+  const safeSingle = Math.floor(reachedInAtLeast(singleYears, K));
+  const draftHeld = yearsReached(singleYears, tons);
+  const draftOk = tons <= 0 || draftHeld >= K;
+  const mixedRows = model.crops
+    .map((c) => ({ c, safe: Math.floor(reachedInAtLeast(promise.mixed.yearly[c.id] ?? [], K)) }))
+    .filter((r) => r.safe >= 1);
+  const draftCropName = (model.cropById.get(crop)?.name ?? crop).toLocaleLowerCase('tr');
   const names = new Map(model.crops.map((c) => [c.id, c.name]));
   const sc = model.scenarios;
   const committed = Object.entries(s.settings.commitments).filter(([id, t]) => t > 0 && model.cropById.has(id));
@@ -187,7 +204,82 @@ export function OverviewScreen() {
                 </button>
               </div>
             </div>
+            {tons > 0 && (
+              <div className={`mt-2 rounded-lg px-3 py-2 text-[13px] ${draftOk ? 'bg-[var(--good-bg)] text-good-ink' : 'bg-[var(--crit-bg)] text-crit-ink'}`} role="status">
+                <b className="font-semibold">
+                  {int(tons)} ton {draftCropName}: 20 yılın {draftHeld}
+                  {inSuffix(draftHeld)} tutar.
+                </b>{' '}
+                {draftOk ? (
+                  <>Seçtiğiniz eşiğin (20'de {K}) üstünde.</>
+                ) : (
+                  <>
+                    Eşiğin (20'de {K}) altında: en çok <b className="font-semibold">{int(safeSingle)} ton</b> söz verilebilir.{' '}
+                    <button type="button" className="link-button !text-inherit" onClick={() => setTons(safeSingle)}>
+                      {int(safeSingle)} ton yap
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
             {dirty && <div className="mt-2 text-[12px] font-medium text-warn-ink">Değişiklik henüz uygulanmadı: "Dağıt"a basın.</div>}
+
+            <div className="mt-4 border-t border-line pt-3">
+              <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                <h3 className="m-0 flex items-center gap-1.5 text-[13px] font-[650] text-ink">
+                  Söz vermeden önce <Tag kind="hesap" />
+                </h3>
+                <label className="flex items-center gap-2 text-[12px] text-ink2">
+                  20 yılın en az
+                  <Segmented
+                    label="Sözün tutması gereken yıl sayısı"
+                    value={need}
+                    options={[
+                      { id: '14', label: "14'ünde" },
+                      { id: '16', label: "16'sında" },
+                      { id: '18', label: "18'inde" },
+                    ]}
+                    onChange={setNeed}
+                  />
+                </label>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-lg bg-sunken p-3">
+                  <div className="text-[12px] font-medium text-ink2">Yalnız {draftCropName}</div>
+                  <div className="tnum mt-0.5 text-[22px] font-bold leading-tight text-ink">
+                    {int(safeSingle)} <span className="text-[13px] font-semibold text-ink2">ton</span>
+                  </div>
+                  <div className="mt-0.5 text-[11.5px] text-ink2">Kooperatif bu ürüne öncelik verirse güvenle söz verilebilecek en yüksek miktar.</div>
+                  <div className="tnum mt-2 border-t border-line pt-2 text-[12px] text-ink2">
+                    Kooperatif brüt geliri <b className="font-semibold text-ink">{tlShort(promise.single.revenue)}</b>
+                  </div>
+                </div>
+                <div className="rounded-lg bg-sunken p-3">
+                  <div className="text-[12px] font-medium text-ink2">Karma (gelir en yüksek)</div>
+                  <ul className="tnum m-0 mt-1 flex list-none flex-col gap-1 p-0">
+                    {mixedRows.map(({ c, safe }) => (
+                      <li key={c.id} className="flex items-baseline justify-between gap-2">
+                        <span className="min-w-0">
+                          <Swatch id={c.id} />
+                          {c.name}
+                          {(c.id === 'nohut' || c.id === 'aycicegi') && <span className="block pl-4 text-[11px] text-ink2">Türkiye'nin ithal ettiği ürün</span>}
+                        </span>
+                        <b className="shrink-0 font-semibold text-ink">{int(safe)} t</b>
+                      </li>
+                    ))}
+                    {mixedRows.length === 0 && <li className="text-ink2">Güvenle söz verilebilecek ürün yok.</li>}
+                  </ul>
+                  <div className="tnum mt-2 border-t border-line pt-2 text-[12px] text-ink2">
+                    Kooperatif brüt geliri <b className="font-semibold text-ink">{tlShort(promise.mixed.revenue)}</b>
+                  </div>
+                </div>
+              </div>
+              <p className="mb-0 mt-2 text-[11.5px] text-ink2">
+                "Güvenle söz verilebilecek miktar": plan 2006–2025'in her yılında o yılın havasıyla çalıştırıldığında, yılların en az {K}'{K === 16 ? 'sında' : K === 14 ? 'ünde' : 'inde'} ulaşılan üretim. Karma
+                sütundaki miktarlar aynı anda verilebilir; "yalnız" sütunu ise tek bir ürüne öncelik verir. "Dağıt" geliri en yükseğe çıkaran planı kurar; söz bu sayılara yakınsa o plan sözü daha az yılda
+                tutabilir. Fiyat ve verimler varsayımdır. "İthal ettiği ürün" notu takım notudur; kaynakla doğrulanmadı.
+              </p>
+            </div>
           </Card>
 
           {cId ? (

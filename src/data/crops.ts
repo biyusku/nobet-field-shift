@@ -58,6 +58,14 @@ function def(
   };
 }
 
+const S_LENTIL =
+  'Takım varsayımı (proje tanımındaki tabloda yok). Kışlık ekim kabul edildi; Konya koşullarında kırmızı mercimeğin kışlık yetişip yetişmediği, verimi ve fiyatı yerel kaynakla doğrulanmalı.';
+function mercimek(): CropDef {
+  const d = def('mercimek', 'Kırmızı mercimek', [11, 1], [120, 40, 35, 20], [0.4, 1.1, 0.3], 1.0, 180, 45000, { legume: true });
+  for (const k of ['plant', 'stages', 'kc', 'ky', 'yieldKgDa', 'priceTlTon'] as const) d[k].source = S_LENTIL;
+  return d;
+}
+
 export const DEFAULT_CROPS: CropDef[] = [
   def('misir', 'Mısır', [5, 1], [30, 40, 50, 30], [0.3, 1.2, 0.5], 1.25, 1265, 15025),
   def('pancar', 'Şeker pancarı', [4, 10], [30, 45, 80, 35], [0.35, 1.2, 0.7], 1.0, 7000, 3720, { contractOnly: true }),
@@ -65,6 +73,8 @@ export const DEFAULT_CROPS: CropDef[] = [
   def('bugday', 'Buğday (kışlık)', [10, 20], [146, 47, 40, 25], [0.4, 1.15, 0.3], 1.05, 550, 16500),
   def('arpa', 'Arpa (kışlık)', [10, 20], [141, 42, 35, 25], [0.3, 1.15, 0.25], 1.0, 500, 12750),
   def('nohut', 'Nohut', [3, 20], [25, 30, 35, 20], [0.4, 1.0, 0.35], 1.0, 220, 34250, { legume: true, smallMarket: true }),
+  // Kırmızı mercimek proje tanımındaki tabloda yoktu; sonradan istendi. Bütün değerleri takım varsayımıdır.
+  mercimek(),
 ];
 
 /** Motorun kullandığı düz biçim. */
