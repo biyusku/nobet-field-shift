@@ -17,21 +17,33 @@ const TABS: { id: Tab; label: string }[] = [
 ];
 
 function ThemeToggle() {
+  // Kullanıcı düğmeye basana kadar işletim sisteminin temasını izle; basınca seçimi sakla.
+  const osDark = () => window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false;
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     const t = document.documentElement.dataset.theme;
-    if (t === 'dark' || t === 'light') return t;
-    return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    return t === 'dark' || t === 'light' ? t : osDark() ? 'dark' : 'light';
   });
   useEffect(() => {
-    document.documentElement.dataset.theme = theme;
+    const mq = window.matchMedia?.('(prefers-color-scheme: dark)');
+    if (!mq) return;
+    const onChange = () => {
+      if (!document.documentElement.dataset.theme) setTheme(mq.matches ? 'dark' : 'light');
+    };
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+  const toggle = () => {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = next;
     try {
-      localStorage.setItem('nobet-theme', theme);
+      localStorage.setItem('nobet-theme', next);
     } catch {
       /* saklanamadı */
     }
-  }, [theme]);
+    setTheme(next);
+  };
   return (
-    <button type="button" className="btn" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} aria-label="Açık ve koyu tema arasında geç">
+    <button type="button" className="btn" onClick={toggle} aria-label="Açık ve koyu tema arasında geç">
       {theme === 'dark' ? 'Açık tema' : 'Koyu tema'}
     </button>
   );

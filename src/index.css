@@ -140,12 +140,15 @@ body {
 .tnum {
   font-variant-numeric: tabular-nums;
 }
-input,
-select,
-button {
-  font: inherit;
-  color: inherit;
+@layer base {
+  input,
+  select,
+  button {
+    font: inherit;
+    color: inherit;
+  }
 }
+@layer components {
 .field {
   background: var(--surface);
   border: 1px solid var(--axis);
@@ -209,6 +212,7 @@ table.data .num {
 table.data th:last-child,
 table.data td:last-child {
   padding-right: 0;
+}
 }
 .leaflet-container {
   font-family: var(--font-sans);

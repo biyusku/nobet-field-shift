@@ -247,11 +247,11 @@ export function CoopScreen() {
                           {cropName(id, names)}
                         </td>
                         <td className="num">{da(model.current.areaByCrop[id] ?? 0)}</td>
-                        <td className="num">{c ? ton(model.current.meanProductionT[id] ?? 0) : '–'}</td>
+                        <td className="num">{c && (model.current.meanProductionT[id] ?? 0) > 0 ? ton(model.current.meanProductionT[id]) : '–'}</td>
                         <td className="num">{da(ps.areaByCrop[id] ?? 0)}</td>
-                        <td className="num">{c ? ton(t) : '–'}</td>
+                        <td className="num">{c && t > 0 ? ton(t) : '–'}</td>
                         <td className="num">{c ? int(c.priceTlTon) : '–'}</td>
-                        <td className="num">{c ? tlShort(t * c.priceTlTon) : '–'}</td>
+                        <td className="num">{c && t > 0 ? tlShort(t * c.priceTlTon) : '–'}</td>
                       </tr>
                     );
                   })}

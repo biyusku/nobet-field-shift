@@ -50,12 +50,14 @@ export function WaterChart({
     const x = (d: number) => M.l + ((d - d0) / (d1 - d0)) * iw;
     const y = (v: number) => M.t + ih - (Math.min(v, yMax) / yMax) * ih;
     const step = (arr: Float64Array) => {
-      let s = `M${x(d0).toFixed(1)},${y(arr[d0]).toFixed(1)}`;
-      let last = arr[d0];
+      // artık yıllarda pencere bir gün uzundur; başka yılın dizisini okurken taşmayı önle
+      const at = (d: number) => arr[Math.min(d, arr.length - 1)];
+      let s = `M${x(d0).toFixed(1)},${y(at(d0)).toFixed(1)}`;
+      let last = at(d0);
       for (let d = d0 + 1; d <= d1; d++) {
-        if (arr[d] !== last || d === d1) {
-          s += `H${x(d).toFixed(1)}V${y(arr[d]).toFixed(1)}`;
-          last = arr[d];
+        if (at(d) !== last || d === d1) {
+          s += `H${x(d).toFixed(1)}V${y(at(d)).toFixed(1)}`;
+          last = at(d);
         }
       }
       return s;
