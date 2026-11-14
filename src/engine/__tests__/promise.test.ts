@@ -1,10 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_CROPS } from '../../data/crops';
-import { DEFAULT_EFF, DEFAULT_SETTINGS, DEFAULT_SOIL } from '../../data/defaults';
+import { DEFAULT_COMMITMENT_TONS, DEFAULT_EFF, DEFAULT_SAFE_YEARS, DEFAULT_SETTINGS, DEFAULT_SOIL } from '../../data/defaults';
 import { DISTRICTS, generateMembers } from '../../data/members';
 import { computeModel } from '../../model';
-import { maxCropScenario, mixedScenario, reachedInAtLeast, yearsReached } from '../promise';
+import { maxCropScenario, maxSafeCommitment, mixedScenario, reachedInAtLeast, yearsReached } from '../promise';
 import type { Weather } from '../types';
 import { buildWeather } from '../weather';
 
@@ -47,5 +47,15 @@ describe('güvenle söz verilebilecek miktar', () => {
   it('sözleşmesi olmayan kooperatifte pancar için verilebilecek söz sıfırdır', () => {
     const none = { ...model.planInput, members: model.planInput.members.map((m) => ({ ...m, beetContract: false })) };
     expect(reachedInAtLeast(maxCropScenario(none, 'pancar').yearly.pancar, 16)).toBe(0);
+  });
+
+  it('varsayılan söz hesaptan gelir: planlı dağıtımda 20 yılın en az 16\'sında tutan en yüksek mısır, 10 tona aşağı yuvarlanmış', () => {
+    const safe = maxSafeCommitment(model.planInput, 'misir', DEFAULT_SAFE_YEARS);
+    expect(DEFAULT_COMMITMENT_TONS).toBe(Math.floor(safe / 10) * 10);
+    expect(DEFAULT_SETTINGS.commitments).toEqual({ misir: DEFAULT_COMMITMENT_TONS });
+    // daha sık taranınca daha büyük bir değer çıkmıyor
+    expect(maxSafeCommitment(model.planInput, 'misir', DEFAULT_SAFE_YEARS, 32)).toBeCloseTo(safe, 6);
+    // varsayılan sözle: planlı dağıtım eşiği tutturur
+    expect(model.scenarios.planned.held).toBeGreaterThanOrEqual(DEFAULT_SAFE_YEARS);
   });
 });

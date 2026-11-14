@@ -5,7 +5,7 @@ import { DEFAULT_CROPS } from '../../data/crops';
 import { DEFAULT_EFF, DEFAULT_SETTINGS, DEFAULT_SOIL } from '../../data/defaults';
 import { DISTRICTS, generateMembers } from '../../data/members';
 import { computeModel } from '../../model';
-import { maxCropScenario, mixedScenario, reachedInAtLeast } from '../promise';
+import { maxCropScenario, maxSafeCommitment, mixedScenario, reachedInAtLeast } from '../promise';
 import type { Weather } from '../types';
 import { buildWeather } from '../weather';
 
@@ -30,5 +30,11 @@ test.runIf(process.env.PROBE)('söz vermeden önce', () => {
   line('YALNIZ MISIR', corn);
   line('KARMA', mixed);
   out.push(`\nvarsayılan (300 t) plan geliri ${(m.planSummary.revenue / 1e6).toFixed(2)}M, alan ${JSON.stringify(Object.fromEntries(Object.entries(m.planSummary.areaByCrop).map(([a, b]) => [a, Math.round(b)])))}`);
+  const t1 = performance.now();
+  const safe = maxSafeCommitment(m.planInput, 'misir', 16);
+  out.push(`\nPLANLI DAĞITIMDA GÜVENLİ MISIR SÖZÜ (16/20): ${safe.toFixed(1)} t (${(performance.now() - t1).toFixed(0)} ms); 32 adımla: ${maxSafeCommitment(m.planInput, 'misir', 16, 32).toFixed(1)}`);
+  const m2 = computeModel(weathers, 'karapinar', { members: generateMembers(), cropDefs: DEFAULT_CROPS, soil: DEFAULT_SOIL, eff: DEFAULT_EFF, settings: { ...DEFAULT_SETTINGS, commitments: { misir: Math.floor(safe / 10) * 10 } } });
+  for (const k of ['today', 'scatter', 'planned'] as const) { const s = m2.scenarios[k]; out.push(`${k} @${Math.floor(safe / 10) * 10}t: tutan ${s.held}/20 ort.üretim ${Math.round(s.deliveredT.misir)} gelir ${(s.revenue / 1e6).toFixed(2)}M biten ${s.exceeded} verim ${(s.yieldLevel * 100).toFixed(0)}% eken ${s.growers}`); }
+  out.push('gelişigüzelde görevlendirilen: ' + m2.members.filter((x) => x.scatterCrop).length);
   console.log(out.join('\n'));
 });

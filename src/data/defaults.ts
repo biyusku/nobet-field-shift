@@ -48,10 +48,18 @@ export const DEFAULT_SOIL: Soil = { taw: 130, p: 0.5 };
 export const DEFAULT_EFF: Efficiencies = { salma: 0.5, yagmurlama: 0.75, damla: 0.9 };
 export const METHOD_LABEL = { salma: 'Salma', yagmurlama: 'Yağmurlama', damla: 'Damla' } as const;
 
+/** "Güvenle söz" eşiği: sözün 20 yılın en az kaçında tutması istenir. */
+export const DEFAULT_SAFE_YEARS = 16;
+/**
+ * Varsayılan mısır sözü (ton): planlı dağıtımda 20 yılın en az 16'sında tutan en yüksek miktar, 10 tona aşağı yuvarlanmış.
+ * Hesap: engine/promise.ts maxSafeCommitment; değer bir testle (promise.test.ts) hesaba bağlıdır, elle değiştirilmez.
+ */
+export const DEFAULT_COMMITMENT_TONS = 2850;
+
 export const DEFAULT_SETTINGS: PlanSettings = {
   maxShare: 1 / 3,
   smallMarketCap: 0.25,
-  commitments: { misir: 300 },
+  commitments: { misir: DEFAULT_COMMITMENT_TONS },
   mode: 'revenue',
   includeUnreliable: false,
   minLegumeShare: 0,

@@ -45,3 +45,30 @@ export function maxCropScenario(input: PlanInput, cropId: string): PromiseScenar
   const commitments = upper > 0 ? { [cropId]: upper } : {};
   return scenarioOf(input, solvePlan({ ...input, settings: { ...input.settings, commitments, mode: 'revenue' } }));
 }
+
+/** maxSafeCommitment'ın denediği ara nokta sayısı. */
+export const SAFE_SCAN_STEPS = 8;
+
+/**
+ * Planlı dağıtımda güvenle verilebilecek en yüksek söz: söz T olarak girildiğinde kurulan plan,
+ * 20 yılın en az k'sinde T'ye ulaşıyorsa T "tutar". Aranan, tutan en yüksek T'dir.
+ *
+ * Taban: taahhütsüz gelir planının k. en iyi yılı (bu T için plan değişmez ve tanım gereği tutar).
+ * Üstü: T planı bağlamaya başlar; plan ortalama verime göre kurulduğu için genellikle tutmaz.
+ * Yine de tabandan en yüksek üretime kadar ara noktalar denenir; tutan daha büyük bir değer varsa o döner.
+ */
+export function maxSafeCommitment(input: PlanInput, cropId: string, k: number, steps = SAFE_SCAN_STEPS): number {
+  const base = reachedInAtLeast(mixedScenario(input).yearly[cropId] ?? [], k);
+  const top = maxCropScenario(input, cropId).yearly[cropId] ?? [];
+  const hi = top.length ? top.reduce((s, v) => s + v, 0) / top.length : 0;
+  let best = base;
+  for (let i = 1; i <= steps; i++) {
+    const tons = base + ((hi - base) * i) / steps;
+    if (!(tons > best)) continue;
+    const plan = solvePlan({ ...input, settings: { ...input.settings, commitments: { [cropId]: tons }, mode: 'revenue' } });
+    if (plan.status !== 'ok') continue;
+    const yearly = backtest(plan.allocations, input.crops, {}).map((y) => y.productionT[cropId] ?? 0);
+    if (yearsReached(yearly, tons) >= k) best = tons;
+  }
+  return best;
+}

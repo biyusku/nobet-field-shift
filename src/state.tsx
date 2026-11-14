@@ -21,7 +21,7 @@ interface Persisted {
   buyer: string;
 }
 
-const KEY = 'nobet-durum-v7';
+const KEY = 'nobet-durum-v8';
 const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
 
 function defaults(): Persisted {
