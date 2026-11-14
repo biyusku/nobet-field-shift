@@ -1,11 +1,13 @@
-import { Handshake } from 'lucide-react';
-import { useMemo } from 'react';
+import { ChevronDown, ChevronRight, Handshake } from 'lucide-react';
+import { Fragment, useMemo, useState } from 'react';
 import { BacktestStrip, cropName, HonestyBanner } from '../components/bits';
 import { Brief, Card, Empty, H2, Note, NumInput, PageHeader, Stat, Swatch, Tag } from '../components/ui';
 import { levelLabel } from '../engine/curves';
 import { maxCommitmentFraction, solvePlan, summarize, type PlanInput } from '../engine/plan';
 import { FALLOW } from '../engine/types';
 import { da, dec1, inSuffix, int, m3, pct, tlShort, ton } from '../lib/format';
+import type { MemberView, Model } from '../model';
+import { DISTRICTS } from '../data/members';
 import { useStore } from '../state';
 import { PlanSettingsCard } from '../components/PlanSettingsCard';
 
@@ -232,93 +234,20 @@ export function CommitmentScreen() {
       {model.plan.status === 'error' && <Note tone="crit">{model.plan.message}</Note>}
 
       <Card>
-        <H2 right={<Tag kind="hesap" />}>Dağıtım: hangi üye ne kadar eker</H2>
+        <H2 right={<Tag kind="hesap" />}>Dağıtım: ilçe ilçe, kim ne kadar eker</H2>
         <div className="mb-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
           <Stat label="Dağıtılan toplam su" tag="hesap" value={m3(ps.reservedM3)} sub={`toplam kotanın ${pct(model.totalQuotaM3 > 0 ? ps.reservedM3 / model.totalQuotaM3 : 0)} kadarı`} />
           <Stat label="Ortalama kullanılan su" tag="hesap" value={m3(sc.planned.usedM3)} sub="20 yıl ortalaması" />
           <Stat label="Kooperatif brüt geliri" tag="hesap" value={tlShort(sc.planned.revenue)} sub="20 yıl ortalaması; girdiler düşülmedi" />
           <Stat label="Toplam su hakkı" tag="kurgusal" value={m3(model.totalQuotaM3)} />
         </div>
-        <div className="overflow-x-auto">
-          <table className="data min-w-[680px]">
-            <thead>
-              <tr>
-                <th>Üye</th>
-                {planCrops.map((id) => (
-                  <th key={id} className="num">
-                    <Swatch id={id} />
-                    {cropName(id, names)} (da)
-                  </th>
-                ))}
-                <th className="num">Ayrılan su (m³)</th>
-                <th className="num">Kota (m³)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {model.members.map((mv) => {
-                const by = new Map<string, { da: number; parts: string[]; t: number }>();
-                for (const a of mv.plannedAllocs) {
-                  if (a.da < 0.05) continue;
-                  const e = by.get(a.cropId) ?? { da: 0, parts: [], t: 0 };
-                  e.da += a.da;
-                  if (a.option) {
-                    e.parts.push(`${dec1(a.da)} da ${levelLabel(a.option.level)}`);
-                    e.t += (a.option.meanRel * (model.cropById.get(a.cropId)?.yieldKgDa ?? 0) * a.da) / 1000;
-                  }
-                  by.set(a.cropId, e);
-                }
-                return (
-                  <tr key={mv.member.id}>
-                    <td>
-                      <button
-                        type="button"
-                        className="cursor-pointer border-0 bg-transparent p-0 text-left underline decoration-axis underline-offset-2"
-                        onClick={() => {
-                          s.setMemberId(mv.member.id);
-                          s.setTab('uye');
-                        }}
-                      >
-                        {mv.member.name}
-                      </button>
-                      <div className="text-[12px] text-muted">{da(mv.member.areaDa)} da</div>
-                    </td>
-                    {planCrops.map((id) => {
-                      const e = by.get(id);
-                      return (
-                        <td key={id} className="num">
-                          {e ? (
-                            <>
-                              {da(e.da)}
-                              {e.parts.length > 0 && <div className="text-[11.5px] text-muted">{e.parts.join(' + ')}</div>}
-                              {e.t > 0 && <div className="text-[11.5px] text-ink2">≈ {ton(e.t)}</div>}
-                            </>
-                          ) : (
-                            <span className="text-muted">–</span>
-                          )}
-                        </td>
-                      );
-                    })}
-                    <td className="num">{int(mv.plannedSummary.reservedM3)}</td>
-                    <td className="num">{int(mv.quotaM3)}</td>
-                  </tr>
-                );
-              })}
-              <tr className="font-semibold">
-                <td>Toplam</td>
-                {planCrops.map((id) => (
-                  <td key={id} className="num">
-                    {da(ps.areaByCrop[id] ?? 0)}
-                    {(ps.productionT[id] ?? 0) > 0 && <div className="text-[11.5px] font-normal text-ink2">≈ {ton(ps.productionT[id])}</div>}
-                  </td>
-                ))}
-                <td className="num">{int(ps.reservedM3)}</td>
-                <td className="num">{int(model.totalQuotaM3)}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <DistributionTable model={model} planCrops={planCrops} names={names} onMember={(id) => {
+          s.setMemberId(id);
+          s.setTab('uye');
+          window.scrollTo({ top: 0 });
+        }} />
         <p className="mb-0 mt-2 text-[12px] text-muted">
-          Hücrelerdeki küçük yazı, o ürüne hangi su seviyesinin ayrıldığını ve 20 yılın ortalama verimiyle beklenen üretimi gösterir. "Ayrılan su" her parsel için 20 yılın en kurak yılına göre
+          İlçeye tıklayınca üyeleri açılır. Küçük yazı, 20 yılın ortalama verimiyle beklenen üretimi (üye satırlarında ayrıca hangi su seviyesinin ayrıldığını) gösterir. "Ayrılan su" her parsel için 20 yılın en kurak yılına göre
           tutulur; bu yüzden hiçbir yıl kota aşılmaz.
         </p>
       </Card>
@@ -366,5 +295,138 @@ export function CommitmentScreen() {
       )}
       <PlanSettingsCard />
     </>
+  );
+}
+
+interface Cell {
+  da: number;
+  t: number;
+  parts: string[];
+}
+function cellsOf(mv: MemberView, model: Model): Map<string, Cell> {
+  const by = new Map<string, Cell>();
+  for (const a of mv.plannedAllocs) {
+    if (a.da < 0.05) continue;
+    const e = by.get(a.cropId) ?? { da: 0, t: 0, parts: [] };
+    e.da += a.da;
+    if (a.option) {
+      e.parts.push(`${dec1(a.da)} da ${levelLabel(a.option.level)}`);
+      e.t += (a.option.meanRel * (model.cropById.get(a.cropId)?.yieldKgDa ?? 0) * a.da) / 1000;
+    }
+    by.set(a.cropId, e);
+  }
+  return by;
+}
+
+/** Dağıtım tablosu: en üstte ürün başına toplam, altında ilçe toplamları; ilçeye tıklayınca üyeleri açılır. */
+function DistributionTable({ model, planCrops, names, onMember }: { model: Model; planCrops: string[]; names: Map<string, string>; onMember: (id: string) => void }) {
+  const [open, setOpen] = useState<Set<string>>(new Set());
+  const ps = model.planSummary;
+  const groups = [...DISTRICTS.map((d) => ({ id: d.id, name: d.name })), { id: '', name: 'İlçesi belirtilmemiş' }]
+    .map((g) => ({ ...g, members: model.members.filter((mv) => (mv.member.pointId ?? '') === g.id || (g.id === '' && !DISTRICTS.some((d) => d.id === mv.member.pointId))) }))
+    .filter((g) => g.members.length > 0);
+  const dash = <span className="text-muted">–</span>;
+  const cell = (e: Cell | undefined, withParts: boolean) =>
+    e && e.da >= 0.05 ? (
+      <>
+        {da(e.da)}
+        {withParts && e.parts.length > 0 && <div className="text-[11.5px] text-muted">{e.parts.join(' + ')}</div>}
+        {e.t > 0 && <div className="text-[11.5px] font-normal text-ink2">≈ {ton(e.t)}</div>}
+      </>
+    ) : (
+      dash
+    );
+  return (
+    <div className="overflow-x-auto">
+      <table className="data min-w-[680px]">
+        <thead>
+          <tr>
+            <th>İlçe / üye</th>
+            {planCrops.map((id) => (
+              <th key={id} className="num">
+                <Swatch id={id} />
+                {cropName(id, names)} (da)
+              </th>
+            ))}
+            <th className="num">Ayrılan su (m³)</th>
+            <th className="num">Su hakkı (m³)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr className="font-semibold text-ink">
+            <td>
+              Kooperatif toplamı
+              <div className="text-[11.5px] font-normal text-ink2">{int(model.members.length)} üye</div>
+            </td>
+            {planCrops.map((id) => (
+              <td key={id} className="num">
+                {cell({ da: ps.areaByCrop[id] ?? 0, t: ps.productionT[id] ?? 0, parts: [] }, false)}
+              </td>
+            ))}
+            <td className="num">{int(ps.reservedM3)}</td>
+            <td className="num">{int(model.totalQuotaM3)}</td>
+          </tr>
+          {groups.map((g) => {
+            const isOpen = open.has(g.id);
+            const per = g.members.map((mv) => ({ mv, cells: cellsOf(mv, model) }));
+            const total = new Map<string, Cell>();
+            for (const { cells } of per)
+              for (const [id, e] of cells) {
+                const t = total.get(id) ?? { da: 0, t: 0, parts: [] };
+                t.da += e.da;
+                t.t += e.t;
+                total.set(id, t);
+              }
+            const toggle = () =>
+              setOpen((prev) => {
+                const next = new Set(prev);
+                if (next.has(g.id)) next.delete(g.id);
+                else next.add(g.id);
+                return next;
+              });
+            return (
+              <Fragment key={g.id || 'diger'}>
+                <tr className="cursor-pointer" onClick={toggle}>
+                  <td>
+                    <button type="button" className="flex cursor-pointer items-center gap-1 border-0 bg-transparent p-0 text-left font-semibold text-ink" aria-expanded={isOpen} onClick={(e) => { e.stopPropagation(); toggle(); }}>
+                      {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                      {g.name}
+                    </button>
+                    <div className="pl-[18px] text-[11.5px] text-ink2">
+                      {int(g.members.length)} üye · {da(g.members.reduce((x, mv) => x + mv.member.areaDa, 0))} da
+                    </div>
+                  </td>
+                  {planCrops.map((id) => (
+                    <td key={id} className="num">
+                      {cell(total.get(id), false)}
+                    </td>
+                  ))}
+                  <td className="num">{int(g.members.reduce((x, mv) => x + mv.plannedSummary.reservedM3, 0))}</td>
+                  <td className="num">{int(g.members.reduce((x, mv) => x + mv.quotaM3, 0))}</td>
+                </tr>
+                {isOpen &&
+                  per.map(({ mv, cells }) => (
+                    <tr key={mv.member.id} className="bg-[color-mix(in_srgb,var(--sunken)_55%,transparent)]">
+                      <td className="!pl-[30px]">
+                        <button type="button" className="cursor-pointer border-0 bg-transparent p-0 text-left underline decoration-axis underline-offset-2" onClick={() => onMember(mv.member.id)}>
+                          {mv.member.name}
+                        </button>
+                        <div className="text-[11.5px] text-muted">{da(mv.member.areaDa)} da</div>
+                      </td>
+                      {planCrops.map((id) => (
+                        <td key={id} className="num">
+                          {cell(cells.get(id), true)}
+                        </td>
+                      ))}
+                      <td className="num">{int(mv.plannedSummary.reservedM3)}</td>
+                      <td className="num">{int(mv.quotaM3)}</td>
+                    </tr>
+                  ))}
+              </Fragment>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
   );
 }
