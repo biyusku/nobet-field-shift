@@ -1,0 +1,155 @@
+# Nöbet
+
+Sulama kooperatifleri için su bütçesi ve ekim planı prototipi. NASA Space Apps Challenge 2026, "Field Shift: Adapting Farms with NASA Data" görevi için hazırlandı.
+
+Kullanıcı bir sulama kooperatifinin ziraat mühendisidir. Araç, üyelerin yıllık su kotasını aşmadan hangi ürünün tarlanın ne kadarına ve ne kadar suyla ekilebileceğini hesaplar; kooperatifin satış taahhüdünü üyelere dağıtır; planı 2006-2025'in gerçek havasında deneyip tutup tutmadığını gösterir.
+
+**Ürün önermiyoruz, su bütçesi yönetiyoruz. Araç karar vermez; seçenekleri ve bedellerini gösterir.**
+
+Pilot nokta Karapınar, Konya (37,72° K, 33,55° D); ikinci nokta Çivril, Denizli (38,30° K, 29,74° D). Açılıştaki "Karapınar Örnek Kooperatifi", üyeleri ve 300 tonluk mısır taahhüdü **kurgusaldır**.
+
+## Çalıştırma
+
+Node.js 20 ya da üstü gerekir.
+
+```bash
+npm install
+```
+
+```bash
+npm run dev
+```
+
+```bash
+npm test
+```
+
+```bash
+npm run build
+```
+
+Bu makinede sistemde Node yoktu; proje içinde `.tools/node` altında bir kopya duruyor (git dışı). Onu kullanmak için komutlardan önce bir kez:
+
+```bash
+export PATH="$PWD/.tools/node/bin:$PATH"
+```
+
+### Veriyi yeniden indirmek
+
+Karapınar ve Çivril verisi `public/data/` altında depoyla birlikte gelir. Yenilemek için (anahtar gerekmez, internet gerekir):
+
+```bash
+npm run fetch-data
+```
+
+Betik (`scripts/fetch-power.mjs`) NASA POWER günlük API'sinden 1 Ekim 2004 – 31 Aralık 2025 arasını indirir ve parametre başına gün dizisi olarak yazar. Başka bir nokta eklemek için betikteki `POINTS` listesine ve `src/data/defaults.ts` içindeki `PRESET_POINTS` listesine satır ekleyin.
+
+## Yayınlama
+
+Sunucu yoktur; bütün hesap tarayıcıda yapılır. `npm run build` çıktısı (`dist/`) herhangi bir statik sunucuya kopyalanabilir. `base: './'` kullanıldığı için alt dizinde de çalışır (GitHub Pages, Netlify, Cloudflare Pages, bir S3 kovası ya da `python3 -m http.server`).
+
+```bash
+npm run preview
+```
+
+Dikkat: `dist/index.html` dosyasını çift tıklayıp `file://` ile açmak çalışmaz (tarayıcılar modülleri ve veri dosyasını engeller); bir statik sunucu gerekir.
+
+## Ekranlar
+
+1. **Üye**: tarla, kota (mm ya da m³), sulama yöntemi, bugünkü ekim. Solda bugünkü ekim, sağda önerilen plan; her birinde su bitiş tarihi (en büyük sayı), kümülatif sulama ve kota çizgisi, 20 yılın bitiş tarihi aralığı, brüt gelir, kullanılan su, toprak puanı ve üç yıllık nöbet tablosu.
+2. **Kooperatif**: üye listesi (ekle, sil, düzenle), ürün başına toplam alan, üretim ve gelir, fiyat riski uyarısı, plan ayarları.
+3. **Taahhüt**: ürün başına ton taahhüdü, dağıtım tablosu, ayrılan su, geçmişte deneme şeridi (yeşil/sarı/kırmızı). Taahhüt karşılanamıyorsa seçenekler ve bedelleri.
+4. **Yöntem ve kaynaklar**: formüller, değiştirilebilir bütün varsayımlar, veri kaynağı, su-verim eğrileri, modelin sınırları.
+
+Üstte nokta seçici: Karapınar, Çivril ya da haritadan seç (Leaflet + OpenStreetMap). Haritadan seçilen nokta tarayıcıdan NASA POWER'a sorulur ve IndexedDB'de saklanır.
+
+## Kod yapısı
+
+```
+scripts/fetch-power.mjs      NASA POWER indirme betiği
+public/data/*.json           Karapınar ve Çivril günlük verisi
+src/engine/                  hesap motoru: arayüzden bağımsız saf fonksiyonlar
+  et0.ts                     FAO-56 Penman-Monteith ve Hargreaves
+  weather.ts                 veri temizliği, günlük ET0
+  bucket.ts                  günlük toprak-su dengesi (kova modeli)
+  curves.ts                  su-verim eğrileri (bellekte tutulur)
+  plan.ts                    doğrusal programlama, geçmişte deneme
+  farm.ts                    bir üyenin tarlasının 20 yıllık değerlendirmesi
+  soil.ts                    toprak puanı, nöbet tablosu
+  __tests__/                 Vitest birim testleri ve kabul kontrolleri
+src/data/crops.ts            ürün tablosu (her alan: value, source, verified:false)
+src/data/defaults.ts         kurgusal kooperatif, toprak, randıman, plan ayarları
+src/model.ts                 ekranların gösterdiği bütün türetilmiş sonuçlar
+src/screens/, components/    arayüz (React + Tailwind, grafikler elle SVG)
+DECISIONS.md                 belirsiz yerlerde verilen kararlar
+```
+
+## Veri kaynakları
+
+- **İklim**: NASA Langley Research Center, POWER Project, Daily API (`community=AG`). Parametreler: `T2M_MAX`, `T2M_MIN`, `PRECTOTCORR`, `ALLSKY_SFC_SW_DWN`, `WS2M`, `RH2M`; rakım yanıttaki `geometry.coordinates[2]`. Dönem 2004-10-01 – 2025-12-31. İndirilen iki noktada eksik (-999) değer yok.
+- **Harita**: OpenStreetMap katkıcıları (yalnız nokta seçimi için).
+- **Yöntem**: FAO Sulama ve Drenaj Yayını 56 (ET0, Kc yaklaşımı), FAO 33 (Ky ile verim tepkisi).
+- Ürün parametreleri, verim ve fiyatlar bir veri kaynağından değil, proje tanımından gelir: aşağıya bakın.
+
+NASA POWER meteoroloji verisi yaklaşık 55 km çözünürlüklüdür: tarlayı değil **yöre iklimini** gösterir.
+
+## Varsayımlar (hiçbiri doğrulanmadı)
+
+Hepsi arayüzde "varsayım" etiketiyle gösterilir ve Yöntem sayfasından (ya da ilgili ekrandan) değiştirilebilir.
+
+| ürün | ekim | evre süreleri (gün) | Kc baş/orta/son | Ky | tam sulu verim kg/da | fiyat TL/ton |
+|---|---|---|---|---|---|---|
+| mısır | 1 Mayıs | 30, 40, 50, 30 | 0,30 / 1,20 / 0,50 | 1,25 | 1265 | 15025 |
+| şeker pancarı | 10 Nisan | 30, 45, 80, 35 | 0,35 / 1,20 / 0,70 | 1,00 | 7000 | 3720 |
+| ayçiçeği (küçük pazar) | 1 Mayıs | 25, 35, 45, 25 | 0,35 / 1,10 / 0,35 | 0,95 | 350 | 34250 |
+| buğday (kışlık) | 20 Ekim | 146, 47, 40, 25 | 0,40 / 1,15 / 0,30 | 1,05 | 550 | 16500 |
+| arpa (kışlık) | 20 Ekim | 141, 42, 35, 25 | 0,30 / 1,15 / 0,25 | 1,00 | 500 | 12750 |
+| nohut (baklagil, küçük pazar) | 20 Mart | 25, 30, 35, 20 | 0,40 / 1,00 / 0,35 | 1,00 | 220 | 34250 |
+
+- Toprak: kullanılabilir su kapasitesi TAW = 130 mm, izin verilen boşalma p = 0,5; bütün ürün ve üyeler için aynı.
+- Sulama randımanı: salma 0,50, yağmurlama 0,75, damla 0,90.
+- Su yılı 1 Ekim'de toprak nemi 0,3·TAW ile başlar; boş tarlada günlük kayıp 0,2·ET0; hasada 10 gün kala sulama kesilir; sulama her seferinde tarla kapasitesine tamamlar.
+- Kışlık ürünler hasat yılından önceki sonbaharda ekilir; ekim tarihi her yıl aynıdır.
+- Bir ürünün üyedeki payı en çok 1/3; küçük pazarlı ürünlerin her biri kooperatif alanının en çok %25'i.
+- Göreli verimi 0,35'in altındaki seçenekler güvenilmez sayılır ve varsayılan olarak planlamaya girmez.
+- Toprak puanının ağırlıkları (60 baklagil, 40 çeşitlilik, %25 baklagil hedefi) takım varsayımıdır.
+- Geçmişte denemede "sarı" eşiği: taahhüdün %90'ı.
+- Kurgusal kooperatif: 80, 120, 200 ve 350 dekarlık dört üye, 200 mm kota, ağırlıklı mısır; 300 ton mısır taahhüdü.
+
+## Kabul kontrolleri: gerçek sonuçlar (Karapınar)
+
+`src/engine/__tests__/acceptance.test.ts`. Hedef bantlar proje tanımındandır; sayılar zorlanmadı. Testler 20 yılın ortalamasını banda karşı, tek tek yılları da "en az şu kadar yıl" diye sınar.
+
+| kontrol | hedef | sonuç |
+|---|---|---|
+| Yıllık ET0 | yaklaşık 1140-1320 mm | ortalama 1241; aralık 1110-1337; 20 yılın 18'i bantta (2011: 1110, 2025: 1337) |
+| Temmuz yağışı | birkaç mm | ortalama 4,3 mm; 20 yılın 19'unda 9 mm altı (2009: 26 mm) |
+| Temmuz ET0 | 200 mm civarı | ortalama 215; aralık 190-231 |
+| Mısır tam sulama, randıman 0,80 | 700-870 mm brüt | ortalama 801; aralık 683-866; 18'i bantta (2011: 691, 2015: 683) |
+| 200 mm kota, tümü mısır: su bitiş | her yıl temmuzun ilk üç haftası | yağmurlama ve damlada 7-24 Temmuz; 19'u ilk üç haftada (2015: 24 Temmuz). Salmada (0,50) 27 Haziran – 15 Temmuz; 5 yılda haziran sonuna düşüyor |
+| Susuz mısır göreli verimi | 0,1 altı | ortalama 0,05; en yüksek 0,16 (2015); 3-4 yıl 0,10-0,16 arasında |
+| Susuz buğday göreli verimi | 0,4-0,6 | ortalama 0,53; aralık 0,41-0,83; yağışlı 2011 (0,83) ve 2015 (0,64) bandın üstünde |
+| ET0 fonksiyonu | FAO-56 Örnek 18: 3,9 mm/gün | 3,8-3,95 aralığında (geçiyor); Örnek 8'deki Ra = 32,2 de tutuyor |
+
+Bantların dışına düşen yıllar hata değil, yağışlı (2011, 2015) ve kurak-sıcak (2025) yıllardır. Ham sayıları görmek için:
+
+```bash
+PROBE=1 npx vitest run src/engine/__tests__/probe.test.ts --disable-console-intercept
+```
+
+Kurgusal kooperatifte sonuç: 300 ton mısır taahhüdü bu kota ve 1/3 kuralıyla karşılanamıyor; 20 yılın ortalama verimiyle en çok yaklaşık 247 ton (%82). Araç bunu saklamaz, açılışta gösterir.
+
+## Bilinen sınırlar
+
+- Gelir brüttür: tohum, gübre, ilaç, mazot, elektrik, işçilik, su ücreti ve yatırım maliyeti düşülmemiştir.
+- İklim verisi yöre ölçeğindedir (yaklaşık 55 km); yerel yağış, don ve dolu görünmez. Yağış verisi istasyon ölçümü değildir.
+- Ürün katsayıları, verimler ve fiyatlar doğrulanmamış varsayımlardır; sonuçlar doğrudan bunlara bağlıdır.
+- Verim tepkisi tek katsayılıdır (sezonluk Ky); stresin hangi evrede geldiği ayrıca hesaba katılmaz. Çok az suda model güvenilir değildir.
+- Kova modeli tek katmanlıdır: sabit kök derinliği, kılcal yükselme, tuzluluk, taban suyu, yüzey akışı ayrıntısı yoktur. Gerçek sulama takvimi ve su sırası modellenmez.
+- Sıcaklık, don, hastalık ve ekim tarihi kayması verimi etkilemez.
+- Fiyatlar sabittir; fiyat tahmini, pazar derinliği, şeker pancarı kotası ve sözleşme koşulları yoktur.
+- Plan 20 yılın ortalama verimine göre kurulur; taahhüt tek tek yıllarda tutmayabilir (şerit bunu gösterir). Ayrılan su en kurak yıla göre tutulduğu için çoğu yıl bir kısmı kullanılmaz.
+- Geçmiş 20 yıl geleceğin garantisi değildir.
+- Nöbet tablosu şematiktir; ön bitki etkisi ve ekim-hasat çakışmaları hesaba katılmaz (ör. 17 Ekim'de sökülen pancarın ardından 20 Ekim'de buğday).
+- Yeraltı suyu düzeyi ve kotanın kendisinin sürdürülebilirliği bu aracın kapsamı dışındadır.
+- Arayüz yalnız Türkçedir. Tarayıcıdan NASA POWER çağrısı ağa ve servisin erişilebilirliğine bağlıdır; başarısız olursa araç bunu söyler ve hazır noktalarla devam eder.
