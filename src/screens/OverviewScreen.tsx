@@ -1,16 +1,16 @@
 // Kooperatif panosu (açılış): solda harita, sağda taahhüt paneli.
 // "Aynı söz, aynı su: gelişigüzel dağıtınca ne oluyor, planlı dağıtınca ne oluyor?"
-import { LayoutDashboard, Plus, RotateCcw, Send } from 'lucide-react';
+import { ArrowRight, LayoutDashboard, Plus, RotateCcw, Send } from 'lucide-react';
 import { lazy, Suspense, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { BacktestStrip, cropName, HonestyBanner } from '../components/bits';
 import { ClimateCard } from '../components/ClimateCard';
 import { Confirm, Select } from '../components/kit';
 import { MemberEditor } from '../components/MemberEditor';
-import { Card, H2, Note, NumInput, PageHeader, Segmented, Swatch, Tag } from '../components/ui';
-import { COOP_NAME } from '../data/defaults';
+import { Card, Change, H2, Note, NumInput, PageHeader, Segmented, Swatch, Tag, type TagKind } from '../components/ui';
+import { COOP_NAME, DEFAULT_SAFE_YEARS } from '../data/defaults';
 import { DISTRICTS } from '../data/members';
 import { levelLabel } from '../engine/curves';
-import { maxCropScenario, mixedScenario, reachedInAtLeast, yearsReached } from '../engine/promise';
+import { maxCropScenario, maxSafeCommitment, mixedScenario, reachedInAtLeast, yearsReached } from '../engine/promise';
 import { da, inSuffix, int, m3, pct, tlShort, ton } from '../lib/format';
 import type { MemberView, Mode, ScenarioSummary } from '../model';
 import { useStore } from '../state';
@@ -19,6 +19,24 @@ const CoopMap = lazy(() => import('../components/CoopMap'));
 
 const MODE_LABEL: Record<Mode, string> = { today: 'Bugün', scatter: 'Gelişigüzel dağıtım', planned: 'Planlı dağıtım' };
 const districtName = (id?: string) => DISTRICTS.find((d) => d.id === id)?.name ?? '–';
+
+/** Üst satırdaki büyük sayı: bugün → planlı. */
+function Big({ label, tag, from, to, tone, hint, extra }: { label: string; tag: TagKind; from: ReactNode; to: ReactNode; tone?: 'good' | 'crit'; hint?: ReactNode; extra?: ReactNode }) {
+  return (
+    <section className="card flex min-w-0 flex-col gap-1 !py-4">
+      <h2 className="card-title flex flex-wrap items-center gap-1.5">
+        {label} <Tag kind={tag} />
+      </h2>
+      <div className="tnum mt-0.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+        <span className="text-[14px] text-ink2">{from}</span>
+        <ArrowRight size={14} className="shrink-0 translate-y-[1px] text-muted" aria-label="planlı dağıtımla" />
+        <span className={`text-[30px] font-bold leading-[1.1] tracking-tight ${tone === 'good' ? 'text-good-ink' : tone === 'crit' ? 'text-crit-ink' : 'text-ink'}`}>{to}</span>
+        {extra}
+      </div>
+      {hint && <span className="text-[11.5px] text-ink2">{hint}</span>}
+    </section>
+  );
+}
 
 function Row({ label, a, b, active, better }: { label: ReactNode; a: ReactNode; b: ReactNode; active: Mode; better?: 'a' | 'b' | null }) {
   const cell = (v: ReactNode, on: boolean, win: boolean) => (
@@ -55,11 +73,15 @@ export function OverviewScreen() {
   }, [s.settings.commitments, s.buyer]);
 
   // "Söz vermeden önce": seçili ürüne öncelik veren plan ve geliri en yükseğe çıkaran karma plan, 20 yılda denenir
-  const [need, setNeed] = useState<'14' | '16' | '18'>('16');
+  const [need, setNeed] = useState<'14' | '16' | '18'>(String(DEFAULT_SAFE_YEARS) as '16');
   const promise = useMemo(() => {
     if (!model) return null;
     return { single: maxCropScenario(model.planInput, crop), mixed: mixedScenario(model.planInput) };
   }, [model, crop]);
+
+  // Üstteki üçüncü sayı: uygulanmış sözün ürünü için (yoksa mısır) güvenle verilebilecek söz, bugün ve planlı
+  const headCrop = Object.entries(s.settings.commitments).find(([id, t]) => t > 0 && model?.cropById.has(id))?.[0] ?? 'misir';
+  const safePlanned = useMemo(() => (model ? maxSafeCommitment(model.planInput, headCrop, Number(need)) : 0), [model, headCrop, need]);
 
   if (!model || !promise) return null;
   const K = Number(need);
@@ -149,6 +171,33 @@ export function OverviewScreen() {
         </button>
       </PageHeader>
 
+      {/* üç büyük sayı: bugün → planlı */}
+      <div className="grid gap-3 md:grid-cols-3">
+        <Big
+          label="Kooperatif brüt geliri"
+          tag="hesap"
+          from={tlShort(sc.today.revenue)}
+          to={tlShort(sc.planned.revenue)}
+          extra={<Change from={sc.today.revenue} to={sc.planned.revenue} />}
+          hint="Yıllık, 20 yılın ortalaması · girdiler düşülmedi"
+        />
+        <Big
+          label="Suyu sezon ortasında biten üye"
+          tag="hesap"
+          from={`${int(model.members.length)} üyeden ${int(sc.today.exceeded)}`}
+          to={int(sc.planned.exceeded)}
+          tone={sc.planned.exceeded === 0 ? 'good' : 'crit'}
+          hint="Bugünkü ekim → planlı dağıtım"
+        />
+        <Big
+          label={`Güvenle verilebilecek ${(model.cropById.get(headCrop)?.name ?? headCrop).toLocaleLowerCase('tr')} sözü`}
+          tag="hesap"
+          from={`${int(Math.floor(reachedInAtLeast(sc.today.backtest.map((y) => y.productionT[headCrop] ?? 0), K)))} t`}
+          to={`${int(Math.floor(safePlanned))} t`}
+          hint={`20 yılın en az ${K}${inSuffix(K)} ulaşılan toplam üretim`}
+        />
+      </div>
+
       <div className="grid items-start gap-3 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
         {/* sol: harita */}
         <Card className="flex min-w-0 flex-col gap-3 xl:sticky xl:top-3">
@@ -160,7 +209,7 @@ export function OverviewScreen() {
               {mode === 'planned' && 'Su hakkı ve nöbet kurallarıyla hesaplanan dağıtım'}
             </span>
           </div>
-          <div className="h-[520px] xl:h-[calc(100vh-190px)] xl:min-h-[520px]">
+          <div className="h-[520px] xl:h-[calc(100vh-300px)] xl:min-h-[520px]">
             <Suspense fallback={<div className="grid h-full place-items-center rounded-lg bg-sunken text-ink2">Harita yükleniyor…</div>}>
               <CoopMap
                 members={model.members}
