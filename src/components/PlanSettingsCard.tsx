@@ -36,7 +36,7 @@ export function PlanSettingsCard() {
           {st.smallMarketCap !== null && (
             <NumInput className="mt-1 w-full" label="Küçük pazarlı ürün eşiği (yüzde)" value={st.smallMarketCap * 100} min={0} max={100} decimals={0} suffix="%" onChange={(v) => s.updateSettings({ smallMarketCap: v / 100 })} />
           )}
-          <span className="mt-1 block font-normal">Nohut ve ayçiçeğinin her biri kooperatif alanının bu payını geçemez.</span>
+          <span className="mt-1 block font-normal">Nohut, ayçiçeği ve kırmızı mercimeğin her biri kooperatif alanının bu payını geçemez.</span>
         </div>
         <label className="block text-[12px] font-medium text-ink2">
           Sulanan ürüne verilecek en az su
@@ -49,6 +49,11 @@ export function PlanSettingsCard() {
             <span>Verim düzeyi %35'in altında kalan seçenekleri de kat</span>
           </label>
           <span className="mt-1 block font-normal">Varsayılan olarak dışarıda: model bu kadar az suda güvenilir değil.</span>
+          <label className="mt-3 flex cursor-pointer items-start gap-2">
+            <input className="mt-0.5 size-4 shrink-0 accent-[var(--primary)]" type="checkbox" checked={!!st.includeOptIn} onChange={(e) => s.updateSettings({ includeOptIn: e.target.checked })} />
+            <span>Kırmızı mercimeği dahil et</span>
+          </label>
+          <span className="mt-1 block font-normal">Varsayılan olarak dışarıda: verimi, fiyatı ve Konya'da yetişip yetişmediği doğrulanmadı.</span>
         </div>
       </div>
     </Card>

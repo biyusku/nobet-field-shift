@@ -105,6 +105,16 @@ describe('planlama (LP)', () => {
     expect(check(0)).toBeGreaterThanOrEqual(0);
   });
 
+  it('kırmızı mercimek varsayılan olarak önerilmez; dahil edilince küçük pazar eşiğine uyar', () => {
+    const off = solvePlan(input({ commitments: {} }));
+    expect(off.allocations.some((x) => x.cropId === 'mercimek')).toBe(false);
+    const on = solvePlan(input({ commitments: {}, includeOptIn: true, smallMarketCap: 0.1 }));
+    const total = DEFAULT_MEMBERS.reduce((x, m) => x + m.areaDa, 0);
+    const lentil = on.allocations.filter((x) => x.cropId === 'mercimek').reduce((x, y) => x + y.da, 0);
+    expect(lentil).toBeGreaterThan(0);
+    expect(lentil).toBeLessThanOrEqual(0.1 * total + 1e-3);
+  });
+
   it('nohutlu plan: her üyede baklagil en az %20, geliri kısıtsız planı aşamaz', () => {
     const free = solvePlan(input({ commitments: {} }));
     const plan = checkConstraints(input({ commitments: {}, minLegumeShare: 0.2 }));

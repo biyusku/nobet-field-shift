@@ -21,6 +21,8 @@ export interface PlanSettings {
    * Altındaki kısıntılı seçenekler plana girmez: ürün ya yeterince sulanır, ya yağmura bırakılır, ya ekilmez.
    */
   minIrrigationFraction?: number;
+  /** değerleri doğrulanmamış, isteğe bağlı ürünleri (kırmızı mercimek) öneri kümesine kat */
+  includeOptIn?: boolean;
 }
 
 export const DEFAULT_MIN_IRRIGATION = 0.6;
@@ -97,6 +99,8 @@ function buildBase(input: PlanInput) {
       const minFrac = settings.minIrrigationFraction ?? DEFAULT_MIN_IRRIGATION;
       // Sözleşmeye bağlı ürün (şeker pancarı): sözleşmesi olmayan üyeye hiç önerilmez.
       if (c.contractOnly && !m.beetContract) continue;
+      // Değerleri doğrulanmamış ürün (kırmızı mercimek): açıkça dahil edilmedikçe önerilmez.
+      if (c.optIn && !settings.includeOptIn) continue;
       opts.forEach((o, oi) => {
         if (!o.reliable && !settings.includeUnreliable) return;
         // ... sözleşmesi olana da yalnız tam sulamayla: doğrusal verim modeli az suda pancar için güvenilir değil.

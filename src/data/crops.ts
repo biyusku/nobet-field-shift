@@ -15,6 +15,8 @@ export interface CropDef {
   smallMarket: boolean;
   /** yalnız sözleşmeli üyeye, yalnız tam sulamayla önerilir */
   contractOnly: boolean;
+  /** varsayılan olarak öneri kümesinin dışında (değerleri doğrulanmadı) */
+  optIn: boolean;
   plant: Assumed<{ month: number; day: number }>;
   stages: Assumed<[number, number, number, number]>;
   kc: Assumed<[number, number, number]>;
@@ -41,7 +43,7 @@ function def(
   ky: number,
   yieldKgDa: number,
   priceTlTon: number,
-  flags: { legume?: boolean; smallMarket?: boolean; contractOnly?: boolean } = {},
+  flags: { legume?: boolean; smallMarket?: boolean; contractOnly?: boolean; optIn?: boolean } = {},
 ): CropDef {
   return {
     id,
@@ -49,6 +51,7 @@ function def(
     legume: !!flags.legume,
     smallMarket: !!flags.smallMarket,
     contractOnly: !!flags.contractOnly,
+    optIn: !!flags.optIn,
     plant: a({ month: plant[0], day: plant[1] }, S_CAL),
     stages: a(stages, S_CAL),
     kc: a(kc, S_KC),
@@ -61,7 +64,7 @@ function def(
 const S_LENTIL =
   'Takım varsayımı (proje tanımındaki tabloda yok). Kışlık ekim kabul edildi; Konya koşullarında kırmızı mercimeğin kışlık yetişip yetişmediği, verimi ve fiyatı yerel kaynakla doğrulanmalı.';
 function mercimek(): CropDef {
-  const d = def('mercimek', 'Kırmızı mercimek', [11, 1], [120, 40, 35, 20], [0.4, 1.1, 0.3], 1.0, 180, 45000, { legume: true });
+  const d = def('mercimek', 'Kırmızı mercimek', [11, 1], [120, 40, 35, 20], [0.4, 1.1, 0.3], 1.0, 180, 45000, { legume: true, smallMarket: true, optIn: true });
   for (const k of ['plant', 'stages', 'kc', 'ky', 'yieldKgDa', 'priceTlTon'] as const) d[k].source = S_LENTIL;
   return d;
 }
@@ -85,6 +88,7 @@ export function toEngineCrop(d: CropDef): Crop {
     legume: d.legume,
     smallMarket: d.smallMarket,
     contractOnly: d.contractOnly,
+    optIn: d.optIn,
     plantMonth: d.plant.value.month,
     plantDay: d.plant.value.day,
     stages: d.stages.value,

@@ -43,6 +43,8 @@ export interface Crop {
   smallMarket: boolean;
   /** yalnız sözleşmesi olan üyeye ve yalnız tam sulamayla önerilir (şeker pancarı) */
   contractOnly?: boolean;
+  /** değerleri doğrulanmadığı için varsayılan olarak öneri kümesinin dışında; Plan kurallarından dahil edilir */
+  optIn?: boolean;
   plantMonth: number;
   plantDay: number;
   /** baş, gelişme, orta, son (gün) */
