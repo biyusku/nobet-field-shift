@@ -59,3 +59,10 @@ Belirsiz kalan yerlerde verilen kararlar, her biri tek satır.
 - Su bitiş tarihi kartın içindeki en büyük sayı olarak kaldı ama panel ölçeğine indirildi (34 px); ayrıca her ekranın başına dört KPI kartı geldi.
 - Nokta seçici ve tema düğmesi kenar menüye taşındı; "Veri kaynağı" satırı NASA POWER yükleme durumunu gösterir.
 - Dürüstlük notları (kurgusal, brüt gelir, 55 km) her ekranın başında mavi bantta ve sayfa altında durur.
+- Ekranlar su bütçesi etrafında yeniden kuruldu: önde kota, tam sulama ihtiyacı, karşılanan kısım, su bitiş tarihi ve verim düzeyi var; brüt gelir öne çıkan bir gösterge değil, panelin altında tek bir sonuç satırı.
+- Üst sıradaki kartlar "bugünkü ekim → önerilen plan" biçiminde: su bitiş tarihi, karşılanan su ihtiyacı, ortalama verim düzeyi, toprak puanı.
+- "Verim düzeyi" = alan ağırlıklı ortalama göreli verim (tam sulu verimin yüzdesi); "karşılanan su ihtiyacı" = kullanılan su ÷ tam sulama ihtiyacı (20 yıl ort.).
+- Üye bilgileri sayfanın başındaki büyük form yerine sağdan açılan çekmecede düzenlenir; Kooperatif'teki üye tablosu salt okunurdur.
+- Yerel seçici, confirm() kutusu ve title ipuçları yerine Radix tabanlı bileşenler (seçici, çekmece, onay penceresi, ipucu) kullanıldı.
+- Tablo başlıklarında kaynak etiketi zeminli çip değil, başlığın altında küçük renkli yazıdır (başlıklar şişmesin diye); anlamı aynı.
+- Yıl yıl grafik artık geliri değil, su ihtiyacının karşılanan kısmını gösterir.

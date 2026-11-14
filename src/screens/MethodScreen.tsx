@@ -1,6 +1,7 @@
 import { BookOpen, RotateCcw } from 'lucide-react';
 import { useState } from 'react';
 import { UnreliableMark } from '../components/bits';
+import { Confirm, Select } from '../components/kit';
 import { Card, H2, Note, NumInput, PageHeader, Swatch, Tag } from '../components/ui';
 import type { CropDef } from '../data/crops';
 import { METHOD_LABEL } from '../data/defaults';
@@ -92,8 +93,8 @@ export function MethodScreen() {
                 <thead>
                   <tr>
                     <th>Yıl</th>
-                    <th className="num">Yağış (mm) <Tag kind="nasa" /></th>
-                    <th className="num">ET0 (mm) <Tag kind="hesap" /></th>
+                    <th className="num">Yağış (mm)<Tag kind="nasa" compact /></th>
+                    <th className="num">ET0 (mm)<Tag kind="hesap" compact /></th>
                     <th className="num">Temmuz yağış</th>
                     <th className="num">Temmuz ET0</th>
                   </tr>
@@ -199,15 +200,18 @@ Amaç:       en yüksek toplam brüt gelir   ya da   taahhüdü karşılayan en 
           right={
             <span className="flex items-center gap-2">
               <Tag kind="varsayim" />
-              <button
-                type="button"
-                className="btn"
-                onClick={() => {
-                  if (confirm('Üyeler, taahhüt ve bütün varsayımlar başlangıç değerlerine döndürülsün mü?')) s.reset();
-                }}
-              >
-                <RotateCcw /> Başlangıç değerlerine dön
-              </button>
+              <Confirm
+                trigger={
+                  <button type="button" className="btn">
+                    <RotateCcw /> Başlangıç değerlerine dön
+                  </button>
+                }
+                title="Başlangıç değerlerine dönülsün mü?"
+                description="Üyeler, taahhüt, plan kuralları ve bütün varsayımlar başlangıç değerlerine döner."
+                action="Başlangıca dön"
+                danger
+                onConfirm={s.reset}
+              />
             </span>
           }
         >
@@ -312,16 +316,14 @@ Amaç:       en yüksek toplam brüt gelir   ya da   taahhüdü karşılayan en 
       <Card>
         <H2
           right={
-            <label className="flex items-center gap-2 text-[13px] text-ink2">
-              Sulama yöntemi
-              <select className="field !w-auto" value={method} onChange={(e) => setMethod(e.target.value as IrrigationMethod)}>
-                {(Object.keys(METHOD_LABEL) as IrrigationMethod[]).map((k) => (
-                  <option key={k} value={k}>
-                    {METHOD_LABEL[k]}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <Select
+              variant="pill"
+              prefix="Sulama yöntemi"
+              label="Sulama yöntemi"
+              value={method}
+              onChange={setMethod}
+              options={(Object.keys(METHOD_LABEL) as IrrigationMethod[]).map((k) => ({ value: k, label: METHOD_LABEL[k] }))}
+            />
           }
         >
           Su-verim eğrileri <Tag kind="hesap" />

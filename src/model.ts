@@ -2,7 +2,7 @@
 import { toEngineCrop, type CropDef } from './data/crops';
 import type { ParcelInput } from './engine/bucket';
 import { buildCurves, type Curves } from './engine/curves';
-import { combineFarms, evaluateFarm, type FarmEvaluation } from './engine/farm';
+import { combineFarms, evaluateFarm, waterStats, type FarmEvaluation, type WaterStats } from './engine/farm';
 import { backtest, solvePlan, summarize, type Allocation, type PlanResult, type PlanSettings, type PlanSummary, type YearOutcome } from './engine/plan';
 import { buildRotation, soilScore, type Rotation, type SoilScore } from './engine/soil';
 import { FALLOW, type Crop, type Efficiencies, type IrrigationMethod, type Member, type Soil, type Weather } from './engine/types';
@@ -23,6 +23,8 @@ export interface MemberView {
   current: FarmEvaluation;
   currentParcels: ParcelInput[];
   currentSoil: SoilScore;
+  currentWater: WaterStats;
+  plannedWater: WaterStats;
   planned: FarmEvaluation;
   plannedParcels: ParcelInput[];
   plannedAllocs: Allocation[];
@@ -40,7 +42,19 @@ export interface Model {
   planBacktest: YearOutcome[];
   members: MemberView[];
   /** bugünkü ekimin kooperatif toplamı */
-  current: { areaByCrop: Record<string, number>; meanRevenue: number; meanUsedM3: number; meanProductionT: Record<string, number> };
+  current: {
+    areaByCrop: Record<string, number>;
+    meanRevenue: number;
+    meanUsedM3: number;
+    /** tam sulama ihtiyacı, m3 */
+    demandM3: number;
+    meanProductionT: Record<string, number>;
+    /** ürün başına kullanılan su, m3 */
+    waterByCrop: Record<string, number>;
+  };
+  /** önerilen planda ürün başına ortalama kullanılan su, m3 */
+  plannedWaterByCrop: Record<string, number>;
+  plannedDemandM3: number;
   currentBacktest: YearOutcome[];
   totalAreaDa: number;
   totalQuotaM3: number;
@@ -86,6 +100,8 @@ export function computeModel(w: Weather, inp: Inputs): Model {
       current,
       currentParcels,
       currentSoil,
+      currentWater: waterStats(current, currentParcels.map((p) => p.areaDa)),
+      plannedWater: waterStats(planned, plannedParcels.map((p) => p.areaDa)),
       planned,
       plannedParcels,
       plannedAllocs,
@@ -104,9 +120,17 @@ export function computeModel(w: Weather, inp: Inputs): Model {
     for (const y of mv.current.years)
       for (const [id, t] of Object.entries(y.productionT)) meanProductionT[id] = (meanProductionT[id] ?? 0) + t / mv.current.years.length;
   }
+  const waterByCrop: Record<string, number> = {};
+  const plannedWaterByCrop: Record<string, number> = {};
+  for (const mv of members) {
+    mv.currentParcels.forEach((p, k) => (waterByCrop[p.crop.id] = (waterByCrop[p.crop.id] ?? 0) + mv.currentWater.parcels[k].usedMm * p.areaDa));
+    mv.plannedParcels.forEach((p, k) => (plannedWaterByCrop[p.crop.id] = (plannedWaterByCrop[p.crop.id] ?? 0) + mv.plannedWater.parcels[k].usedMm * p.areaDa));
+  }
   return {
     crops,
     cropById,
+    plannedWaterByCrop,
+    plannedDemandM3: members.reduce((s, m) => s + m.plannedWater.demandM3, 0),
     curvesByMethod,
     plan,
     planSummary,
@@ -115,6 +139,8 @@ export function computeModel(w: Weather, inp: Inputs): Model {
     current: {
       areaByCrop,
       meanProductionT,
+      waterByCrop,
+      demandM3: members.reduce((s, m) => s + m.currentWater.demandM3, 0),
       meanRevenue: members.reduce((s, m) => s + m.current.meanRevenue, 0),
       meanUsedM3: members.reduce((s, m) => s + m.current.meanUsedM3, 0),
     },

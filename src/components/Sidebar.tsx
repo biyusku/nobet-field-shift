@@ -3,6 +3,7 @@ import { BookOpen, Droplets, Handshake, type LucideIcon, MapPin, Moon, PanelLeft
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { PRESET_POINTS } from '../data/defaults';
 import { useStore, type Tab } from '../state';
+import { Select } from './kit';
 
 const MapModal = lazy(() => import('./MapModal'));
 
@@ -175,32 +176,22 @@ export function Sidebar() {
               <MapPin size={16} aria-hidden />
             </button>
           ) : (
-            <label className="mt-1 flex items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.03] px-2.5 py-1.5">
-              <MapPin size={15} className="shrink-0 text-white/55" aria-hidden />
-              <select
-                aria-label="İklim verisi noktası"
-                className="w-full min-w-0 cursor-pointer appearance-none border-0 bg-transparent text-[13px] font-medium text-white outline-none"
-                value={pointValue}
-                onChange={(e) => {
-                  if (e.target.value === 'map') setMapOpen(true);
-                  else if (e.target.value !== 'custom') s.selectPoint({ kind: 'preset', id: e.target.value });
-                }}
-              >
-                {PRESET_POINTS.map((p) => (
-                  <option key={p.id} value={p.id} className="text-black">
-                    {p.name}
-                  </option>
-                ))}
-                {s.point.kind === 'custom' && (
-                  <option value="custom" className="text-black">
-                    Seçilen nokta ({s.point.lat.toFixed(2)}°K, {s.point.lon.toFixed(2)}°D)
-                  </option>
-                )}
-                <option value="map" className="text-black">
-                  Haritadan seç…
-                </option>
-              </select>
-            </label>
+            <Select
+              variant="dark"
+              className="mt-1"
+              label="İklim verisi noktası"
+              icon={<MapPin size={15} className="shrink-0 text-white/55" aria-hidden />}
+              value={pointValue}
+              onChange={(v) => {
+                if (v === 'map') setMapOpen(true);
+                else if (v !== 'custom') s.selectPoint({ kind: 'preset', id: v });
+              }}
+              options={[
+                ...PRESET_POINTS.map((p) => ({ value: p.id, label: p.name })),
+                ...(s.point.kind === 'custom' ? [{ value: 'custom', label: `Seçilen nokta (${s.point.lat.toFixed(2)}°K, ${s.point.lon.toFixed(2)}°D)` }] : []),
+                { value: 'map', label: 'Haritadan seç…' },
+              ]}
+            />
           )}
           {!collapsed && s.weather && (
             <div className="tnum mt-1.5 whitespace-nowrap px-2.5 text-[11px] text-white/35">

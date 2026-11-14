@@ -21,7 +21,40 @@ export interface FarmYear {
   productionT: Record<string, number>;
   relYield: number[];
   grossMm: number[];
+  /** kota olmasaydı her parselin isteyeceği brüt su, mm */
+  needMm: number[];
   capEndDay: (number | null)[];
+}
+
+/** Bir tarlanın 20 yıllık su bütçesi özeti. */
+export interface WaterStats {
+  /** tam sulama ihtiyacı, m3 (20 yıl ort.) */
+  demandM3: number;
+  usedM3: number;
+  /** ihtiyacın karşılanan kesri (0-1) */
+  coverage: number;
+  /** alan ağırlıklı ortalama göreli verim (tam sulu verime göre, 0-1) */
+  yieldLevel: number;
+  /** parsel başına 20 yıl ortalaması */
+  parcels: { relYield: number; usedMm: number; needMm: number }[];
+}
+
+export function waterStats(ev: FarmEvaluation, areas: number[]): WaterStats {
+  const n = ev.years.length || 1;
+  const parcels = areas.map((_, k) => ({
+    relYield: ev.years.reduce((s, y) => s + y.relYield[k], 0) / n,
+    usedMm: ev.years.reduce((s, y) => s + y.grossMm[k], 0) / n,
+    needMm: ev.years.reduce((s, y) => s + y.needMm[k], 0) / n,
+  }));
+  const demandM3 = ev.years.reduce((s, y) => s + y.demandTotalM3, 0) / n;
+  const area = areas.reduce((s, a) => s + a, 0);
+  return {
+    demandM3,
+    usedM3: ev.meanUsedM3,
+    coverage: demandM3 > 0 ? Math.min(1, ev.meanUsedM3 / demandM3) : 1,
+    yieldLevel: area > 0 ? parcels.reduce((s, p, k) => s + p.relYield * areas[k], 0) / area : 0,
+    parcels,
+  };
 }
 
 export interface FarmEvaluation {
@@ -77,6 +110,7 @@ export function evaluateFarm(
       productionT,
       relYield: lim.parcels.map((r) => r.relYield),
       grossMm: lim.parcels.map((r) => r.grossMm),
+      needMm: dem.parcels.map((r) => r.grossMm),
       capEndDay: lim.parcels.map((r) => r.capEndDay),
     };
   });

@@ -532,6 +532,32 @@ body {
 .leaflet-container {
   font-family: var(--font-sans);
 }
+@keyframes overlay-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes sheet-in {
+  from {
+    transform: translateX(24px);
+    opacity: 0;
+  }
+}
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    scale: 0.97;
+  }
+}
+.sheet-overlay {
+  animation: overlay-in 0.2s ease-out;
+}
+.sheet-content {
+  animation: sheet-in 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.dialog-content {
+  animation: dialog-in 0.18s ease-out;
+}
 @keyframes fade-up {
   from {
     opacity: 0;

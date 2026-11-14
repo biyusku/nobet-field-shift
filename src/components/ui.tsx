@@ -1,5 +1,6 @@
-import { AlertTriangle, ArrowDownRight, ArrowUpRight, CheckCircle2, Info, type LucideIcon } from 'lucide-react';
+import { AlertTriangle, ArrowDownRight, ArrowRight, ArrowUpRight, CheckCircle2, Info, type LucideIcon } from 'lucide-react';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { Tip } from './kit';
 import { FALLOW } from '../engine/types';
 
 // ---------- Dürüstlük etiketleri ----------
@@ -10,12 +11,22 @@ const TAGS: Record<TagKind, { text: string; cls: string; title: string }> = {
   varsayim: { text: 'varsayım', cls: 'tag-warning', title: 'Doğrulanmamış varsayım; Yöntem sayfasından değiştirilebilir' },
   kurgusal: { text: 'kurgusal', cls: 'tag-critical', title: 'Gerçek kişi ya da kurum değildir; örnek olsun diye uydurulmuştur' },
 };
-export function Tag({ kind, className = '' }: { kind: TagKind; className?: string }) {
+const TAG_INK: Record<TagKind, string> = { nasa: 'var(--info-ink)', hesap: 'var(--ink2)', varsayim: 'var(--warn-ink)', kurgusal: 'var(--crit-ink)' };
+/** compact: tablo başlıklarında kullanılan, zeminsiz küçük yazı. */
+export function Tag({ kind, className = '', compact = false }: { kind: TagKind; className?: string; compact?: boolean }) {
   const t = TAGS[kind];
   return (
-    <span title={t.title} className={`tag ${t.cls} ${className}`}>
-      {t.text}
-    </span>
+    <Tip text={t.title}>
+      {compact ? (
+        <span className={`block cursor-help text-[10px] font-medium leading-tight ${className}`} style={{ color: TAG_INK[kind] }}>
+          {t.text}
+        </span>
+      ) : (
+        <span className={`tag cursor-help ${t.cls} ${className}`}>
+          {t.text}
+        </span>
+      )}
+    </Tip>
   );
 }
 
@@ -241,6 +252,77 @@ export function Empty({ title, children }: { title: string; children?: ReactNode
     <div className="card !py-10 text-center">
       <div className="text-[14px] font-[650] text-ink">{title}</div>
       {children && <div className="mt-1 text-[13.5px] text-ink2">{children}</div>}
+    </div>
+  );
+}
+
+/** Önce → sonra kartı: bugünkü ekimden önerilen plana ne değişiyor. */
+export function Shift({ label, tag, from, to, tone, hint }: { label: string; tag: TagKind; from: ReactNode; to: ReactNode; tone?: 'good' | 'crit'; hint?: ReactNode }) {
+  return (
+    <section className="card flex min-w-0 flex-col gap-1.5 !py-3.5">
+      <h2 className="card-title flex flex-wrap items-center gap-1.5">
+        {label} <Tag kind={tag} />
+      </h2>
+      <div className="tnum flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+        <span className="text-[13px] text-ink2">{from}</span>
+        <ArrowRight size={13} className="shrink-0 translate-y-[1px] text-muted" aria-label="önerilen planla" />
+        <span className={`text-[18px] font-bold leading-tight ${tone === 'good' ? 'text-good-ink' : tone === 'crit' ? 'text-crit-ink' : 'text-ink'}`}>{to}</span>
+      </div>
+      {hint && <span className="text-[11px] text-ink2">{hint}</span>}
+    </section>
+  );
+}
+
+/** Ortak ölçekte yatay çubuklar: kota, ihtiyaç, kullanılan gibi büyüklükleri yan yana okutur. */
+export function Bars({ rows, unit }: { rows: { label: string; value: number; color: string; note?: string }[]; unit: (v: number) => string }) {
+  const max = Math.max(...rows.map((r) => r.value), 1);
+  return (
+    <dl className="m-0 flex flex-col gap-2">
+      {rows.map((r) => (
+        <div key={r.label}>
+          <div className="flex items-baseline justify-between gap-2 text-[12px]">
+            <dt className="text-ink2">{r.label}</dt>
+            <dd className="tnum m-0 font-semibold text-ink">
+              {unit(r.value)}
+              {r.note && <span className="font-normal text-ink2"> · {r.note}</span>}
+            </dd>
+          </div>
+          <div className="mt-1 h-2 overflow-hidden rounded-[4px] bg-sunken">
+            <div className="h-full rounded-[4px]" style={{ width: `${Math.max(0.5, (r.value / max) * 100)}%`, background: r.color }} />
+          </div>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+/** Etiket solda, değer sağda satırlar. */
+export function MiniList({ rows }: { rows: { label: ReactNode; value: ReactNode; sub?: ReactNode }[] }) {
+  return (
+    <dl className="m-0 flex flex-col">
+      {rows.map((r, i) => (
+        <div key={i} className="flex items-baseline justify-between gap-3 border-b border-line py-2 last:border-b-0">
+          <dt className="flex flex-wrap items-center gap-1.5 text-ink2">{r.label}</dt>
+          <dd className="tnum m-0 text-right font-semibold text-ink">
+            {r.value}
+            {r.sub && <div className="text-[11px] font-normal text-ink2">{r.sub}</div>}
+          </dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+/** İnce ilerleme çubuğu: bir değerin bir sınıra oranı (sınırı aşarsa kırmızı). */
+export function Meter({ value, limit, label }: { value: number; limit: number; label: string }) {
+  const ratio = limit > 0 ? value / limit : 0;
+  const over = ratio > 1.0001;
+  return (
+    <div className="min-w-[110px]" role="img" aria-label={label}>
+      <div className="relative h-2 overflow-hidden rounded-[4px] bg-sunken">
+        <div className="h-full rounded-[4px]" style={{ width: `${Math.min(100, (over ? 1 / ratio : ratio) * 100)}%`, background: 'var(--water)' }} />
+        {over && <div className="absolute inset-y-0 right-0 rounded-r-[4px]" style={{ left: `${(1 / ratio) * 100}%`, background: 'var(--crit)', opacity: 0.75 }} />}
+      </div>
     </div>
   );
 }
