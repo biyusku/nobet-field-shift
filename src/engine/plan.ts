@@ -29,6 +29,8 @@ export interface PlanInput {
   members: Member[];
   crops: Crop[];
   curvesByMethod: Record<IrrigationMethod, Curves>;
+  /** verilirse üye başına eğri buradan okunur (üyeler farklı hava noktalarındaysa) */
+  curvesOf?: (m: Member) => Curves;
   settings: PlanSettings;
 }
 
@@ -87,7 +89,7 @@ function buildBase(input: PlanInput) {
     constraints[`su_${mi}`] = { max: m.areaDa * m.quotaMm };
     const minLegume = settings.minLegumeShare ?? 0;
     if (minLegume > 0) constraints[`bakla_${mi}`] = { min: minLegume * m.areaDa };
-    const curves = curvesByMethod[m.method];
+    const curves = input.curvesOf ? input.curvesOf(m) : curvesByMethod[m.method];
     for (const c of crops) {
       constraints[`pay_${mi}_${c.id}`] = { max: settings.maxShare * m.areaDa };
       const opts = curves[c.id] ?? [];

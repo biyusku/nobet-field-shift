@@ -36,7 +36,7 @@ export function CommitmentScreen() {
   // Taahhüt tutmuyorsa: seçenekler ve bedelleri (her biri planı yeniden çözerek bulunur)
   const options = useMemo<Option[]>(() => {
     if (!model || model.plan.status !== 'partial') return [];
-    const base: PlanInput = { members: s.members, crops: model.crops, curvesByMethod: model.curvesByMethod, settings: s.settings };
+    const base: PlanInput = model.planInput;
     const out: Option[] = [];
     const f = model.plan.commitmentFraction;
     const lowered = Object.fromEntries(Object.entries(s.settings.commitments).map(([id, t]) => [id, Math.floor(t * f * 10) / 10]));

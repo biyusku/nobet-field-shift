@@ -74,6 +74,11 @@ export interface Member {
   current: { cropId: string; da: number }[];
   /** şeker pancarı sözleşmesi var mı; yoksa pancar bu üyeye önerilmez */
   beetContract?: boolean;
+  /** üyenin havasının okunacağı nokta (ilçe) kimliği; yoksa seçili nokta kullanılır */
+  pointId?: string;
+  /** haritadaki konum (kurgusal) */
+  lat?: number;
+  lon?: number;
 }
 
 export const FALLOW = 'nadas';

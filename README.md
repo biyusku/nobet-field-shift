@@ -6,7 +6,7 @@ Kullanıcı bir sulama kooperatifinin ziraat mühendisidir. Araç, üyelerin yı
 
 **Ürün önermiyoruz, su bütçesi yönetiyoruz. Araç karar vermez; seçenekleri ve bedellerini gösterir.**
 
-Pilot nokta Karapınar, Konya (37,72° K, 33,55° D); ikinci nokta Çivril, Denizli (38,30° K, 29,74° D). Açılıştaki "Karapınar Örnek Kooperatifi", üyeleri ve 40 tonluk mısır taahhüdü **kurgusaldır**.
+Pilot bölge Konya: Karapınar (37,72° K, 33,55° D), Çumra, Ereğli, Cihanbeyli ve Altınekin. Açılıştaki "Konya Ovası Örnek Kooperatifi", 50 üyesi ve 300 tonluk mısır taahhüdü **kurgusaldır**.
 
 ## Çalıştırma
 
@@ -56,12 +56,12 @@ Dikkat: `dist/index.html` dosyasını çift tıklayıp `file://` ile açmak çal
 
 ## Ekranlar
 
-1. **Genel bakış** (açılış): kooperatif toplamında dört büyük sayı (brüt gelir, su hakkı aşımı, en erken su bitiş tarihi, taahhüt; hepsi bugün → öneri), harita (seçili nokta, NASA POWER hücresi; harita, uydu ve NASA GIBS MODIS altlıkları), "NASA verisi ne diyor" kartı (aylık yağış ve ET0, yıllık yağış eğilimi, sıcak gün sayısı), üye tablosu, ürün dağılımı ve taahhüt şeridi.
+1. **Kooperatif panosu** (açılış): solda harita, sağda taahhüt paneli. Haritada 50 kurgusal üyenin her biri bir pasta daire (büyüklük dekar, dilimler ürün payı; yakınlaşınca tarla dikdörtgeni) ve ilçelerin NASA POWER hücreleri var; üç görünüm arasında geçilir: Bugün, Gelişigüzel dağıtım, Planlı dağıtım. Panelde ürün, ton ve alıcı girilir; iki dağıtım altı sayıyla karşılaştırılır (ürünü eken üye, ortalama verim, sözün tuttuğu yıl, kullanılan su, brüt gelir, suyu biten üye) ve dağıtım tablosu gösterilir. Hücreye tıklayınca o ilçenin NASA iklim kartı açılır.
 2. **Üyeler**: bir üyenin bugünkü ekimi ile önerilen plan yan yana: brüt gelir, su bitiş tarihi, iki çizgili su grafiği, ürün başına ton ve TL, üç yıllık nöbet tablosu. Ayrıntılar kapalı bölümde.
 3. **Taahhüt**: ürün başına ton taahhüdü, dağıtım tablosu, geçmişte deneme şeridi, plan kuralları. Taahhüt karşılanamıyorsa seçenekler ve bedelleri.
 4. **Yöntem ve kaynaklar**: formüller, değiştirilebilir bütün varsayımlar, veri kaynağı, su-verim eğrileri, modelin sınırları.
 
-Kenar menüde nokta seçici: Karapınar, Çivril ya da haritadan seç (Leaflet + OpenStreetMap). Haritadan seçilen nokta tarayıcıdan NASA POWER'a sorulur ve IndexedDB'de saklanır. Nokta değişince bütün ekranlar yeniden hesaplanır.
+Kenar menüde seçili ilçe: Karapınar, Çumra, Ereğli, Cihanbeyli, Altınekin. Her üye kendi ilçesinin NASA verisiyle hesaplanır. Beş ilçe yalnızca üç NASA hücresine düşer (Karapınar ile Ereğli, Cihanbeyli ile Altınekin aynı hücrededir).
 
 Plan kuralları: bir ürün tarlanın en çok 1/3'ü; sulanan ürün tam su ihtiyacının en az %60'ını alır (altı plana girmez); şeker pancarı yalnız sözleşmesi olan üyeye ve yalnız tam sulamayla önerilir.
 

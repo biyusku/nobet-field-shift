@@ -12,6 +12,11 @@ const END = '20251231';
 const POINTS = [
   { id: 'karapinar', name: 'Karapınar, Konya', lat: 37.72, lon: 33.55 },
   { id: 'civril', name: 'Çivril, Denizli', lat: 38.3, lon: 29.74 },
+  // Kurgusal kooperatifin yayıldığı Konya ilçeleri (ilçe merkezleri, yaklaşık)
+  { id: 'cumra', name: 'Çumra, Konya', lat: 37.57, lon: 32.77 },
+  { id: 'eregli', name: 'Ereğli, Konya', lat: 37.51, lon: 34.05 },
+  { id: 'cihanbeyli', name: 'Cihanbeyli, Konya', lat: 38.66, lon: 32.93 },
+  { id: 'altinekin', name: 'Altınekin, Konya', lat: 38.31, lon: 32.87 },
 ];
 
 const outDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'public', 'data');
@@ -67,7 +72,9 @@ async function fetchPoint(point) {
 }
 
 await mkdir(outDir, { recursive: true });
+const only = process.argv.slice(2);
 for (const point of POINTS) {
+  if (only.length && !only.includes(point.id)) continue;
   console.log(`${point.name} (${point.lat}, ${point.lon}) indiriliyor...`);
   const data = await fetchPoint(point);
   const n = data.params.T2M_MAX.length;

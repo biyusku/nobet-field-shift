@@ -13,7 +13,7 @@ export function HonestyBanner() {
     <div className="banner banner-info" role="note">
       <Info size={16} aria-hidden />
       <div>
-        <strong>{COOP_NAME} ve üyeleri kurgusaldır</strong> (örnek olsun diye uyduruldu). Hava verisi NASA'dan gelir ve yaklaşık 55 km'lik bir bölgenin ortalamasıdır: tek bir tarlayı değil, yöreyi anlatır. Gelir brüttür: tohum, gübre, elektrik düşülmedi.
+        <strong>{COOP_NAME} ve üyeleri kurgusaldır</strong> (örnek olsun diye uyduruldu). Hava verisi NASA'dan gelir ve yaklaşık 55 km'lik bir bölgenin ortalamasıdır: tek bir tarlayı değil, yöreyi anlatır; tarlada ne ekildiğini söylemez. Gelir brüttür: tohum, gübre, elektrik düşülmedi.
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 import type { PlanSettings } from '../engine/plan';
 import type { Efficiencies, Member, Soil } from '../engine/types';
 
-export const COOP_NAME = 'Karapınar Örnek Kooperatifi';
+export const COOP_NAME = 'Konya Ovası Örnek Kooperatifi';
 
 /** KURGUSAL üyeler: gerçek kişi ya da işletme değildir; yalnız arayüzü dolu göstermek içindir. */
 export const DEFAULT_MEMBERS: Member[] = [
@@ -51,8 +51,7 @@ export const METHOD_LABEL = { salma: 'Salma', yagmurlama: 'Yağmurlama', damla: 
 export const DEFAULT_SETTINGS: PlanSettings = {
   maxShare: 1 / 3,
   smallMarketCap: 0.25,
-  // 40 ton: önerilen plan bunu 20 yılın 20'sinde tutturuyor (bkz. DECISIONS.md)
-  commitments: { misir: 40 },
+  commitments: { misir: 300 },
   mode: 'revenue',
   includeUnreliable: false,
   minLegumeShare: 0,

@@ -115,10 +115,10 @@ describe('planlama (LP)', () => {
     expect(summarize(plan.allocations, crops).revenue).toBeLessThanOrEqual(summarize(free.allocations, crops).revenue + 1);
   });
 
-  it('varsayılan taahhüt (40 t mısır) önerilen planla 20 yılın çoğunda tutar', () => {
-    const plan = solvePlan(input());
+  it('dört üyeli küçük kooperatifte 40 t mısır taahhüdü 20 yılın çoğunda tutar', () => {
+    const plan = solvePlan(input({ commitments: { misir: 40 } }));
     expect(plan.status).toBe('ok');
-    const held = backtest(plan.allocations, crops, DEFAULT_SETTINGS.commitments).filter((y) => y.status === 'green').length;
+    const held = backtest(plan.allocations, crops, { misir: 40 }).filter((y) => y.status === 'green').length;
     expect(held).toBeGreaterThanOrEqual(15);
   });
 

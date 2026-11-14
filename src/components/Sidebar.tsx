@@ -1,14 +1,12 @@
 // Daraltılabilir koyu kenar menü. Telefonda ikon şeridi olarak başlar; açılınca sayfanın üstüne biner.
 import { BookOpen, Droplets, Handshake, LayoutDashboard, type LucideIcon, MapPin, Moon, PanelLeftClose, PanelLeftOpen, Satellite, Sun, Users } from 'lucide-react';
-import { lazy, Suspense, useEffect, useState } from 'react';
-import { PRESET_POINTS } from '../data/defaults';
+import { useEffect, useState } from 'react';
+import { DISTRICTS } from '../data/members';
 import { useStore, type Tab } from '../state';
 import { Select } from './kit';
 
-const MapModal = lazy(() => import('./MapModal'));
-
 const NAV: { id: Tab; label: string; icon: LucideIcon }[] = [
-  { id: 'genel', label: 'Genel bakış', icon: LayoutDashboard },
+  { id: 'genel', label: 'Pano', icon: LayoutDashboard },
   { id: 'uye', label: 'Üyeler', icon: Users },
   { id: 'taahhut', label: 'Taahhüt', icon: Handshake },
 ];
@@ -68,7 +66,6 @@ export function Sidebar() {
       return false;
     }
   });
-  const [mapOpen, setMapOpen] = useState(false);
   const [theme, toggleTheme] = useTheme();
   const rail = narrow ? 52 : 64;
   const overlay = narrow && !collapsed;
@@ -117,9 +114,6 @@ export function Sidebar() {
 
   const status = s.weatherStatus === 'loading' ? 'Yükleniyor…' : s.weatherStatus === 'error' ? 'Hata' : 'Hazır';
   const dot = s.weatherStatus === 'loading' ? '#f5b93a' : s.weatherStatus === 'error' ? '#e5534b' : '#36b37e';
-  const pointValue = s.point.kind === 'preset' ? s.point.id : 'custom';
-  const center = s.weather ? { lat: s.weather.lat, lon: s.weather.lon } : { lat: PRESET_POINTS[0].lat, lon: PRESET_POINTS[0].lon };
-
   return (
     <>
       {narrow && <div aria-hidden className="shrink-0" style={{ width: rail }} />}
@@ -154,7 +148,7 @@ export function Sidebar() {
           {collapsed ? (
             <div aria-hidden className="mx-auto my-3 h-px w-6 bg-white/[0.08]" />
           ) : (
-            <div className="mb-1 mt-5 whitespace-nowrap px-2.5 text-[11px] font-semibold uppercase tracking-wide text-white/35">Veri kaynağı</div>
+            <div className="mb-1 mt-5 whitespace-nowrap px-2.5 text-[11px] font-semibold uppercase tracking-wide text-white/35">Veri kaynağı · 5 ilçe</div>
           )}
           <div
             className={`flex h-9 items-center text-[13px] font-medium text-white/75 ${collapsed ? 'justify-center' : 'gap-2.5 px-2.5'}`}
@@ -172,25 +166,18 @@ export function Sidebar() {
             )}
           </div>
           {collapsed ? (
-            <button type="button" className="side-item is-collapsed" title={`Nokta: ${s.weather?.name ?? ''}`} aria-label="İklim noktasını değiştir" onClick={() => setCollapsed(false)}>
+            <button type="button" className="side-item is-collapsed" title={`İlçe: ${s.weather?.name ?? ''}`} aria-label="Seçili ilçeyi değiştir" onClick={() => setCollapsed(false)}>
               <MapPin size={16} aria-hidden />
             </button>
           ) : (
             <Select
               variant="dark"
               className="mt-1"
-              label="İklim verisi noktası"
+              label="Seçili ilçe"
               icon={<MapPin size={15} className="shrink-0 text-white/55" aria-hidden />}
-              value={pointValue}
-              onChange={(v) => {
-                if (v === 'map') setMapOpen(true);
-                else if (v !== 'custom') s.selectPoint({ kind: 'preset', id: v });
-              }}
-              options={[
-                ...PRESET_POINTS.map((p) => ({ value: p.id, label: p.name })),
-                ...(s.point.kind === 'custom' ? [{ value: 'custom', label: `Seçilen nokta (${s.point.lat.toFixed(2)}°K, ${s.point.lon.toFixed(2)}°D)` }] : []),
-                { value: 'map', label: 'Haritadan seç…' },
-              ]}
+              value={s.districtId}
+              onChange={(v) => s.setDistrictId(v)}
+              options={DISTRICTS.map((d) => ({ value: d.id, label: d.name }))}
             />
           )}
           {!collapsed && s.weather && (
@@ -208,18 +195,6 @@ export function Sidebar() {
           </button>
         </div>
       </aside>
-      {mapOpen && (
-        <Suspense fallback={null}>
-          <MapModal
-            initial={center}
-            onClose={() => setMapOpen(false)}
-            onPick={(lat, lon) => {
-              setMapOpen(false);
-              s.selectPoint({ kind: 'custom', lat, lon });
-            }}
-          />
-        </Suspense>
-      )}
     </>
   );
 }

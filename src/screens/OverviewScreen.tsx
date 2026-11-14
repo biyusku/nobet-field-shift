@@ -1,86 +1,117 @@
-// Genel bakış: kooperatifin tek sayfalık analiz panosu. Üstte büyük sayılar, ortada harita ve NASA verisi, altta üyeler.
-import { ArrowRight, LayoutDashboard, Pencil, Plus, RotateCcw } from 'lucide-react';
-import { lazy, Suspense, useState, type ReactNode } from 'react';
-import { BacktestStrip, cropName, CropBar, HonestyBanner } from '../components/bits';
+// Kooperatif panosu (açılış): solda harita, sağda taahhüt paneli.
+// "Aynı söz, aynı su: gelişigüzel dağıtınca ne oluyor, planlı dağıtınca ne oluyor?"
+import { LayoutDashboard, Plus, RotateCcw, Send } from 'lucide-react';
+import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react';
+import { BacktestStrip, cropName, HonestyBanner } from '../components/bits';
 import { ClimateCard } from '../components/ClimateCard';
-import { Confirm } from '../components/kit';
+import { Confirm, Select } from '../components/kit';
 import { MemberEditor } from '../components/MemberEditor';
-import { Card, Change, H2, Note, PageHeader, Swatch, Tag, type TagKind } from '../components/ui';
-import { COOP_NAME, METHOD_LABEL } from '../data/defaults';
-import { FALLOW } from '../engine/types';
-import { dateOfIndex } from '../engine/weather';
-import { da, fmtDayMonth, inSuffix, int, m3, pct, tlShort, ton } from '../lib/format';
+import { Card, H2, Note, NumInput, PageHeader, Segmented, Swatch, Tag } from '../components/ui';
+import { COOP_NAME } from '../data/defaults';
+import { DISTRICTS } from '../data/members';
+import { levelLabel } from '../engine/curves';
+import { da, inSuffix, int, m3, pct, tlShort, ton } from '../lib/format';
+import type { MemberView, Mode, ScenarioSummary } from '../model';
 import { useStore } from '../state';
 
-const OverviewMap = lazy(() => import('../components/OverviewMap'));
+const CoopMap = lazy(() => import('../components/CoopMap'));
 
-const md = (d: Date) => (d.getUTCMonth() + 1) * 100 + d.getUTCDate();
-/** "4 üyeden 4'ü" için belirtme eki. */
-const ofSuffix = (n: number) => ['', "'i", "'si", "'ü", "'ü", "'i", "'sı", "'si", "'i", "'u"][n % 10] || "'u";
+const MODE_LABEL: Record<Mode, string> = { today: 'Bugün', scatter: 'Gelişigüzel dağıtım', planned: 'Planlı dağıtım' };
+const districtName = (id?: string) => DISTRICTS.find((d) => d.id === id)?.name ?? '–';
 
-/** Üst satırdaki büyük sayı: bugün → öneri. */
-function Big({ label, tag, from, to, tone, hint, extra }: { label: string; tag: TagKind; from: ReactNode; to: ReactNode; tone?: 'good' | 'crit'; hint?: ReactNode; extra?: ReactNode }) {
+function Row({ label, a, b, active, better }: { label: ReactNode; a: ReactNode; b: ReactNode; active: Mode; better?: 'a' | 'b' | null }) {
+  const cell = (v: ReactNode, on: boolean, win: boolean) => (
+    <td className={`num !py-2.5 text-[15px] font-bold ${win ? 'text-good-ink' : 'text-ink'} ${on ? 'bg-[color-mix(in_srgb,var(--water)_9%,transparent)]' : ''}`}>{v}</td>
+  );
   return (
-    <section className="card flex min-w-0 flex-col gap-1 !py-4">
-      <h2 className="card-title flex flex-wrap items-center gap-1.5">
-        {label} <Tag kind={tag} />
-      </h2>
-      <div className="tnum mt-0.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-        <span className="text-[13px] text-ink2">{from}</span>
-        <ArrowRight size={13} className="shrink-0 translate-y-[1px] text-muted" aria-label="önerilen planla" />
-        <span className={`text-[26px] font-bold leading-[1.15] tracking-tight ${tone === 'good' ? 'text-good-ink' : tone === 'crit' ? 'text-crit-ink' : 'text-ink'}`}>{to}</span>
-        {extra}
-      </div>
-      {hint && <span className="text-[11px] text-ink2">{hint}</span>}
-    </section>
+    <tr>
+      <td className="text-ink2">{label}</td>
+      {cell(a, active === 'scatter', better === 'a')}
+      {cell(b, active === 'planned', better === 'b')}
+    </tr>
   );
 }
 
 export function OverviewScreen() {
   const s = useStore();
+  const { model } = s;
+  const [mode, setMode] = useState<Mode>('today');
+  const [panel, setPanel] = useState<'dagitim' | 'iklim'>('dagitim');
   const [editing, setEditing] = useState<string | null>(null);
-  const { model, weather } = s;
-  if (!model || !weather) return null;
+
+  // taahhüt taslağı: "Dağıt" ile uygulanır
+  const first = Object.entries(s.settings.commitments).find(([, t]) => t > 0);
+  const [crop, setCrop] = useState(first?.[0] ?? 'misir');
+  const [tons, setTons] = useState(first?.[1] ?? 300);
+  const [buyer, setBuyer] = useState(s.buyer);
+  useEffect(() => {
+    // "Kurgusal örneğe dön" sonrası taslağı da eşitle
+    const f = Object.entries(s.settings.commitments).find(([, t]) => t > 0);
+    setCrop(f?.[0] ?? 'misir');
+    setTons(f?.[1] ?? 0);
+    setBuyer(s.buyer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [s.settings.commitments, s.buyer]);
+
+  if (!model) return null;
   const names = new Map(model.crops.map((c) => [c.id, c.name]));
-  const ps = model.planSummary;
-  const cur = model.current;
-  const n = model.members.length;
-
-  const endOf = (kind: 'current' | 'planned') =>
-    model.members
-      .map((mv) => {
-        const ev = mv[kind];
-        const y = ev.years[ev.medianIndex];
-        return ev.yearsExceeded > 0 && y?.endDay != null ? { mv, d: dateOfIndex(weather, y.start + y.endDay) } : null;
-      })
-      .filter((x): x is NonNullable<typeof x> => x !== null)
-      .sort((a, b) => md(a.d) - md(b.d));
-  const exCur = endOf('current');
-  const exPl = endOf('planned');
-
+  const sc = model.scenarios;
   const committed = Object.entries(s.settings.commitments).filter(([id, t]) => t > 0 && model.cropById.has(id));
-  const heldCur = model.currentBacktest.filter((y) => y.status === 'green').length;
-  const heldPl = model.planBacktest.filter((y) => y.status === 'green').length;
-  const total = model.planBacktest.length || 20;
+  const [cId, cTons] = committed[0] ?? [null, 0];
+  const cName = cId ? cropName(cId, names).toLocaleLowerCase('tr') : '';
+  const dirty = crop !== (first?.[0] ?? 'misir') || tons !== (first?.[1] ?? 0) || buyer !== s.buyer;
+  const apply = () => {
+    s.update({ buyer });
+    s.updateSettings({ commitments: tons > 0 ? { [crop]: tons } : {} });
+    setMode('planned');
+  };
+  const held = (x: ScenarioSummary) => (
+    <>
+      {x.held}
+      <span className="text-[12px] font-normal text-ink2"> / {x.total}</span>
+    </>
+  );
+  const delivered = (x: ScenarioSummary) => (cId ? (x.deliveredT[cId] ?? 0) : 0);
+  const openMember = (id: string) => {
+    s.setMemberId(id);
+    s.setTab('uye');
+    window.scrollTo({ top: 0 });
+  };
 
-  const ids = [...model.crops.map((c) => c.id), FALLOW].filter((id) => (cur.areaByCrop[id] ?? 0) >= 0.05 || (ps.areaByCrop[id] ?? 0) >= 0.05);
-  const revBy = model.crops
-    .map((c) => ({ c, rev: (ps.productionT[c.id] ?? 0) * c.priceTlTon }))
-    .filter((x) => x.rev > 0)
-    .sort((a, b) => b.rev - a.rev);
-  const top = revBy[0];
-  const topShare = top && ps.revenue > 0 ? top.rev / ps.revenue : 0;
-  const sum = (o: Record<string, number>) => Object.values(o).reduce((a, b) => a + b, 0);
-  const dash = <span className="text-ink2">–</span>;
+  // dağıtım tablosu: seçili moda göre sözleşme ürününü kim, kaç dekar, ne kadar suyla ekiyor
+  const tableMode: Mode = mode === 'today' ? 'planned' : mode;
+  const rows = cId
+    ? model.members
+        .map((mv: MemberView) => {
+          if (tableMode === 'scatter') {
+            if (mv.scatterCrop !== cId) return null;
+            const st = mv.scatterWater.parcels[0];
+            return { mv, da: mv.member.areaDa, water: mv.scatter.meanUsedM3, level: 'su hakkı bitene kadar', rel: st?.relYield ?? 0 };
+          }
+          const mine = mv.plannedAllocs.filter((a) => a.cropId === cId && a.option && a.da >= 0.05);
+          if (mine.length === 0) return null;
+          const area = mine.reduce((x, a) => x + a.da, 0);
+          return {
+            mv,
+            da: area,
+            water: mine.reduce((x, a) => x + a.da * a.waterMm, 0),
+            level: [...new Set(mine.map((a) => levelLabel(a.option!.level)))].join(' + '),
+            rel: mine.reduce((x, a) => x + a.da * a.option!.meanRel, 0) / area,
+          };
+        })
+        .filter((r): r is NonNullable<typeof r> => r !== null)
+        .sort((a, b) => b.da - a.da)
+    : [];
+  const yieldKg = cId ? (model.cropById.get(cId)?.yieldKgDa ?? 0) : 0;
 
   return (
     <>
       <PageHeader
         icon={LayoutDashboard}
-        title="Genel bakış"
+        title="Kooperatif panosu"
         meta={
           <>
-            {COOP_NAME} <Tag kind="kurgusal" /> · {weather.name}
+            {COOP_NAME} <Tag kind="kurgusal" /> · {int(model.members.length)} üye · {int(model.totalAreaDa)} da · su hakkı {m3(model.totalQuotaM3)}
           </>
         }
       >
@@ -101,276 +132,231 @@ export function OverviewScreen() {
         </button>
       </PageHeader>
 
-      {/* üst satır: dört büyük sayı, bugün → öneri */}
-      <div className="kpi-grid">
-        <Big
-          label="Toplam brüt gelir"
-          tag="hesap"
-          from={tlShort(cur.meanRevenue)}
-          to={tlShort(ps.revenue)}
-          extra={<Change from={cur.meanRevenue} to={ps.revenue} />}
-          hint="Yıllık, 20 yılın ortalaması · girdiler düşülmedi"
-        />
-        <Big
-          label="Su hakkı aşımı"
-          tag="hesap"
-          from={n ? `${n} üyeden ${exCur.length === 0 ? 'hiçbiri' : `${exCur.length}${ofSuffix(exCur.length)}`}` : 'üye yok'}
-          to={exPl.length}
-          tone={exPl.length === 0 ? 'good' : 'crit'}
-          hint="Suyu sezon ortasında biten üye sayısı"
-        />
-        <Big
-          label="En erken su bitiş tarihi"
-          tag="hesap"
-          from={exCur[0] ? fmtDayMonth(exCur[0].d) : 'aşım yok'}
-          to={exPl[0] ? fmtDayMonth(exPl[0].d) : 'Aşım yok'}
-          tone={exPl[0] ? 'crit' : 'good'}
-          hint={exCur[0] ? `Bugün ilk biten: ${exCur[0].mv.member.name} · tipik yıl` : 'Bugünkü ekimde kimsenin su hakkı aşılmıyor'}
-        />
-        <Big
-          label="Taahhüt"
-          tag="hesap"
-          from={committed.length ? `${total} yılın ${heldCur}${inSuffix(heldCur)}` : 'taahhüt yok'}
-          to={
-            committed.length ? (
-              <>
-                {heldPl}
-                <span className="text-[13px] font-normal text-ink2"> / {total} yıl</span>
-              </>
-            ) : (
-              '–'
-            )
-          }
-          tone={committed.length ? (heldPl >= 16 ? 'good' : heldPl >= 10 ? undefined : 'crit') : undefined}
-          hint={committed.length ? `${committed.map(([id, t]) => `${int(t)} t ${cropName(id, names).toLocaleLowerCase('tr')}`).join(', ')} · tuttuğu yıl sayısı` : 'Taahhüt ekranından girilebilir'}
-        />
-      </div>
-
-      {model.plan.status === 'partial' && (
-        <Note tone="warn">
-          Kooperatifin satış sözü bu suyla tutmuyor; öneri, söze en çok yaklaşan plandır. Ayrıntı için{' '}
-          <button type="button" className="link-button !text-inherit" onClick={() => s.setTab('taahhut')}>
-            Taahhüt
-          </button>{' '}
-          ekranına bakın.
-        </Note>
-      )}
-
-      {/* orta satır: harita ve NASA verisi */}
-      <div className="grid items-stretch gap-3 lg:grid-cols-2">
-        <Card className="flex min-h-[420px] min-w-0 flex-col">
-          <H2 right={<Tag kind="nasa" />}>Veri nereden geliyor</H2>
-          <Suspense fallback={<div className="grid flex-1 place-items-center rounded-lg bg-sunken text-ink2">Harita yükleniyor…</div>}>
-            <OverviewMap lat={weather.lat} lon={weather.lon} name={weather.name} />
-          </Suspense>
+      <div className="grid items-start gap-3 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+        {/* sol: harita */}
+        <Card className="flex min-w-0 flex-col gap-3 xl:sticky xl:top-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <Segmented label="Dağıtım" value={mode} options={(['today', 'scatter', 'planned'] as Mode[]).map((id) => ({ id, label: MODE_LABEL[id] }))} onChange={setMode} />
+            <span className="text-[12px] text-ink2">
+              {mode === 'today' && 'Üyelerin bugün ektiği'}
+              {mode === 'scatter' && (cId ? `Söz ${sc.scatter.growers} üyeye verildi; hepsi bütün tarlasına ${cName} ekiyor` : 'Taahhüt girilmedi')}
+              {mode === 'planned' && 'Su hakkı ve nöbet kurallarıyla hesaplanan dağıtım'}
+            </span>
+          </div>
+          <div className="h-[520px] xl:h-[calc(100vh-190px)] xl:min-h-[520px]">
+            <Suspense fallback={<div className="grid h-full place-items-center rounded-lg bg-sunken text-ink2">Harita yükleniyor…</div>}>
+              <CoopMap
+                members={model.members}
+                mode={mode}
+                weathers={s.weathers}
+                districtId={s.districtId}
+                onDistrict={(id) => {
+                  s.setDistrictId(id);
+                  setPanel('iklim');
+                }}
+                onMember={openMember}
+              />
+            </Suspense>
+          </div>
+          <p className="m-0 text-[11.5px] text-ink2">
+            Üyelerin konumu, tarlası ve ekimi <Tag kind="kurgusal" />. Mavi dikdörtgenler NASA POWER hücreleridir (yaklaşık 0,5° × 0,625°): aynı hücredeki üyeler aynı havayı görür. Beş ilçe yalnızca üç hücreye
+            düşüyor. NASA verisi havayı söyler; tarlada ne ekildiğini söylemez.
+          </p>
         </Card>
-        <ClimateCard w={weather} />
-      </div>
 
-      {/* alt satır: üyeler, ürün dağılımı, taahhüt şeridi */}
-      <Card>
-        <H2 right={<span className="text-[12px] text-ink2">Satıra tıklayınca üye ekranı açılır</span>}>Üyeler</H2>
-        {n === 0 ? (
-          <div className="rounded-lg bg-sunken px-3 py-6 text-center text-ink2">Üye yok. "Üye ekle" ile başlayın.</div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="data min-w-[720px]">
-              <thead>
-                <tr>
-                  <th>Üye</th>
-                  <th className="num">Tarla</th>
-                  <th className="num">Su hakkı</th>
-                  <th>
-                    Bugün su ne zaman bitiyor
-                    <Tag kind="hesap" compact />
-                  </th>
-                  <th className="num">
-                    Brüt gelir: bugün → öneri
-                    <Tag kind="hesap" compact />
-                  </th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {model.members.map((mv) => {
-                  const m = mv.member;
-                  const med = mv.current.years[mv.current.medianIndex];
-                  const open = () => {
-                    s.setMemberId(m.id);
-                    s.setTab('uye');
-                    window.scrollTo({ top: 0 });
-                  };
-                  return (
-                    <tr key={m.id} className="cursor-pointer" onClick={open}>
-                      <td>
-                        <button type="button" className="cursor-pointer border-0 bg-transparent p-0 text-left font-semibold text-ink" onClick={open}>
-                          {m.name}
-                        </button>
-                        <div className="text-[11px] text-ink2">
-                          {METHOD_LABEL[m.method]} sulama{m.beetContract ? ' · pancar sözleşmesi var' : ''}
-                        </div>
-                      </td>
-                      <td className="num">{da(m.areaDa)} da</td>
-                      <td className="num">
-                        {m3(mv.quotaM3)}
-                        <div className="text-[11px] text-ink2">{int(m.quotaMm)} mm</div>
-                      </td>
-                      <td className="whitespace-nowrap">
-                        {mv.current.yearsExceeded > 0 && med?.endDay != null ? (
-                          <>
-                            <span className="font-semibold text-crit-ink">{fmtDayMonth(dateOfIndex(weather, med.start + med.endDay))}</span>
-                            <div className="text-[11px] text-ink2">
-                              20 yılın {mv.current.yearsExceeded}
-                              {inSuffix(mv.current.yearsExceeded)}
-                            </div>
-                          </>
-                        ) : (
-                          <span className="tag tag-success">su hakkı aşılmıyor</span>
-                        )}
-                      </td>
-                      <td className="num whitespace-nowrap">
-                        <span className="text-ink2">{tlShort(mv.current.meanRevenue)}</span> <ArrowRight size={12} className="inline text-muted" aria-label="öneriyle" />{' '}
-                        <span className="font-semibold text-ink">{tlShort(mv.planned.meanRevenue)}</span> <Change from={mv.current.meanRevenue} to={mv.planned.meanRevenue} />
-                      </td>
-                      <td className="whitespace-nowrap text-right">
-                        <button
-                          type="button"
-                          className="icon-button !text-ink2"
-                          aria-label={`${m.name}: düzenle`}
-                          title="Düzenle"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setEditing(m.id);
-                          }}
-                        >
-                          <Pencil size={15} />
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </Card>
-
-      {n > 0 && (
-        <>
-          <div className="grid items-start gap-3 lg:grid-cols-2">
-            <Card>
-              <H2>Kooperatif ürün dağılımı</H2>
-              <div className="mb-1.5 text-[12px] font-medium text-ink2">Bugün</div>
-              <CropBar areas={cur.areaByCrop} names={names} />
-              <div className="mb-1.5 mt-4 flex items-center gap-1.5 text-[12px] font-medium text-ink2">
-                Öneri <Tag kind="hesap" />
+        {/* sağ: taahhüt paneli */}
+        <div className="flex min-w-0 flex-col gap-3">
+          <Card>
+            <H2 right={<Tag kind="kurgusal" />}>Taahhüt</H2>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-[1fr_120px]">
+              <div className="text-[12px] font-medium text-ink2">
+                Ürün
+                <Select className="mt-1" label="Sözleşme ürünü" value={crop} onChange={setCrop} options={model.crops.map((c) => ({ value: c.id, label: c.name }))} />
               </div>
-              <CropBar areas={ps.areaByCrop} names={names} />
-            </Card>
-            <Card>
-              <H2 right={<Tag kind="hesap" />}>Taahhüt 20 yılda tutar mıydı?</H2>
-              {committed.length === 0 ? (
-                <div className="text-ink2">Taahhüt girilmedi. Taahhüt ekranından ton olarak girebilirsiniz.</div>
-              ) : (
-                <BacktestStrip outcomes={model.planBacktest} commitments={s.settings.commitments} names={names} title="Önerilen plan" />
-              )}
-            </Card>
-          </div>
+              <label className="block text-[12px] font-medium text-ink2">
+                Miktar
+                <NumInput className="mt-1 w-full" label="Taahhüt (ton)" value={tons} max={1e6} decimals={0} suffix="t" onChange={setTons} />
+              </label>
+              <label className="col-span-2 block text-[12px] font-medium text-ink2 sm:col-span-1">
+                Alıcı
+                <input className="field mt-1" value={buyer} onChange={(e) => setBuyer(e.target.value)} placeholder="Alıcının adı" />
+              </label>
+              <div className="col-span-2 flex items-end sm:col-span-1">
+                <button type="button" className="btn btn-primary w-full" onClick={apply}>
+                  <Send /> Dağıt
+                </button>
+              </div>
+            </div>
+            {dirty && <div className="mt-2 text-[12px] font-medium text-warn-ink">Değişiklik henüz uygulanmadı: "Dağıt"a basın.</div>}
+          </Card>
 
-          <details className="card group">
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-2 text-[13px] font-[650] text-ink">
-              <span>Ayrıntılar</span>
-              <span className="text-[12px] font-normal text-ink2 group-open:hidden">ürün başına alan, su, üretim ve gelir; fiyat riski</span>
-            </summary>
-            <div className="mt-4 flex flex-col gap-5">
+          {cId ? (
+            <Card>
+              <H2 right={<Tag kind="hesap" />}>
+                {s.buyer ? `${s.buyer}: ` : ''}
+                {int(cTons)} ton {cName}
+              </H2>
+              <p className="m-0 mb-3 text-[14px] leading-relaxed text-ink">
+                Aynı söz, aynı su. Gelişigüzel dağıtınca ortalama <b className={delivered(sc.scatter) < cTons ? 'font-semibold text-crit-ink' : 'font-semibold'}>{ton(delivered(sc.scatter))}</b> çıkıyor ve söz 20 yılın{' '}
+                {sc.scatter.held}
+                {inSuffix(sc.scatter.held)} tutuyor; planlı dağıtınca <b className={delivered(sc.planned) >= cTons ? 'font-semibold text-good-ink' : 'font-semibold text-crit-ink'}>{ton(delivered(sc.planned))}</b>, 20 yılın{' '}
+                {sc.planned.held}
+                {inSuffix(sc.planned.held)}.
+              </p>
               <div className="overflow-x-auto">
-                <table className="data min-w-[860px]">
+                <table className="data">
                   <thead>
                     <tr>
-                      <th rowSpan={2}>Ürün</th>
-                      <th colSpan={3} className="!text-center">
-                        Bugün
+                      <th></th>
+                      <th className="num">
+                        <button type="button" className="cursor-pointer border-0 bg-transparent p-0 font-semibold text-inherit underline decoration-dotted underline-offset-2" onClick={() => setMode('scatter')}>
+                          Gelişigüzel
+                        </button>
                       </th>
-                      <th colSpan={3} className="!text-center">
-                        Öneri
-                      </th>
-                      <th rowSpan={2} className="num">
-                        Fiyat (TL/t)
-                        <Tag kind="varsayim" compact />
-                      </th>
-                      <th rowSpan={2} className="num">
-                        Önerilen brüt gelir
-                        <Tag kind="hesap" compact />
-                      </th>
-                    </tr>
-                    <tr>
-                      <th className="num !rounded-none">Alan (da)</th>
-                      <th className="num !rounded-none">
-                        Su (m³)
-                        <Tag kind="hesap" compact />
-                      </th>
-                      <th className="num !rounded-none">
-                        Üretim (t)
-                        <Tag kind="hesap" compact />
-                      </th>
-                      <th className="num !rounded-none">Alan (da)</th>
-                      <th className="num !rounded-none">
-                        Su (m³)
-                        <Tag kind="hesap" compact />
-                      </th>
-                      <th className="num !rounded-none">
-                        Üretim (t)
-                        <Tag kind="hesap" compact />
+                      <th className="num">
+                        <button type="button" className="cursor-pointer border-0 bg-transparent p-0 font-semibold text-inherit underline decoration-dotted underline-offset-2" onClick={() => setMode('planned')}>
+                          Planlı
+                        </button>
                       </th>
                     </tr>
                   </thead>
                   <tbody>
-                    {ids.map((id) => {
-                      const c = model.cropById.get(id);
-                      const t = ps.productionT[id] ?? 0;
-                      const tc = cur.meanProductionT[id] ?? 0;
-                      return (
-                        <tr key={id}>
-                          <td>
-                            <Swatch id={id} />
-                            {cropName(id, names)}
-                          </td>
-                          <td className="num">{(cur.areaByCrop[id] ?? 0) >= 0.05 ? da(cur.areaByCrop[id]) : dash}</td>
-                          <td className="num">{(cur.waterByCrop[id] ?? 0) > 0.5 ? int(cur.waterByCrop[id]) : dash}</td>
-                          <td className="num">{c && tc > 0 ? ton(tc) : dash}</td>
-                          <td className="num">{(ps.areaByCrop[id] ?? 0) >= 0.05 ? da(ps.areaByCrop[id]) : dash}</td>
-                          <td className="num">{(model.plannedWaterByCrop[id] ?? 0) > 0.5 ? int(model.plannedWaterByCrop[id]) : dash}</td>
-                          <td className="num">{c && t > 0 ? ton(t) : dash}</td>
-                          <td className="num">{c ? int(c.priceTlTon) : dash}</td>
-                          <td className="num">{c && t > 0 ? tlShort(t * c.priceTlTon) : dash}</td>
-                        </tr>
-                      );
-                    })}
-                    <tr className="font-semibold text-ink">
-                      <td>Toplam</td>
-                      <td className="num">{da(model.totalAreaDa)}</td>
-                      <td className="num">{int(sum(cur.waterByCrop))}</td>
-                      <td className="num"></td>
-                      <td className="num">{da(model.totalAreaDa)}</td>
-                      <td className="num">{int(sum(model.plannedWaterByCrop))}</td>
-                      <td className="num"></td>
-                      <td className="num"></td>
-                      <td className="num">{tlShort(ps.revenue)}</td>
-                    </tr>
+                    <Row label={`${cropName(cId, names)} eken üye`} a={sc.scatter.growers} b={sc.planned.growers} active={mode} />
+                    <Row
+                      label="Ortalama verim (tam sulanana göre)"
+                      a={pct(sc.scatter.yieldLevel)}
+                      b={pct(sc.planned.yieldLevel)}
+                      active={mode}
+                      better={sc.planned.yieldLevel > sc.scatter.yieldLevel + 0.005 ? 'b' : sc.scatter.yieldLevel > sc.planned.yieldLevel + 0.005 ? 'a' : null}
+                    />
+                    <Row label="Söz 20 yılın kaçında tutuyor" a={held(sc.scatter)} b={held(sc.planned)} active={mode} better={sc.planned.held > sc.scatter.held ? 'b' : sc.scatter.held > sc.planned.held ? 'a' : null} />
+                    <Row label="Kullanılan toplam su" a={m3(sc.scatter.usedM3)} b={m3(sc.planned.usedM3)} active={mode} />
+                    <Row
+                      label="Kooperatif brüt geliri"
+                      a={tlShort(sc.scatter.revenue)}
+                      b={tlShort(sc.planned.revenue)}
+                      active={mode}
+                      better={sc.planned.revenue > sc.scatter.revenue * 1.005 ? 'b' : sc.scatter.revenue > sc.planned.revenue * 1.005 ? 'a' : null}
+                    />
+                    <Row
+                      label="Suyu sezon ortasında biten üye"
+                      a={sc.scatter.exceeded}
+                      b={sc.planned.exceeded}
+                      active={mode}
+                      better={sc.planned.exceeded < sc.scatter.exceeded ? 'b' : sc.scatter.exceeded < sc.planned.exceeded ? 'a' : null}
+                    />
                   </tbody>
                 </table>
               </div>
-              {top && (
-                <Note tone={topShare > 0.4 ? 'warn' : 'plain'}>
-                  <strong>Fiyat riski:</strong> önerilen planda brüt gelirin {pct(topShare)} kadarı tek üründen ({top.c.name}) geliyor. {top.c.name} fiyatı %20 düşerse toplam gelir {tlShort(top.rev * 0.2)} azalır.
-                  Fiyatlar sabit varsayımdır; araç fiyat tahmini yapmaz.
-                </Note>
+              <p className="mb-0 mt-2 text-[11.5px] text-ink2">
+                20 yılın (2006–2025) ortalaması. Gelişigüzel dağıtımda söz yalnız görevlendirilen üyelerin teslimatıyla ölçülür; öbür üyeler bugünkü ekimini sürdürür. Planlı dağıtım kooperatif gelirini en
+                yükseğe çıkardığı için sözden fazlasını üretebilir. Gelir brüttür; girdiler düşülmedi. Bugünkü ekimde {int(sc.today.exceeded)} üyenin suyu sezon ortasında bitiyor.
+              </p>
+              {model.plan.status === 'partial' && (
+                <div className="mt-3">
+                  <Note tone="warn">
+                    Bu söz planlı dağıtımla da tam karşılanamıyor: en çok {pct(model.plan.commitmentFraction)} kadarı üretilebiliyor. Seçenekler için{' '}
+                    <button type="button" className="link-button !text-inherit" onClick={() => s.setTab('taahhut')}>
+                      Taahhüt
+                    </button>{' '}
+                    ekranına bakın.
+                  </Note>
+                </div>
               )}
-              <p className="m-0 text-[12px] text-ink2">Toplam su hakkı {m3(model.totalQuotaM3)}; önerilen planda dağıtılan su {m3(ps.reservedM3)}. Hepsi 20 yılın ortalamasıdır.</p>
+            </Card>
+          ) : (
+            <Card>
+              <div className="text-ink2">Taahhüt girilmedi. Ürün ve miktarı yazıp "Dağıt"a basın.</div>
+            </Card>
+          )}
+
+          <Card className="flex min-w-0 flex-col gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <Segmented
+                label="Alt panel"
+                value={panel}
+                options={[
+                  { id: 'dagitim', label: 'Dağıtım tablosu' },
+                  { id: 'iklim', label: `NASA verisi: ${districtName(s.districtId)}` },
+                ]}
+                onChange={setPanel}
+              />
+              {panel === 'dagitim' && cId && (
+                <span className="text-[12px] text-ink2">
+                  {MODE_LABEL[tableMode]} · {rows.length} üye
+                </span>
+              )}
             </div>
-          </details>
-        </>
-      )}
+
+            {panel === 'dagitim' ? (
+              !cId ? (
+                <div className="text-ink2">Taahhüt girilince hangi üyenin ne kadar ekeceği burada görünür.</div>
+              ) : (
+                <>
+                  <div className="max-h-[360px] overflow-auto">
+                    <table className="data">
+                      <thead className="sticky top-0 z-10">
+                        <tr>
+                          <th>Üye</th>
+                          <th className="num">{cropName(cId, names)} (da)</th>
+                          <th className="num">
+                            Su (m³)
+                            <Tag kind="hesap" compact />
+                          </th>
+                          <th className="num">
+                            Verim
+                            <Tag kind="hesap" compact />
+                          </th>
+                          <th className="num">
+                            Teslim (t)
+                            <Tag kind="hesap" compact />
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {rows.map((r) => (
+                          <tr key={r.mv.member.id} className="cursor-pointer" onClick={() => openMember(r.mv.member.id)}>
+                            <td>
+                              <button type="button" className="cursor-pointer border-0 bg-transparent p-0 text-left font-semibold text-ink" onClick={() => openMember(r.mv.member.id)}>
+                                {r.mv.member.name}
+                              </button>
+                              <div className="text-[11px] text-ink2">
+                                {districtName(r.mv.member.pointId)} · {da(r.mv.member.areaDa)} da
+                              </div>
+                            </td>
+                            <td className="num">
+                              <Swatch id={cId} />
+                              {da(r.da)}
+                            </td>
+                            <td className="num">
+                              {int(r.water)}
+                              <div className="text-[11px] text-ink2">{r.level}</div>
+                            </td>
+                            <td className="num">{pct(r.rel)}</td>
+                            <td className="num">{ton((r.rel * yieldKg * r.da) / 1000)}</td>
+                          </tr>
+                        ))}
+                        {rows.length === 0 && (
+                          <tr>
+                            <td colSpan={5} className="text-ink2">
+                              Bu dağıtımda {cName} eken üye yok.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                  <BacktestStrip outcomes={sc[tableMode].backtest} commitments={s.settings.commitments} names={names} title={MODE_LABEL[tableMode]} />
+                </>
+              )
+            ) : s.weather ? (
+              <div className="-m-4">
+                <ClimateCard w={s.weather} />
+              </div>
+            ) : null}
+          </Card>
+        </div>
+      </div>
 
       <HonestyBanner />
       <MemberEditor id={editing} onClose={() => setEditing(null)} />

@@ -441,8 +441,8 @@ export function MemberScreen() {
   const [yearSel, setYearSel] = useState<number | 'median'>('median');
   const [editing, setEditing] = useState<string | null>(null);
   const [detail, setDetail] = useState(false);
-  const { model, weather } = s;
-  if (!model || !weather) return null;
+  const { model } = s;
+  if (!model) return null;
   if (model.members.length === 0)
     return (
       <>
@@ -461,6 +461,8 @@ export function MemberScreen() {
   const mv = model.members.find((x) => x.member.id === s.memberId) ?? model.members[0];
   const m = mv.member;
   const years = mv.current.years.map((y) => y.year);
+  // her üye kendi ilçesinin havasıyla hesaplanır
+  const weather = mv.weather;
   const medCur = medianDate(weather, mv.current);
   const medPl = medianDate(weather, mv.planned);
   const names = new Map(model.crops.map((c) => [c.id, c.name]));

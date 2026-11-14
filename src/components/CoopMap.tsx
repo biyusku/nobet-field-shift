@@ -1,0 +1,263 @@
+// Kooperatif haritası: her üye bir pasta daire (büyüklük dekara, dilimler ürün paylarına göre),
+// yakınlaşınca tarla dikdörtgeni; ilçelerin NASA POWER hücreleri; üç altlık.
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { DISTRICTS } from '../data/members';
+import { climateSummary, powerCell } from '../engine/climate';
+import { FALLOW, type Weather } from '../engine/types';
+import { dateOfIndex } from '../engine/weather';
+import { da, fmtDayMonth, int, m3, pct } from '../lib/format';
+import { modeParts, type MemberView, type Mode } from '../model';
+import { cropColor, Segmented } from './ui';
+
+type Base = 'osm' | 'uydu' | 'modis';
+/** GIBS MODIS gerçek renk katmanı için gösterilen gün. */
+export const MODIS_DATE = '2025-07-15';
+const LAYERS: Record<Base, { url: string; options: L.TileLayerOptions }> = {
+  osm: { url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', options: { attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> katkıcıları', maxZoom: 19 } },
+  uydu: { url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', options: { attribution: 'Uydu görüntüsü &copy; Esri, Maxar, Earthstar Geographics', maxZoom: 18 } },
+  modis: {
+    url: `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/${MODIS_DATE}/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg`,
+    options: { attribution: 'NASA EOSDIS GIBS · MODIS Terra gerçek renk', maxNativeZoom: 9, maxZoom: 15 },
+  },
+};
+/** Bu yakınlaştırma düzeyinden itibaren daireler yerine tarla dikdörtgenleri çizilir. */
+const FIELD_ZOOM = 12;
+const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
+
+/** Üyenin o moddaki ürün payları (alan). */
+function shares(mv: MemberView, mode: Mode): { cropId: string; name: string; da: number }[] {
+  const by = new Map<string, { cropId: string; name: string; da: number }>();
+  for (const p of modeParts(mv, mode).parcels) {
+    if (p.areaDa < 0.05) continue;
+    const r = by.get(p.crop.id) ?? { cropId: p.crop.id, name: p.crop.name, da: 0 };
+    r.da += p.areaDa;
+    by.set(p.crop.id, r);
+  }
+  const out = [...by.values()].sort((a, b) => b.da - a.da);
+  const rest = mv.member.areaDa - out.reduce((s, r) => s + r.da, 0);
+  if (rest >= 0.5) out.push({ cropId: FALLOW, name: 'Nadas', da: rest });
+  return out;
+}
+
+function pieSvg(parts: { cropId: string; da: number }[], r: number, ring: string): string {
+  const total = parts.reduce((s, p) => s + p.da, 0) || 1;
+  const size = r * 2 + 6;
+  const c = size / 2;
+  let a0 = -Math.PI / 2;
+  let body = '';
+  for (const p of parts) {
+    const f = p.da / total;
+    if (f >= 0.999) {
+      body += `<circle cx="${c}" cy="${c}" r="${r}" fill="${cropColor(p.cropId)}"/>`;
+      break;
+    }
+    const a1 = a0 + f * 2 * Math.PI;
+    const x0 = c + r * Math.cos(a0);
+    const y0 = c + r * Math.sin(a0);
+    const x1 = c + r * Math.cos(a1);
+    const y1 = c + r * Math.sin(a1);
+    body += `<path d="M${c},${c}L${x0.toFixed(2)},${y0.toFixed(2)}A${r},${r} 0 ${f > 0.5 ? 1 : 0} 1 ${x1.toFixed(2)},${y1.toFixed(2)}Z" fill="${cropColor(p.cropId)}" stroke="#fff" stroke-width="0.8"/>`;
+    a0 = a1;
+  }
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="display:block;overflow:visible">${body}<circle cx="${c}" cy="${c}" r="${r + 1}" fill="none" stroke="${ring}" stroke-width="2.5"/></svg>`;
+}
+
+export default function CoopMap({
+  members,
+  mode,
+  weathers,
+  districtId,
+  onDistrict,
+  onMember,
+}: {
+  members: MemberView[];
+  mode: Mode;
+  weathers: Record<string, Weather>;
+  districtId: string;
+  onDistrict: (id: string) => void;
+  onMember: (id: string) => void;
+}) {
+  const el = useRef<HTMLDivElement | null>(null);
+  const map = useRef<L.Map | null>(null);
+  const tiles = useRef<L.TileLayer | null>(null);
+  const cellsLayer = useRef<L.LayerGroup | null>(null);
+  const pies = useRef<L.LayerGroup | null>(null);
+  const fields = useRef<L.LayerGroup | null>(null);
+  const [base, setBase] = useState<Base>('osm');
+  const [zoom, setZoom] = useState(8);
+  const [tileError, setTileError] = useState(false);
+  const cb = useRef({ onDistrict, onMember });
+  cb.current = { onDistrict, onMember };
+
+  // hücreler: aynı hücreye düşen ilçeler birleştirilir
+  const cells = useMemo(() => {
+    const by = new Map<string, { bounds: ReturnType<typeof powerCell>; ids: string[]; names: string[] }>();
+    for (const d of DISTRICTS) {
+      const b = powerCell(d.lat, d.lon);
+      const key = `${b.south},${b.west}`;
+      const c = by.get(key) ?? { bounds: b, ids: [], names: [] };
+      c.ids.push(d.id);
+      c.names.push(d.name);
+      by.set(key, c);
+    }
+    return [...by.values()];
+  }, []);
+  const climate = useMemo(() => Object.fromEntries(Object.entries(weathers).map(([id, w]) => [id, climateSummary(w)])), [weathers]);
+
+  useEffect(() => {
+    if (!el.current) return;
+    const m = L.map(el.current, { zoomControl: true, scrollWheelZoom: true, minZoom: 6, maxZoom: 15, zoomSnap: 0.25 });
+    map.current = m;
+    cellsLayer.current = L.layerGroup().addTo(m);
+    pies.current = L.layerGroup().addTo(m);
+    fields.current = L.layerGroup();
+    // Konya'ya ortalı: bütün hücreler görünsün
+    const all = L.latLngBounds(cells.flatMap((c) => [L.latLng(c.bounds.south, c.bounds.west), L.latLng(c.bounds.north, c.bounds.east)]));
+    m.fitBounds(all.pad(0.03));
+    setZoom(m.getZoom());
+    m.on('zoomend', () => setZoom(m.getZoom()));
+    setTimeout(() => m.invalidateSize(), 60);
+    return () => {
+      m.remove();
+      map.current = null;
+    };
+  }, [cells]);
+
+  useEffect(() => {
+    const m = map.current;
+    if (!m) return;
+    setTileError(false);
+    tiles.current?.remove();
+    const t = L.tileLayer(LAYERS[base].url, LAYERS[base].options).addTo(m);
+    t.on('tileerror', () => setTileError(true));
+    t.bringToBack();
+    tiles.current = t;
+  }, [base]);
+
+  // NASA hücreleri
+  useEffect(() => {
+    const g = cellsLayer.current;
+    if (!g) return;
+    g.clearLayers();
+    const dark = base !== 'osm';
+    for (const c of cells) {
+      const selected = c.ids.includes(districtId);
+      const col = dark ? '#ffffff' : '#005bd3';
+      const rect = L.rectangle([[c.bounds.south, c.bounds.west], [c.bounds.north, c.bounds.east]], {
+        color: col,
+        weight: selected ? 2.5 : 1.2,
+        dashArray: selected ? undefined : '6 5',
+        fillColor: col,
+        fillOpacity: selected ? 0.1 : 0.04,
+      }).addTo(g);
+      rect.on('click', () => cb.current.onDistrict(c.ids[0]));
+      const label = L.divIcon({
+        className: '',
+        iconSize: [0, 0],
+        html: `<div style="transform:translate(6px,4px);white-space:nowrap;font:600 11px Inter,system-ui,sans-serif;color:${dark ? '#fff' : '#00408f'};text-shadow:0 0 3px ${dark ? '#000' : '#fff'},0 0 3px ${dark ? '#000' : '#fff'}">NASA hücresi · ${esc(c.names.join(' + '))}</div>`,
+      });
+      L.marker([c.bounds.north, c.bounds.west], { icon: label, interactive: false, keyboard: false }).addTo(g);
+    }
+  }, [cells, districtId, base]);
+
+  // üyeler: pasta daireler ve tarla dikdörtgenleri
+  useEffect(() => {
+    const gp = pies.current;
+    const gf = fields.current;
+    if (!gp || !gf) return;
+    gp.clearLayers();
+    gf.clearLayers();
+    // büyükler altta kalsın, küçükler tıklanabilsin
+    const scale = zoom < 8.75 ? 0.72 : zoom < 9.75 ? 0.85 : 1;
+    const sorted = [...members].filter((mv) => mv.member.lat != null && mv.member.lon != null).sort((a, b) => b.member.areaDa - a.member.areaDa);
+    for (const mv of sorted) {
+      const m = mv.member;
+      const lat = m.lat!;
+      const lon = m.lon!;
+      const { ev, water } = modeParts(mv, mode);
+      const parts = shares(mv, mode);
+      const y = ev.years[ev.medianIndex];
+      const end = ev.yearsExceeded > 0 && y?.endDay != null ? dateOfIndex(mv.weather, y.start + y.endDay) : null;
+      const cl = climate[m.pointId ?? ''];
+      const tip =
+        `<div style="font:13px Inter,system-ui,sans-serif;min-width:210px;line-height:1.45">` +
+        `<div style="font-weight:650">${esc(m.name)} <span style="font-weight:500;color:#b4231a;background:#fedad9;border-radius:8px;padding:0 6px;font-size:11px">kurgusal</span></div>` +
+        `<div style="color:#616161;font-size:12px">${da(m.areaDa)} da · su hakkı ${m3(mv.quotaM3)}${mode === 'scatter' && mv.scatterCrop ? ' · söz bu üyeye verildi' : ''}</div>` +
+        `<div style="margin-top:4px">${parts.map((p) => `<span style="white-space:nowrap"><i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${cropColor(p.cropId)};margin-right:4px"></i>${esc(p.name)} ${da(p.da)} da</span>`).join('<br>')}</div>` +
+        `<div style="margin-top:4px">${end ? `<b style="color:#b4231a">Su ${fmtDayMonth(end)} bitiyor</b>` : `<b style="color:#0c7a43">Su hakkı aşılmıyor</b>`} · beklenen verim <b>${pct(water.yieldLevel)}</b></div>` +
+        (cl ? `<div style="margin-top:4px;color:#616161;font-size:12px;border-top:1px solid #e3e3e3;padding-top:4px">NASA hücresi (${esc(mv.weather.name)}): yılda ${int(cl.meanPrec)} mm yağış · temmuz ET0 ${int(cl.months[6].et0)} mm</div>` : '') +
+        `</div>`;
+      // uzaktan bakarken daireler küçülür ki üst üste binmesin
+      const r = Math.round((7 + 11 * Math.sqrt(Math.min(1, m.areaDa / 400))) * scale);
+      const size = r * 2 + 6;
+      const marker = L.marker([lat, lon], {
+        icon: L.divIcon({ className: 'coop-pie', iconSize: [size, size], iconAnchor: [size / 2, size / 2], html: pieSvg(parts, r, end ? '#d03b3b' : '#ffffff') }),
+        title: m.name,
+        riseOnHover: true,
+      }).addTo(gp);
+      marker.bindTooltip(tip, { direction: 'auto', offset: [r, 0], opacity: 1 });
+      marker.on('click', () => cb.current.onMember(m.id));
+
+      // tarla: gerçek alanında bir kare (1 da = 1000 m²), ürün paylarına göre şeritler
+      const side = Math.sqrt(m.areaDa * 1000);
+      const dLat = side / 111320;
+      const dLon = side / (111320 * Math.cos((lat * Math.PI) / 180));
+      let x = lon - dLon / 2;
+      for (const p of parts) {
+        const wdt = dLon * (p.da / m.areaDa);
+        const rect = L.rectangle([[lat - dLat / 2, x], [lat + dLat / 2, x + wdt]], { color: end ? '#d03b3b' : '#ffffff', weight: 1.5, fillColor: cropColor(p.cropId), fillOpacity: 0.85 }).addTo(gf);
+        rect.bindTooltip(tip, { sticky: true, opacity: 1 });
+        rect.on('click', () => cb.current.onMember(m.id));
+        x += wdt;
+      }
+    }
+  }, [members, mode, climate, zoom < 8.75 ? 8 : zoom < 9.75 ? 9 : 10]);
+
+  // yakınlaşınca daireden tarlaya geç
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !pies.current || !fields.current) return;
+    const showFields = zoom >= FIELD_ZOOM;
+    if (showFields) {
+      m.removeLayer(pies.current);
+      m.addLayer(fields.current);
+    } else {
+      m.removeLayer(fields.current);
+      m.addLayer(pies.current);
+    }
+  }, [zoom]);
+
+  return (
+    <div className="flex h-full min-h-0 flex-col gap-2">
+      <div className="relative min-h-[420px] flex-1 overflow-hidden rounded-lg">
+        <div ref={el} className="absolute inset-0 z-0" />
+        <div className="absolute right-2 top-2 z-[500]">
+          <Segmented
+            label="Harita altlığı"
+            value={base}
+            options={[
+              { id: 'osm', label: 'Harita' },
+              { id: 'uydu', label: 'Uydu' },
+              { id: 'modis', label: 'NASA MODIS' },
+            ]}
+            onChange={setBase}
+          />
+        </div>
+      </div>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11.5px] text-ink2">
+        <span className="flex items-center gap-1.5">
+          <svg width="16" height="16" aria-hidden>
+            <circle cx="8" cy="8" r="5.5" fill="var(--sunken)" stroke="#d03b3b" strokeWidth="2.5" />
+          </svg>
+          kırmızı halka: su sezon ortasında bitiyor
+        </span>
+        <span>daire büyüklüğü: dekar · dilimler: ürün payı</span>
+        <span>{zoom >= FIELD_ZOOM ? 'tarlalar gerçek alanında kare olarak çizili (konum ve biçim kurgusal)' : 'yakınlaşınca tarla dikdörtgeni görünür'}</span>
+        {base === 'modis' && <span>NASA GIBS, MODIS Terra, {MODIS_DATE.split('-').reverse().join('.')}</span>}
+        {tileError && <span className="font-semibold text-warn-ink">Harita karoları yüklenemedi (ağ bağlantısı?).</span>}
+      </div>
+    </div>
+  );
+}
