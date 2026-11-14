@@ -46,13 +46,62 @@ Betik (`scripts/fetch-power.mjs`) NASA POWER günlük API'sinden 1 Ekim 2004 –
 
 ## Yayınlama
 
-Sunucu yoktur; bütün hesap tarayıcıda yapılır. `npm run build` çıktısı (`dist/`) herhangi bir statik sunucuya kopyalanabilir. `base: './'` kullanıldığı için alt dizinde de çalışır (GitHub Pages, Netlify, Cloudflare Pages, bir S3 kovası ya da `python3 -m http.server`).
+Sunucu yoktur; bütün hesap tarayıcıda yapılır. `npm run build` çıktısı (`dist/`) herhangi bir statik sunucuda çalışır. `base: './'` kullanıldığı için alt dizinde de çalışır. İlçe verileri (`public/data/*.json`) derlemeye dahildir; yayın sırasında NASA'ya istek atılmaz.
+
+Yayından önce yerelde deneyin:
+
+```bash
+npm test
+```
+
+```bash
+npm run build
+```
 
 ```bash
 npm run preview
 ```
 
-Dikkat: `dist/index.html` dosyasını çift tıklayıp `file://` ile açmak çalışmaz (tarayıcılar modülleri ve veri dosyasını engeller); bir statik sunucu gerekir.
+Her iki serviste de ayarlar aynıdır: derleme komutu `npm run build`, yayın dizini `dist`, Node 20 ya da üstü. Ortam değişkeni ve anahtar gerekmez.
+
+### Vercel
+
+1. Projeyi bir Git deposuna gönderin (GitHub, GitLab ya da Bitbucket) ve vercel.com'da "Add New… → Project" ile içe aktarın. Vercel, Vite'ı kendisi tanır; tanımazsa Framework Preset: Vite, Build Command: `npm run build`, Output Directory: `dist` girin.
+2. Ya da komut satırından (ilk çalıştırmada hesap girişi ve birkaç soru sorar):
+
+```bash
+npx vercel
+```
+
+Önizleme adresi çalışıyorsa canlıya alın:
+
+```bash
+npx vercel --prod
+```
+
+### Netlify
+
+1. app.netlify.com'da "Add new site → Import an existing project" ile depoyu bağlayın; Build command: `npm run build`, Publish directory: `dist`.
+2. Depo olmadan: `npm run build` çalıştırıp `dist` klasörünü app.netlify.com/drop sayfasına sürükleyin.
+3. Ya da komut satırından:
+
+```bash
+npx netlify deploy --build
+```
+
+Taslak adres çalışıyorsa canlıya alın:
+
+```bash
+npx netlify deploy --build --prod
+```
+
+### Yayınlarken bilinmesi gerekenler
+
+- `dist/index.html` dosyasını çift tıklayıp `file://` ile açmak çalışmaz; bir statik sunucu gerekir.
+- Tek sayfalık uygulamadır ve adres çubuğunda yol kullanmaz; yönlendirme (rewrite) kuralı gerekmez.
+- Sayfa açıkken tarayıcı şu dış servislere istek atar: harita karoları (OpenStreetMap, Esri World Imagery, NASA GIBS) ve yazı tipi (Google Fonts). Bunlar erişilemezse harita altlığı boş kalır ya da yazı tipi sistem yazı tipine düşer; hesap etkilenmez.
+- `.tools/` klasörü (bu makine için indirilen Node ve commit aracı) git dışındadır ve yayına girmez.
+- Bu makinede sistem git'i yok; depoyu bir Git servisine göndermek için git kurulu bir ortam gerekir (macOS'ta Xcode komut satırı araçları).
 
 ## Ekranlar
 

@@ -235,7 +235,7 @@ export default function CoopMap({
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-2">
-      <div className="relative min-h-[420px] flex-1 overflow-hidden rounded-lg">
+      <div className="relative min-h-0 flex-1 overflow-hidden rounded-lg">
         <div ref={el} className="absolute inset-0 z-0" />
         <div className="absolute right-2 top-2 z-[500]">
           <Segmented

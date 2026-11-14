@@ -8,6 +8,7 @@ import { buildCurves, type Curves } from './engine/curves';
 import { combineFarms, evaluateFarm, waterStats, type FarmEvaluation, type WaterStats } from './engine/farm';
 import {
   backtest,
+  heldYears,
   solvePlan,
   summarize,
   type Allocation,
@@ -260,7 +261,7 @@ export function computeModel(weathers: Record<string, Weather>, fallbackId: stri
     return {
       growers,
       yieldLevel: area > 0 ? relArea / area : 0,
-      held: committed.length ? bt.filter((y) => y.status === 'green').length : 0,
+      held: committed.length ? heldYears(bt) : 0,
       total: bt.length,
       deliveredT,
       usedM3: mean(bt.map((y) => y.waterM3)),

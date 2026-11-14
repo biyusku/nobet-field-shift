@@ -192,6 +192,37 @@ Amaç:       en yüksek toplam brüt gelir   ya da   taahhüdü karşılayan en 
               taahhüdün en az {pct(YELLOW_FLOOR)}'ini verdi. Kırmızı: daha azı. Bu bir tahmin değil, "bu plan geçmişte uygulansaydı" denemesidir; gelecek 20 yıl geçmişe benzemeyebilir.
             </p>
           </div>
+          <div id="yontem-soz" className="scroll-mt-4">
+            <h3 className="m-0 mb-1 text-[13px] font-[650]">7. Panodaki söz hesabı ve üç dağıtım</h3>
+            <ul className="m-0 flex flex-col gap-1.5 pl-5 text-ink2">
+              <li>
+                <strong className="text-ink">Söz kaç yılda tutuyor:</strong> her dağıtımda kooperatifin o üründeki <em>toplam</em> üretimine bakılır; yılın üretimi söze ulaşıyorsa o yıl "tuttu" sayılır. Pano, Taahhüt
+                sayfası ve miktar kutusunun altındaki mesaj aynı fonksiyonu kullanır.
+              </li>
+              <li>
+                <strong className="text-ink">Bugün:</strong> üyelerin bugünkü ekimi; herkes ihtiyaç duydukça sular, su hakkı bitince susuz kalır.
+              </li>
+              <li>
+                <strong className="text-ink">Gelişigüzel dağıtım:</strong> üyeler sabit tohumla karıştırılır; tam verim varsayılarak hesaplanan üretim sözü geçene dek sıradaki üyenin bütün tarlası sözleşme ürününe
+                ayrılır. Öbür üyeler bugünkü ekimini sürdürür. Sonra hepsi gerçek su hakkıyla çalıştırılır.
+              </li>
+              <li>
+                <strong className="text-ink">Planlı dağıtım:</strong> 4. maddedeki doğrusal programlama. Söz, 20 yılın ortalama verimiyle karşılanacak biçimde kısıt olarak girer; plan geliri en yükseğe çıkarır.
+              </li>
+              <li>
+                <strong className="text-ink">Güvenle verilebilecek söz:</strong> plan (alanlar ve su tavanları sabit) 2006–2025'in her yılında o yılın havasıyla çalıştırılır; yılların en az 14, 16 ya da 18'inde
+                ulaşılan üretim alınır. Panonun üstündeki sayı ve miktar kutusundaki uyarı, "Dağıt"ın kuracağı plana göredir. Varsayılan söz bu hesabın 16 yıl için sonucudur.
+              </li>
+              <li>
+                <strong className="text-ink">"Yalnız [ürün]" ve "Karma":</strong> ilki kooperatif tek bir ürüne öncelik verseydi (o üründen en çok üretimi veren plan) verilebilecek sözdür ve planlı dağıtımdaki
+                sayıdan büyük olabilir. Karma sütundaki miktarlar, geliri en yükseğe çıkaran tek bir plandan gelir ve aynı anda verilebilir.
+              </li>
+              <li>
+                <strong className="text-ink">Sınırlar:</strong> plan ortalama verime göre kurulur; söz güvenli miktarın üstündeyse tutan yıl sayısı hızla düşer. Gelir brüttür; fiyat ve verimler varsayımdır. "Türkiye'nin
+                ithal ettiği ürün" notu takım notudur, bir kaynakla doğrulanmadı.
+              </li>
+            </ul>
+          </div>
         </div>
       </Card>
 

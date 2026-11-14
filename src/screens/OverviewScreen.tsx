@@ -10,7 +10,8 @@ import { Card, Change, H2, Note, NumInput, PageHeader, Segmented, Swatch, Tag, t
 import { COOP_NAME, DEFAULT_SAFE_YEARS } from '../data/defaults';
 import { DISTRICTS } from '../data/members';
 import { levelLabel } from '../engine/curves';
-import { maxCropScenario, maxSafeCommitment, mixedScenario, reachedInAtLeast, yearsReached } from '../engine/promise';
+import { plannedOutcome } from '../engine/plan';
+import { maxCropScenario, maxSafeCommitment, mixedScenario, reachedInAtLeast } from '../engine/promise';
 import { da, inSuffix, int, m3, pct, tlShort, ton } from '../lib/format';
 import type { MemberView, Mode, ScenarioSummary } from '../model';
 import { useStore } from '../state';
@@ -83,12 +84,21 @@ export function OverviewScreen() {
   const headCrop = Object.entries(s.settings.commitments).find(([id, t]) => t > 0 && model?.cropById.has(id))?.[0] ?? 'misir';
   const safePlanned = useMemo(() => (model ? maxSafeCommitment(model.planInput, headCrop, Number(need)) : 0), [model, headCrop, need]);
 
+  // Taslak söz: "Dağıt"a basılınca kurulacak planın 20 yıllık sonucu (karşılaştırma tablosuyla aynı fonksiyon)
+  const draft = useMemo(() => (model && tons > 0 ? plannedOutcome(model.planInput, { [crop]: tons }) : null), [model, crop, tons]);
+  const safeDraft = useMemo(() => (model ? (crop === headCrop ? safePlanned : maxSafeCommitment(model.planInput, crop, Number(need))) : 0), [model, crop, headCrop, safePlanned, need]);
+
   if (!model || !promise) return null;
   const K = Number(need);
   const singleYears = promise.single.yearly[crop] ?? [];
   const safeSingle = Math.floor(reachedInAtLeast(singleYears, K));
-  const draftHeld = yearsReached(singleYears, tons);
+  const draftHeld = draft?.held ?? 0;
   const draftOk = tons <= 0 || draftHeld >= K;
+  const safeTons = Math.floor(safeDraft);
+  const goMethod = () => {
+    s.setTab('yontem');
+    setTimeout(() => document.getElementById('yontem-soz')?.scrollIntoView({ block: 'start' }), 80);
+  };
   const mixedRows = model.crops
     .map((c) => ({ c, safe: Math.floor(reachedInAtLeast(promise.mixed.yearly[c.id] ?? [], K)) }))
     .filter((r) => r.safe >= 1);
@@ -199,8 +209,9 @@ export function OverviewScreen() {
       </div>
 
       <div className="grid items-start gap-3 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
-        {/* sol: harita */}
-        <Card className="flex min-w-0 flex-col gap-3 xl:sticky xl:top-3">
+        {/* sol: harita, altında dağıtım tablosu ve yıl şeridi */}
+        <div className="flex min-w-0 flex-col gap-3">
+        <Card className="flex min-w-0 flex-col gap-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <Segmented label="Dağıtım" value={mode} options={(['today', 'scatter', 'planned'] as Mode[]).map((id) => ({ id, label: MODE_LABEL[id] }))} onChange={setMode} />
             <span className="text-[12px] text-ink2">
@@ -209,7 +220,7 @@ export function OverviewScreen() {
               {mode === 'planned' && 'Su hakkı ve nöbet kurallarıyla hesaplanan dağıtım'}
             </span>
           </div>
-          <div className="h-[520px] xl:h-[calc(100vh-300px)] xl:min-h-[520px]">
+          <div className="h-[470px]">
             <Suspense fallback={<div className="grid h-full place-items-center rounded-lg bg-sunken text-ink2">Harita yükleniyor…</div>}>
               <CoopMap
                 members={model.members}
@@ -229,6 +240,93 @@ export function OverviewScreen() {
             düşüyor. NASA verisi havayı söyler; tarlada ne ekildiğini söylemez.
           </p>
         </Card>
+
+          <Card className="flex min-w-0 flex-col gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <Segmented
+                label="Alt panel"
+                value={panel}
+                options={[
+                  { id: 'dagitim', label: 'Dağıtım tablosu' },
+                  { id: 'iklim', label: `NASA verisi: ${districtName(s.districtId)}` },
+                ]}
+                onChange={setPanel}
+              />
+              {panel === 'dagitim' && cId && (
+                <span className="text-[12px] text-ink2">
+                  {MODE_LABEL[tableMode]} · {rows.length} üye
+                </span>
+              )}
+            </div>
+
+            {panel === 'dagitim' ? (
+              !cId ? (
+                <div className="text-ink2">Taahhüt girilince hangi üyenin ne kadar ekeceği burada görünür.</div>
+              ) : (
+                <>
+                  <div className="max-h-[188px] overflow-auto">
+                    <table className="data">
+                      <thead className="sticky top-0 z-10">
+                        <tr>
+                          <th>Üye</th>
+                          <th className="num">{cropName(cId, names)} (da)</th>
+                          <th className="num">
+                            Su (m³)
+                            <Tag kind="hesap" compact />
+                          </th>
+                          <th className="num">
+                            Verim
+                            <Tag kind="hesap" compact />
+                          </th>
+                          <th className="num">
+                            Teslim (t)
+                            <Tag kind="hesap" compact />
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {rows.map((r) => (
+                          <tr key={r.mv.member.id} className="cursor-pointer" onClick={() => openMember(r.mv.member.id)}>
+                            <td>
+                              <button type="button" className="cursor-pointer border-0 bg-transparent p-0 text-left font-semibold text-ink" onClick={() => openMember(r.mv.member.id)}>
+                                {r.mv.member.name}
+                              </button>
+                              <div className="text-[11px] text-ink2">
+                                {districtName(r.mv.member.pointId)} · {da(r.mv.member.areaDa)} da
+                              </div>
+                            </td>
+                            <td className="num">
+                              <Swatch id={cId} />
+                              {da(r.da)}
+                            </td>
+                            <td className="num">
+                              {int(r.water)}
+                              <div className="text-[11px] text-ink2">{r.level}</div>
+                            </td>
+                            <td className="num">{pct(r.rel)}</td>
+                            <td className="num">{ton((r.rel * yieldKg * r.da) / 1000)}</td>
+                          </tr>
+                        ))}
+                        {rows.length === 0 && (
+                          <tr>
+                            <td colSpan={5} className="text-ink2">
+                              Bu dağıtımda {cName} eken üye yok.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                  <BacktestStrip outcomes={sc[tableMode].backtest} commitments={s.settings.commitments} names={names} title={MODE_LABEL[tableMode]} />
+                </>
+              )
+            ) : s.weather ? (
+              <div className="-m-4">
+                <ClimateCard w={s.weather} />
+              </div>
+            ) : null}
+          </Card>
+        </div>
 
         {/* sağ: taahhüt paneli */}
         <div className="flex min-w-0 flex-col gap-3">
@@ -260,12 +358,12 @@ export function OverviewScreen() {
                   {inSuffix(draftHeld)} tutar.
                 </b>{' '}
                 {draftOk ? (
-                  <>Seçtiğiniz eşiğin (20'de {K}) üstünde.</>
+                  <>Planlı dağıtımla; eşiğinizi (20'de {K}) karşılıyor.</>
                 ) : (
                   <>
-                    Eşiğin (20'de {K}) altında: en çok <b className="font-semibold">{int(safeSingle)} ton</b> söz verilebilir.{' '}
-                    <button type="button" className="link-button !text-inherit" onClick={() => setTons(safeSingle)}>
-                      {int(safeSingle)} ton yap
+                    Planlı dağıtımla; eşiğin (20'de {K}) altında: en çok <b className="font-semibold">{int(safeTons)} ton</b> söz verilebilir.{' '}
+                    <button type="button" className="link-button !text-inherit" onClick={() => setTons(safeTons)}>
+                      {int(safeTons)} ton yap
                     </button>
                   </>
                 )}
@@ -298,7 +396,7 @@ export function OverviewScreen() {
                   <div className="tnum mt-0.5 text-[22px] font-bold leading-tight text-ink">
                     {int(safeSingle)} <span className="text-[13px] font-semibold text-ink2">ton</span>
                   </div>
-                  <div className="mt-0.5 text-[11.5px] text-ink2">Kooperatif bu ürüne öncelik verirse güvenle söz verilebilecek en yüksek miktar.</div>
+                  <div className="mt-0.5 text-[11.5px] text-ink2">Kooperatif bu ürüne öncelik verirse.</div>
                   <div className="tnum mt-2 border-t border-line pt-2 text-[12px] text-ink2">
                     Kooperatif brüt geliri <b className="font-semibold text-ink">{tlShort(promise.single.revenue)}</b>
                   </div>
@@ -324,9 +422,11 @@ export function OverviewScreen() {
                 </div>
               </div>
               <p className="mb-0 mt-2 text-[11.5px] text-ink2">
-                "Güvenle söz verilebilecek miktar": plan 2006–2025'in her yılında o yılın havasıyla çalıştırıldığında, yılların en az {K}'{K === 16 ? 'sında' : K === 14 ? 'ünde' : 'inde'} ulaşılan üretim. Karma
-                sütundaki miktarlar aynı anda verilebilir; "yalnız" sütunu ise tek bir ürüne öncelik verir. "Dağıt" geliri en yükseğe çıkaran planı kurar; söz bu sayılara yakınsa o plan sözü daha az yılda
-                tutabilir. Fiyat ve verimler varsayımdır. "İthal ettiği ürün" notu takım notudur; kaynakla doğrulanmadı.
+                Yılların en az {K}
+                {inSuffix(K)} ulaşılan üretim; fiyat ve verimler varsayımdır.{' '}
+                <button type="button" className="link-button" onClick={goMethod}>
+                  Nasıl hesaplandı?
+                </button>
               </p>
             </div>
           </Card>
@@ -389,8 +489,10 @@ export function OverviewScreen() {
                 </table>
               </div>
               <p className="mb-0 mt-2 text-[11.5px] text-ink2">
-                20 yılın (2006–2025) ortalaması. Söz, her dağıtımda kooperatifin o üründeki toplam üretimiyle ölçülür. Gelişigüzel dağıtımda görevlendirilen üyeler bütün tarlasına sözleşme ürününü eker; öbür
-                üyeler bugünkü ekimini sürdürür. Gelir brüttür; girdiler düşülmedi. Bugünkü ekimde {int(sc.today.exceeded)} üyenin suyu sezon ortasında bitiyor.
+                20 yılın ortalaması; söz kooperatifin toplam üretimiyle ölçülür, gelir brüttür.{' '}
+                <button type="button" className="link-button" onClick={goMethod}>
+                  Nasıl hesaplandı?
+                </button>
               </p>
               {model.plan.status === 'partial' && (
                 <div className="mt-3">
@@ -409,92 +511,6 @@ export function OverviewScreen() {
               <div className="text-ink2">Taahhüt girilmedi. Ürün ve miktarı yazıp "Dağıt"a basın.</div>
             </Card>
           )}
-
-          <Card className="flex min-w-0 flex-col gap-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <Segmented
-                label="Alt panel"
-                value={panel}
-                options={[
-                  { id: 'dagitim', label: 'Dağıtım tablosu' },
-                  { id: 'iklim', label: `NASA verisi: ${districtName(s.districtId)}` },
-                ]}
-                onChange={setPanel}
-              />
-              {panel === 'dagitim' && cId && (
-                <span className="text-[12px] text-ink2">
-                  {MODE_LABEL[tableMode]} · {rows.length} üye
-                </span>
-              )}
-            </div>
-
-            {panel === 'dagitim' ? (
-              !cId ? (
-                <div className="text-ink2">Taahhüt girilince hangi üyenin ne kadar ekeceği burada görünür.</div>
-              ) : (
-                <>
-                  <div className="max-h-[360px] overflow-auto">
-                    <table className="data">
-                      <thead className="sticky top-0 z-10">
-                        <tr>
-                          <th>Üye</th>
-                          <th className="num">{cropName(cId, names)} (da)</th>
-                          <th className="num">
-                            Su (m³)
-                            <Tag kind="hesap" compact />
-                          </th>
-                          <th className="num">
-                            Verim
-                            <Tag kind="hesap" compact />
-                          </th>
-                          <th className="num">
-                            Teslim (t)
-                            <Tag kind="hesap" compact />
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {rows.map((r) => (
-                          <tr key={r.mv.member.id} className="cursor-pointer" onClick={() => openMember(r.mv.member.id)}>
-                            <td>
-                              <button type="button" className="cursor-pointer border-0 bg-transparent p-0 text-left font-semibold text-ink" onClick={() => openMember(r.mv.member.id)}>
-                                {r.mv.member.name}
-                              </button>
-                              <div className="text-[11px] text-ink2">
-                                {districtName(r.mv.member.pointId)} · {da(r.mv.member.areaDa)} da
-                              </div>
-                            </td>
-                            <td className="num">
-                              <Swatch id={cId} />
-                              {da(r.da)}
-                            </td>
-                            <td className="num">
-                              {int(r.water)}
-                              <div className="text-[11px] text-ink2">{r.level}</div>
-                            </td>
-                            <td className="num">{pct(r.rel)}</td>
-                            <td className="num">{ton((r.rel * yieldKg * r.da) / 1000)}</td>
-                          </tr>
-                        ))}
-                        {rows.length === 0 && (
-                          <tr>
-                            <td colSpan={5} className="text-ink2">
-                              Bu dağıtımda {cName} eken üye yok.
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                  <BacktestStrip outcomes={sc[tableMode].backtest} commitments={s.settings.commitments} names={names} title={MODE_LABEL[tableMode]} />
-                </>
-              )
-            ) : s.weather ? (
-              <div className="-m-4">
-                <ClimateCard w={s.weather} />
-              </div>
-            ) : null}
-          </Card>
         </div>
       </div>
 

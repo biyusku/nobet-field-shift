@@ -295,6 +295,21 @@ export function backtest(allocations: Allocation[], crops: Crop[], commitments: 
   });
 }
 
+/** Sözün tuttuğu yıl sayısı: pano, taahhüt sayfası ve taslak mesajı hep bunu kullanır. */
+export function heldYears(outcomes: readonly YearOutcome[]): number {
+  return outcomes.filter((y) => y.status === 'green').length;
+}
+
+/**
+ * "Dağıt"a basılınca kurulacak planı ve 20 yıllık sonucunu verir: verilen sözle plan çözülür,
+ * her yılın havasında denenir, sözün tuttuğu yıllar sayılır.
+ */
+export function plannedOutcome(input: PlanInput, commitments: Record<string, number>): { plan: PlanResult; outcomes: YearOutcome[]; held: number } {
+  const plan = solvePlan({ ...input, settings: { ...input.settings, commitments } });
+  const outcomes = backtest(plan.allocations, input.crops, commitments);
+  return { plan, outcomes, held: Object.values(commitments).some((t) => t > 0) ? heldYears(outcomes) : 0 };
+}
+
 export interface PlanSummary {
   areaByCrop: Record<string, number>;
   /** 20 yıl ortalaması, ton */

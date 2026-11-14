@@ -4,6 +4,7 @@ import { DEFAULT_CROPS } from '../../data/crops';
 import { DEFAULT_COMMITMENT_TONS, DEFAULT_EFF, DEFAULT_SAFE_YEARS, DEFAULT_SETTINGS, DEFAULT_SOIL } from '../../data/defaults';
 import { DISTRICTS, generateMembers } from '../../data/members';
 import { computeModel } from '../../model';
+import { heldYears, plannedOutcome } from '../plan';
 import { maxCropScenario, maxSafeCommitment, mixedScenario, reachedInAtLeast, yearsReached } from '../promise';
 import type { Weather } from '../types';
 import { buildWeather } from '../weather';
@@ -57,5 +58,13 @@ describe('güvenle söz verilebilecek miktar', () => {
     expect(maxSafeCommitment(model.planInput, 'misir', DEFAULT_SAFE_YEARS, 32)).toBeCloseTo(safe, 6);
     // varsayılan sözle: planlı dağıtım eşiği tutturur
     expect(model.scenarios.planned.held).toBeGreaterThanOrEqual(DEFAULT_SAFE_YEARS);
+  });
+
+  it('taslak mesajı ile karşılaştırma tablosu aynı fonksiyondan: aynı söz için aynı yıl sayısı', () => {
+    const draft = plannedOutcome(model.planInput, DEFAULT_SETTINGS.commitments);
+    expect(draft.held).toBe(model.scenarios.planned.held);
+    expect(draft.held).toBe(heldYears(model.planBacktest));
+    // güvenli miktarın üstündeki söz daha az yılda tutar
+    expect(plannedOutcome(model.planInput, { misir: 3100 }).held).toBeLessThan(DEFAULT_SAFE_YEARS);
   });
 });

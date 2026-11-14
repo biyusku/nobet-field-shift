@@ -113,3 +113,6 @@ Belirsiz kalan yerlerde verilen kararlar, her biri tek satır.
 - "En kötü yıl" satırında yüzde yalnız sözün altında kalındığında gösterilir.
 - Haritada hücre etiketi hücrenin ekrandaki genişliğiyle sınırlanır; dar olunca yalnız ilçe adları yazar.
 - Saklanan durumun anahtarı v10 oldu.
+- Miktar kutusunun altındaki "20 yılın N'inde tutar" mesajı yanlış planı ölçüyordu: kooperatif o ürüne öncelik verseydi kurulacak "yalnız [ürün]" planını. Karşılaştırma tablosu ve yıl şeridi ise "Dağıt"ın kurduğu planı ölçüyordu; bu yüzden aynı söz için biri 20, öbürü 16 diyordu. Mesaj artık "Dağıt"ın kuracağı planı aynı fonksiyonla (plannedOutcome / heldYears) ölçer; "en çok X ton" uyarısı da planlı dağıtımdaki güvenli miktarı gösterir. "Yalnız [ürün]" kutusu ayrı bir senaryo olarak kaldı.
+- Panoda dağıtım tablosu ve yıl şeridi haritanın altına (sol sütun) taşındı; harita 470 px, tablo en çok 188 px yüksekliğinde kaydırılır. 1440 px genişlikte iki sütun 1.026 ve 963 px'de bitiyor.
+- Sağ paneldeki uzun açıklamalar tek cümleye indi; ayrıntı Yöntem sayfasındaki "7. Panodaki söz hesabı ve üç dağıtım" bölümüne taşındı ve "Nasıl hesaplandı?" bağlantısı oraya gider.
