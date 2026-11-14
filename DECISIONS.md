@@ -79,3 +79,10 @@ Belirsiz kalan yerlerde verilen kararlar, her biri tek satır.
 - Düzeltmeden sonra Üye 1: bugün 333 bin TL → öneri 524 bin TL (+%57; düzeltmeden önce 602 bin TL, +%81). Kooperatif önerilen brüt gelir 6,85 → 5,99 milyon TL.
 - 40 tonluk mısır taahhüdü artık planı zorlamıyor: pancar çıkınca plan zaten ortalama 164 ton mısır üretiyor, söz 20 yılın 20'sinde tutuyor. Değer değiştirilmedi.
 - Saklanan durumun anahtarı v3 oldu (üyeye sözleşme alanı eklendi).
+- Uygulama artık "Genel bakış" ile açılır; menü sırası Genel bakış, Üyeler, Taahhüt, Yöntem. Eski Kooperatif ekranı kaldırıldı: üye ekleme/düzenleme Genel bakış'ta, plan kuralları Taahhüt ekranında, ürün başına tablo ve fiyat riski Genel bakış'ın kapalı "Ayrıntılar" bölümünde.
+- Haritadaki NASA POWER hücresi, 0,5° x 0,625° ızgarada noktaya en yakın merkezin çevresi olarak çizilir (merkezler bu adımların katı varsayıldı); "yaklaşık" diye etiketlidir, POWER'ın gerçek hücre sınırı API'den okunmuyor.
+- NASA GIBS MODIS Terra gerçek renk katmanı ilk denemede çalıştı (WMTS, EPSG:3857, tarayıcıdan erişime açık) ve üçüncü altlık olarak eklendi. Sabit bir gün gösterilir (15.07.2025); en çok 9. yakınlaştırma düzeyine kadar keskindir.
+- "Uydu" altlığı Esri World Imagery karolarıdır (anahtarsız, atıflı).
+- Yıllık yağış grafiği 2005-2025'i gösterir (veri 1 Ekim 2004'te başladığı için ilk tam yıl 2005); ortalamalar 2006-2025 hasat yıllarıyla aynı dönemden. Eğilim en küçük kareler doğrusudur; anlamlılığı sınanmadı ve ekranda öyle yazıyor.
+- "35 °C üstü gün": temmuz-ağustosta günlük en yüksek sıcaklığı (T2M_MAX) 35 °C'yi aşan gün sayısı; son yıl 2025.
+- Genel bakış'taki taahhüt şeridi, Taahhüt ekranındakiyle aynı üç durumu kullanır (yeşil tuttu, sarı %90-100, kırmızı altı).

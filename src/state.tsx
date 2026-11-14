@@ -9,7 +9,7 @@ import { computeModel, type Model } from './model';
 import { StoreCtx } from './storeContext';
 
 export type PointSel = { kind: 'preset'; id: string } | { kind: 'custom'; lat: number; lon: number };
-export type Tab = 'uye' | 'kooperatif' | 'taahhut' | 'yontem';
+export type Tab = 'genel' | 'uye' | 'taahhut' | 'yontem';
 
 interface Persisted {
   members: Member[];
@@ -77,7 +77,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [weatherStatus, setStatus] = useState<Store['weatherStatus']>('loading');
   const [weatherError, setWeatherError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [tab, setTab] = useState<Tab>('uye');
+  const [tab, setTab] = useState<Tab>('genel');
   const [memberId, setMemberId] = useState<string>(() => p.members[0]?.id ?? '');
   const lastGood = useRef<PointSel>({ kind: 'preset', id: PRESET_POINTS[0].id });
 

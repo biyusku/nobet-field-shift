@@ -1,5 +1,5 @@
 // Daraltılabilir koyu kenar menü. Telefonda ikon şeridi olarak başlar; açılınca sayfanın üstüne biner.
-import { BookOpen, Droplets, Handshake, type LucideIcon, MapPin, Moon, PanelLeftClose, PanelLeftOpen, Satellite, Sprout, Sun, Users } from 'lucide-react';
+import { BookOpen, Droplets, Handshake, LayoutDashboard, type LucideIcon, MapPin, Moon, PanelLeftClose, PanelLeftOpen, Satellite, Sun, Users } from 'lucide-react';
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { PRESET_POINTS } from '../data/defaults';
 import { useStore, type Tab } from '../state';
@@ -8,8 +8,8 @@ import { Select } from './kit';
 const MapModal = lazy(() => import('./MapModal'));
 
 const NAV: { id: Tab; label: string; icon: LucideIcon }[] = [
-  { id: 'uye', label: 'Üye', icon: Sprout },
-  { id: 'kooperatif', label: 'Kooperatif', icon: Users },
+  { id: 'genel', label: 'Genel bakış', icon: LayoutDashboard },
+  { id: 'uye', label: 'Üyeler', icon: Users },
   { id: 'taahhut', label: 'Taahhüt', icon: Handshake },
 ];
 const METHOD = { id: 'yontem' as Tab, label: 'Yöntem ve kaynaklar', icon: BookOpen };

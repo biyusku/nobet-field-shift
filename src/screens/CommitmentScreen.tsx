@@ -7,7 +7,7 @@ import { maxCommitmentFraction, solvePlan, summarize, type PlanInput } from '../
 import { FALLOW } from '../engine/types';
 import { da, dec1, inSuffix, int, m3, pct, tlShort, ton } from '../lib/format';
 import { useStore } from '../state';
-import { PlanSettingsCard } from './CoopScreen';
+import { PlanSettingsCard } from '../components/PlanSettingsCard';
 
 /** Uygun olan en küçük değeri ikiye bölerek bulur (lo uygun değil, hi uygun). */
 function bisect(lo: number, hi: number, ok: (v: number) => boolean, steps = 12): number {
@@ -81,7 +81,7 @@ export function CommitmentScreen() {
   }, [model]);
 
   if (!model) return null;
-  if (model.members.length === 0) return <Empty title="Kooperatifte üye yok">Taahhüt dağıtmak için önce Kooperatif ekranından üye ekleyin.</Empty>;
+  if (model.members.length === 0) return <Empty title="Kooperatifte üye yok">Taahhüt dağıtmak için önce Genel bakış ekranından üye ekleyin.</Empty>;
 
   const st = s.settings;
   const committed = Object.entries(st.commitments).filter(([id, t]) => t > 0 && model.cropById.has(id));

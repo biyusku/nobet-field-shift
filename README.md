@@ -56,12 +56,14 @@ Dikkat: `dist/index.html` dosyasını çift tıklayıp `file://` ile açmak çal
 
 ## Ekranlar
 
-1. **Üye**: tarla, kota (mm ya da m³), sulama yöntemi, bugünkü ekim. Solda bugünkü ekim, sağda önerilen plan; her birinde su bitiş tarihi (en büyük sayı), kümülatif sulama ve kota çizgisi, 20 yılın bitiş tarihi aralığı, brüt gelir, kullanılan su, toprak puanı ve üç yıllık nöbet tablosu.
-2. **Kooperatif**: üye listesi (ekle, sil, düzenle), ürün başına toplam alan, üretim ve gelir, fiyat riski uyarısı, plan ayarları.
-3. **Taahhüt**: ürün başına ton taahhüdü, dağıtım tablosu, ayrılan su, geçmişte deneme şeridi (yeşil/sarı/kırmızı). Taahhüt karşılanamıyorsa seçenekler ve bedelleri.
+1. **Genel bakış** (açılış): kooperatif toplamında dört büyük sayı (brüt gelir, su hakkı aşımı, en erken su bitiş tarihi, taahhüt; hepsi bugün → öneri), harita (seçili nokta, NASA POWER hücresi; harita, uydu ve NASA GIBS MODIS altlıkları), "NASA verisi ne diyor" kartı (aylık yağış ve ET0, yıllık yağış eğilimi, sıcak gün sayısı), üye tablosu, ürün dağılımı ve taahhüt şeridi.
+2. **Üyeler**: bir üyenin bugünkü ekimi ile önerilen plan yan yana: brüt gelir, su bitiş tarihi, iki çizgili su grafiği, ürün başına ton ve TL, üç yıllık nöbet tablosu. Ayrıntılar kapalı bölümde.
+3. **Taahhüt**: ürün başına ton taahhüdü, dağıtım tablosu, geçmişte deneme şeridi, plan kuralları. Taahhüt karşılanamıyorsa seçenekler ve bedelleri.
 4. **Yöntem ve kaynaklar**: formüller, değiştirilebilir bütün varsayımlar, veri kaynağı, su-verim eğrileri, modelin sınırları.
 
-Kenar menüde nokta seçici: Karapınar, Çivril ya da haritadan seç (Leaflet + OpenStreetMap). Haritadan seçilen nokta tarayıcıdan NASA POWER'a sorulur ve IndexedDB'de saklanır.
+Kenar menüde nokta seçici: Karapınar, Çivril ya da haritadan seç (Leaflet + OpenStreetMap). Haritadan seçilen nokta tarayıcıdan NASA POWER'a sorulur ve IndexedDB'de saklanır. Nokta değişince bütün ekranlar yeniden hesaplanır.
+
+Plan kuralları: bir ürün tarlanın en çok 1/3'ü; sulanan ürün tam su ihtiyacının en az %60'ını alır (altı plana girmez); şeker pancarı yalnız sözleşmesi olan üyeye ve yalnız tam sulamayla önerilir.
 
 ## Kod yapısı
 
@@ -87,7 +89,7 @@ DECISIONS.md                 belirsiz yerlerde verilen kararlar
 ## Veri kaynakları
 
 - **İklim**: NASA Langley Research Center, POWER Project, Daily API (`community=AG`). Parametreler: `T2M_MAX`, `T2M_MIN`, `PRECTOTCORR`, `ALLSKY_SFC_SW_DWN`, `WS2M`, `RH2M`; rakım yanıttaki `geometry.coordinates[2]`. Dönem 2004-10-01 – 2025-12-31. İndirilen iki noktada eksik (-999) değer yok.
-- **Harita**: OpenStreetMap katkıcıları (yalnız nokta seçimi için).
+- **Harita**: OpenStreetMap katkıcıları; uydu altlığı Esri World Imagery; NASA EOSDIS GIBS, MODIS Terra gerçek renk (CorrectedReflectance_TrueColor).
 - **Yöntem**: FAO Sulama ve Drenaj Yayını 56 (ET0, Kc yaklaşımı), FAO 33 (Ky ile verim tepkisi).
 - Ürün parametreleri, verim ve fiyatlar bir veri kaynağından değil, proje tanımından gelir: aşağıya bakın.
 

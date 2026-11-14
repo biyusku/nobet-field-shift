@@ -475,7 +475,7 @@ export function MemberScreen() {
 
   return (
     <>
-      <PageHeader icon={Sprout} title="Üye" meta={`${da(m.areaDa)} da · su hakkı ${m3(mv.quotaM3)} · ${METHOD_LABEL[m.method]} sulama · ${weather.name}`}>
+      <PageHeader icon={Sprout} title="Üyeler" meta={`${da(m.areaDa)} da · su hakkı ${m3(mv.quotaM3)} · ${METHOD_LABEL[m.method]} sulama · ${weather.name}`}>
         <Select
           variant="pill"
           prefix="Grafik yılı"

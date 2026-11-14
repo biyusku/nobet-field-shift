@@ -2,7 +2,7 @@ import { Sidebar } from './components/Sidebar';
 import { Empty, Note } from './components/ui';
 import { COOP_NAME, PRESET_POINTS } from './data/defaults';
 import { CommitmentScreen } from './screens/CommitmentScreen';
-import { CoopScreen } from './screens/CoopScreen';
+import { OverviewScreen } from './screens/OverviewScreen';
 import { MemberScreen } from './screens/MemberScreen';
 import { MethodScreen } from './screens/MethodScreen';
 import { useStore } from './state';
@@ -43,7 +43,7 @@ export default function App() {
           <div key={s.tab} className={`fade-up flex flex-col gap-4 ${s.weatherStatus === 'loading' ? 'pointer-events-none opacity-50' : ''}`} aria-busy={s.weatherStatus === 'loading'}>
             {s.weatherStatus === 'loading' && <Note tone="info">Yeni nokta için NASA POWER verisi indiriliyor… (5-30 saniye sürebilir)</Note>}
             {s.tab === 'uye' && <MemberScreen />}
-            {s.tab === 'kooperatif' && <CoopScreen />}
+            {s.tab === 'genel' && <OverviewScreen />}
             {s.tab === 'taahhut' && <CommitmentScreen />}
             {s.tab === 'yontem' && <MethodScreen />}
           </div>
