@@ -167,7 +167,7 @@ export function CommitmentScreen() {
                 {worst && (
                   <>
                     {' '}
-                    En kötü yıl <strong className="text-ink">{worst.year}</strong>: taahhüdün {pct(worst.ratio)} kadarı.
+                    En kötü yıl <strong className="text-ink">{worst.year}</strong>{worst.ratio < 1 ? <>: taahhüdün {pct(worst.ratio)} kadarı.</> : <>; o yıl da söz tutuyor.</>}
                   </>
                 )}
               </div>

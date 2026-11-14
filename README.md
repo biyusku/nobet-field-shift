@@ -6,7 +6,7 @@ Kullanıcı bir sulama kooperatifinin ziraat mühendisidir. Araç, üyelerin yı
 
 **Ürün önermiyoruz, su bütçesi yönetiyoruz. Araç karar vermez; seçenekleri ve bedellerini gösterir.**
 
-Pilot bölge Konya: Karapınar (37,72° K, 33,55° D), Çumra, Ereğli, Cihanbeyli ve Altınekin. Açılıştaki "Konya Ovası Örnek Kooperatifi", 50 üyesi ve 300 tonluk mısır taahhüdü **kurgusaldır**.
+Pilot bölge Konya: Karapınar (37,72° K, 33,55° D), Çumra, Ereğli, Cihanbeyli ve Altınekin. Açılıştaki "Konya Ovası Örnek Kooperatifi", 50 üyesi ve 2.770 tonluk mısır taahhüdü **kurgusaldır** (söz, planlı dağıtımda 20 yılın en az 16'sında tutan en yüksek miktar olarak hesaplanır).
 
 ## Çalıştırma
 
@@ -107,7 +107,7 @@ Hepsi arayüzde "varsayım" etiketiyle gösterilir ve Yöntem sayfasından (ya d
 | buğday (kışlık) | 20 Ekim | 146, 47, 40, 25 | 0,40 / 1,15 / 0,30 | 1,05 | 550 | 16500 |
 | arpa (kışlık) | 20 Ekim | 141, 42, 35, 25 | 0,30 / 1,15 / 0,25 | 1,00 | 500 | 12750 |
 | nohut (baklagil, küçük pazar) | 20 Mart | 25, 30, 35, 20 | 0,40 / 1,00 / 0,35 | 1,00 | 220 | 34250 |
-| kırmızı mercimek (baklagil; sonradan eklendi, proje tanımında yok) | 1 Kasım | 120, 40, 35, 20 | 0,40 / 1,10 / 0,30 | 1,00 | 180 | 45000 |
+| kırmızı mercimek (baklagil, küçük pazar; proje tanımında yok, varsayılan olarak öneri dışında) | 1 Kasım | 120, 40, 35, 20 | 0,40 / 1,10 / 0,30 | 1,00 | 180 | 45000 |
 
 - Toprak: kullanılabilir su kapasitesi TAW = 130 mm, izin verilen boşalma p = 0,5; bütün ürün ve üyeler için aynı.
 - Sulama randımanı: salma 0,50, yağmurlama 0,75, damla 0,90.

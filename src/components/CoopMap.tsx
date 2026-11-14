@@ -153,14 +153,18 @@ export default function CoopMap({
         fillOpacity: selected ? 0.1 : 0.04,
       }).addTo(g);
       rect.on('click', () => cb.current.onDistrict(c.ids[0]));
+      // etiket hücrenin dışına taşmasın: genişliği hücrenin ekrandaki genişliğiyle sınırla
+      const m = map.current;
+      const px = m ? Math.abs(m.latLngToLayerPoint([c.bounds.north, c.bounds.east]).x - m.latLngToLayerPoint([c.bounds.north, c.bounds.west]).x) : 200;
+      const text = px >= 230 ? `NASA hücresi · ${c.names.join(' + ')}` : c.names.join(' + ');
       const label = L.divIcon({
         className: '',
         iconSize: [0, 0],
-        html: `<div style="transform:translate(6px,4px);white-space:nowrap;font:600 11px Inter,system-ui,sans-serif;color:${dark ? '#fff' : '#00408f'};text-shadow:0 0 3px ${dark ? '#000' : '#fff'},0 0 3px ${dark ? '#000' : '#fff'}">NASA hücresi · ${esc(c.names.join(' + '))}</div>`,
+        html: `<div title="NASA POWER hücresi: ${esc(c.names.join(' + '))}" style="transform:translate(6px,4px);box-sizing:border-box;display:inline-block;width:max-content;max-width:${Math.max(40, Math.round(px) - 12)}px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:600 11px Inter,system-ui,sans-serif;color:${dark ? '#fff' : '#00408f'};text-shadow:0 0 3px ${dark ? '#000' : '#fff'},0 0 3px ${dark ? '#000' : '#fff'}">${esc(text)}</div>`,
       });
       L.marker([c.bounds.north, c.bounds.west], { icon: label, interactive: false, keyboard: false }).addTo(g);
     }
-  }, [cells, districtId, base]);
+  }, [cells, districtId, base, zoom]);
 
   // üyeler: pasta daireler ve tarla dikdörtgenleri
   useEffect(() => {

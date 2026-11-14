@@ -118,7 +118,7 @@ export function BacktestStrip({
           {committed.map(([id, t]) => (
             <span key={id}>
               {' '}
-              · {cropName(id, names)} {ton(shown.productionT[id] ?? 0)} / {int(t)} t ({pct((shown.productionT[id] ?? 0) / t)})
+              · {cropName(id, names)} {ton(shown.productionT[id] ?? 0)} / {int(t)} t{(shown.productionT[id] ?? 0) < t ? ` (${pct((shown.productionT[id] ?? 0) / t)})` : ''}
             </span>
           ))}
         </span>

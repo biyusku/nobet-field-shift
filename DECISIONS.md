@@ -104,3 +104,12 @@ Belirsiz kalan yerlerde verilen kararlar, her biri tek satır.
 - Mercimeğin etkisi büyük: bu varsayımlarla plan tarlaların üçte birine (3.061 da) susuz mercimek koyuyor, nohut ve arpayı itiyor ve kooperatif brüt gelirini 79,97 → 84,72 milyon TL'ye çıkarıyor. Bu artış doğrulanmamış tek bir fiyat/verim çiftine dayanıyor.
 - Karma senaryoda nohut ve ayçiçeğinin yanındaki "Türkiye'nin ithal ettiği ürün" notu istendiği gibi rakamsız yazıldı; bir kaynakla doğrulanmadı ve ekranda öyle belirtiliyor.
 - Saklanan durumun anahtarı v7 oldu (ürün tablosu değişti).
+- Karşılaştırma mantığı düzeltildi: üç senaryo (bugün, gelişigüzel, planlı) aynı ölçüyle ölçülür. "Söz tutuyor mu", her senaryoda kooperatifin o üründeki TOPLAM üretimine bakar. Pano ve Taahhüt sayfası aynı kaynağı (model.scenarios) okur; ayrı hesap kalmadı.
+- Varsayılan söz hesaptan gelir: planlı dağıtımda 20 yılın en az 16'sında tutan en yüksek mısır miktarı, 10 tona aşağı yuvarlanmış = 2.770 ton. Bir test sabiti hesaba bağlar; varsayımlar değişirse test kırılır. Arama, taahhütsüz gelir planının 16. en iyi yılından başlayıp en yüksek üretime kadar ara noktaları dener; daha büyük tutan değer çıkmadı (32 adımla da aynı).
+- Aynı sözle sonuç: bugünkü ekim 20 yılın 2'sinde, gelişigüzel dağıtım 8'inde, planlı dağıtım 16'sında tutuyor. Gelişigüzel dağıtım söz ölçüsünde beklenenden iyi çıktı (ortalama 2.700 ton), çünkü görevlendirilmeyen üyeler de bugün zaten mısır ekiyor; sayı olduğu gibi gösteriliyor.
+- Panonun üstünde üç büyük sayı var (bugün → planlı): kooperatif brüt geliri, suyu sezon ortasında biten üye, güvenle verilebilecek söz. "Eken üye" satırı kaldırıldı.
+- Kırmızı mercimek varsayılan olarak öneri kümesinin dışında (değerleri doğrulanmadı); Plan kurallarındaki "Kırmızı mercimeği dahil et" kutusuyla açılır. Küçük pazar eşiği mercimeğe de uygulanır.
+- Taahhüt sayfasındaki dağıtım tablosu ilçe toplamlarıyla açılır (5 satır), ilçeye tıklayınca üyeleri görünür; kooperatif toplamı en üst satırdadır.
+- "En kötü yıl" satırında yüzde yalnız sözün altında kalındığında gösterilir.
+- Haritada hücre etiketi hücrenin ekrandaki genişliğiyle sınırlanır; dar olunca yalnız ilçe adları yazar.
+- Saklanan durumun anahtarı v10 oldu.
