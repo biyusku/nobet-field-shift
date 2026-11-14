@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { cropName, CropBar, HonestyBanner } from '../components/bits';
 import { Confirm } from '../components/kit';
 import { MemberEditor } from '../components/MemberEditor';
-import { Bars, Card, H2, Kpi, Meter, Note, NumInput, PageHeader, Segmented, Swatch, Tag } from '../components/ui';
+import { Bars, Brief, Card, H2, Kpi, Meter, Note, NumInput, PageHeader, Segmented, Swatch, Tag } from '../components/ui';
 import { COOP_NAME, METHOD_LABEL } from '../data/defaults';
 import { FALLOW } from '../engine/types';
 import { dateOfIndex } from '../engine/weather';
@@ -116,17 +116,35 @@ export function CoopScreen() {
       </PageHeader>
       <HonestyBanner />
 
+      <Brief>
+        <p className="m-0">
+          Kooperatifin {int(model.members.length)} üyesinin toplam su hakkı yılda <b>{m3(quota)}</b>. Bugün ektikleri ürünler ise yaklaşık <b>{m3(cur.demandM3)}</b> su istiyor
+          {quota > 0 && cur.demandM3 > quota ? <>: hakkın <b className="text-crit-ink">{dec1(cur.demandM3 / quota)} katı</b></> : null}.{' '}
+          {exceeded.length > 0 ? (
+            <>
+              Bu yüzden {int(model.members.length)} üyenin <b>{exceeded.length}{inSuffix(exceeded.length)}</b> su yaz ortasında bitiyor{earliest ? <> (en erken {fmtDayMonth(earliest.d)})</> : null} ve ürün susuz kalıyor.
+            </>
+          ) : (
+            <>Bugünkü ekimde herkesin suyu yetiyor.</>
+          )}
+        </p>
+        <p className="m-0">
+          Önerilen plan aynı suyu kullanır ama neyin nereye ekileceğini değiştirir: çok su isteyen ürün azalır, yerine az suyla ya da yalnız yağmurla yetişenler gelir. Aşağıda önce üyeleri, sonra bugünkü ekim
+          ile önerinin karşılaştırmasını görürsünüz.
+        </p>
+      </Brief>
+
       <div className="kpi-grid">
-        <Kpi label="Toplam kota" tag="kurgusal" value={m3(quota)} hint={`${int(model.members.length)} üye · ${int(model.totalAreaDa)} da`} />
+        <Kpi label="Toplam su hakkı (kota)" tag="kurgusal" value={m3(quota)} hint={`${int(model.members.length)} üye · ${int(model.totalAreaDa)} da`} />
         <Kpi
-          label="Bugünkü ekimin su ihtiyacı"
+          label="Bugünkü ekimin istediği su"
           tag="hesap"
           tone={cur.demandM3 > quota * 1.0001 ? 'crit' : undefined}
           value={m3(cur.demandM3)}
-          hint={quota > 0 ? (cur.demandM3 > quota ? `Kotanın ${dec1(cur.demandM3 / quota)} katı · tam sulama, 20 yıl ort.` : `Kotanın ${pct(cur.demandM3 / quota)}'i · tam sulama, 20 yıl ort.`) : undefined}
+          hint={quota > 0 ? (cur.demandM3 > quota ? `Su hakkının ${dec1(cur.demandM3 / quota)} katı · 20 yılın ortalaması` : `Su hakkının ${pct(cur.demandM3 / quota)} kadarı · 20 yılın ortalaması`) : undefined}
         />
         <Kpi
-          label="Kotası biten üye"
+          label="Suyu yetmeyen üye"
           tag="hesap"
           tone={exceeded.length > 0 ? 'crit' : 'good'}
           value={
@@ -135,9 +153,9 @@ export function CoopScreen() {
               <span className="text-[12px] font-normal text-ink2"> / {model.members.length}</span>
             </>
           }
-          hint={earliest ? `En erken ${fmtDayMonth(earliest.d)} · ${earliest.mv.member.name}` : 'Bugünkü ekimde kimsenin kotası bitmiyor'}
+          hint={earliest ? `En erken ${fmtDayMonth(earliest.d)} · ${earliest.mv.member.name}` : 'Bugünkü ekimde herkesin suyu yetiyor'}
         />
-        <Kpi label="Önerilen planda ayrılan su" tag="hesap" value={m3(ps.reservedM3)} hint={`Kotanın ${pct(quota > 0 ? ps.reservedM3 / quota : 0)}'i · ortalama kullanım ${m3(ps.meanUsedM3)}`} />
+        <Kpi label="Önerilen planda dağıtılan su" tag="hesap" value={m3(ps.reservedM3)} hint={`Su hakkının ${pct(quota > 0 ? ps.reservedM3 / quota : 0)} kadarı · hiçbir yıl aşılmıyor`} />
       </div>
 
       <Card>
@@ -154,11 +172,11 @@ export function CoopScreen() {
                   <th className="num">Kota</th>
                   <th>Bugünkü ekim</th>
                   <th>
-                    Su ihtiyacı / kota
+                    İstenen su / su hakkı
                     <Tag kind="hesap" compact />
                   </th>
                   <th>
-                    Su bitiş (ortanca)
+                    Su ne zaman bitiyor?
                     <Tag kind="hesap" compact />
                   </th>
                   <th></th>
@@ -210,7 +228,7 @@ export function CoopScreen() {
                             <div className="text-[11px] text-ink2">20 yılın {mv.current.yearsExceeded}{inSuffix(mv.current.yearsExceeded)} bitiyor</div>
                           </>
                         ) : (
-                          <span className="tag tag-success">kota yetiyor</span>
+                          <span className="tag tag-success">su yetiyor</span>
                         )}
                       </td>
                       <td className="whitespace-nowrap text-right">
@@ -246,14 +264,14 @@ export function CoopScreen() {
               <Bars
                 unit={m3}
                 rows={[
-                  { label: 'Toplam kota', value: quota, color: 'var(--crit)' },
-                  { label: 'Bugünkü ekim: tam sulama ihtiyacı', value: cur.demandM3, color: 'var(--axis)', note: quota > 0 && cur.demandM3 > quota ? `kotanın ${dec1(cur.demandM3 / quota)} katı` : undefined },
-                  { label: 'Bugünkü ekim: kotayla yapılabilen sulama', value: cur.meanUsedM3, color: 'var(--water)', note: cur.demandM3 > 0 ? `ihtiyacın ${pct(Math.min(1, cur.meanUsedM3 / cur.demandM3))}'i` : undefined },
-                  { label: 'Önerilen plan: tam sulama ihtiyacı', value: model.plannedDemandM3, color: 'var(--axis)' },
-                  { label: 'Önerilen plan: kullanılan su', value: ps.meanUsedM3, color: 'var(--water)', note: model.plannedDemandM3 > 0 ? `ihtiyacın ${pct(Math.min(1, ps.meanUsedM3 / model.plannedDemandM3))}'i` : undefined },
+                  { label: 'Toplam su hakkı (kota)', value: quota, color: 'var(--crit)' },
+                  { label: 'Bugünkü ekim: ürünlerin istediği su', value: cur.demandM3, color: 'var(--axis)', note: quota > 0 && cur.demandM3 > quota ? `su hakkının ${dec1(cur.demandM3 / quota)} katı` : undefined },
+                  { label: 'Bugünkü ekim: verilebilen su', value: cur.meanUsedM3, color: 'var(--water)', note: cur.demandM3 > 0 ? `istenenin ${pct(Math.min(1, cur.meanUsedM3 / cur.demandM3))} kadarı` : undefined },
+                  { label: 'Önerilen plan: ürünlerin istediği su', value: model.plannedDemandM3, color: 'var(--axis)' },
+                  { label: 'Önerilen plan: verilen su', value: ps.meanUsedM3, color: 'var(--water)', note: model.plannedDemandM3 > 0 ? `istenenin ${pct(Math.min(1, ps.meanUsedM3 / model.plannedDemandM3))} kadarı` : undefined },
                 ]}
               />
-              <p className="mb-0 mt-3 text-[11px] text-ink2">20 hasat yılının ortalaması. Plan suyu çoğaltmaz; aynı kotayı, daha az su isteyen bir ürün karışımına ve parsellere önceden paylaştırır.</p>
+              <p className="mb-0 mt-3 text-[11px] text-ink2">20 yılın ortalaması. Plan suyu çoğaltmaz: aynı su hakkını, daha az su isteyen ürünlere ve parsellere baştan paylaştırır.</p>
             </Card>
             <Card>
               <H2>Alan dağılımı</H2>
@@ -358,7 +376,7 @@ export function CoopScreen() {
             ) : (
               <>
                 <Note tone={topShare > 0.4 ? 'warn' : 'plain'}>
-                  Önerilen planda brüt gelirin <strong>{pct(topShare)}</strong>'i tek üründen ({top.c.name}) geliyor. {top.c.name} fiyatı %20 düşerse toplam gelir {pct(topShare * 0.2)} ({tlShort(top.rev * 0.2)})
+                  Önerilen planda brüt gelirin <strong>{pct(topShare)}</strong> kadarı tek üründen ({top.c.name}) geliyor. {top.c.name} fiyatı %20 düşerse toplam gelir {pct(topShare * 0.2)} ({tlShort(top.rev * 0.2)})
                   azalır.{' '}
                   {smallArea > 0 && <>Pazarı küçük ürünler (nohut, ayçiçeği) alanın {pct(smallArea / model.totalAreaDa)}'ini kaplıyor; kooperatif bu kadarını satabileceğinden emin olmalı.</>}
                 </Note>

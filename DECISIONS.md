@@ -66,3 +66,4 @@ Belirsiz kalan yerlerde verilen kararlar, her biri tek satır.
 - Yerel seçici, confirm() kutusu ve title ipuçları yerine Radix tabanlı bileşenler (seçici, çekmece, onay penceresi, ipucu) kullanıldı.
 - Tablo başlıklarında kaynak etiketi zeminli çip değil, başlığın altında küçük renkli yazıdır (başlıklar şişmesin diye); anlamı aynı.
 - Yıl yıl grafik artık geliri değil, su ihtiyacının karşılanan kısmını gösterir.
+- Her ekranın başına düz Türkçe "Kısaca" özeti eklendi ve terimler sadeleştirildi (kota → su hakkı, tam sulama ihtiyacı → ürünlerin istediği su, verim düzeyi → alınan ürün, taahhüt → satış sözü): ekran, ziraat terimlerini bilmeyen birine de okunabilsin diye.

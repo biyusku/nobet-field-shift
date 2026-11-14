@@ -74,7 +74,7 @@ export function WaterChart({
   const endMax = ev.endDays.length ? Math.max(...ev.endDays) : null;
   const end = fy.endDay;
   const hd = hover === null ? null : Math.max(d0, Math.min(d1, hover));
-  const usedLabel = kind === 'current' ? 'Kotayla yapılabilen sulama' : 'Plandaki sulama';
+  const usedLabel = kind === 'current' ? 'Verilebilen su' : 'Planda verilen su';
 
   return (
     <div ref={ref} className="relative">
@@ -102,7 +102,7 @@ export function WaterChart({
           </g>
         ))}
         <text x={M.l - 44} y={12} fontSize={11} fill="var(--muted)">
-          m³ (1 Ekim'den beri kümülatif)
+          m³ (1 Ekim'den beri toplam)
         </text>
         {/* x ekseni: ay başları */}
         <line x1={M.l} x2={W - M.r} y1={M.t + ih} y2={M.t + ih} stroke="var(--axis)" />
@@ -132,7 +132,7 @@ export function WaterChart({
         {/* kota çizgisi */}
         <line x1={M.l} x2={W - M.r} y1={y(quotaM3)} y2={y(quotaM3)} stroke="var(--crit)" strokeWidth={1.5} />
         <text x={M.l + 4} y={y(quotaM3) - 5} fontSize={11.5} fontWeight={600} fill="var(--crit-ink)">
-          Kota {int(quotaM3)} m³
+          Su hakkı {int(quotaM3)} m³
         </text>
 
         {/* su bitiş işareti */}
@@ -159,11 +159,11 @@ export function WaterChart({
         >
           <div className="font-semibold">{fmtDayMonth(dateOfIndex(w, fy.start + hd))} {dateOfIndex(w, fy.start + hd).getUTCFullYear()}</div>
           <div className="flex justify-between gap-2">
-            <span className="text-ink2">Sulama</span>
+            <span className="text-ink2">Verilen su</span>
             <span>{m3(fy.cumM3[hd])}</span>
           </div>
           <div className="flex justify-between gap-2">
-            <span className="text-ink2">Tam ihtiyaç</span>
+            <span className="text-ink2">İstenen su</span>
             <span>{m3(fy.demandM3[hd])}</span>
           </div>
         </div>
@@ -176,16 +176,16 @@ export function WaterChart({
         </li>
         <li className="flex items-center gap-1.5">
           <svg width="22" height="8" aria-hidden><line x1="0" x2="22" y1="4" y2="4" stroke="var(--ink2)" strokeWidth="1.5" strokeDasharray="5 4" /></svg>
-          Tam sulama ihtiyacı ({fy.year})
+          Ürünlerin istediği su ({fy.year})
         </li>
         <li className="flex items-center gap-1.5">
           <svg width="22" height="8" aria-hidden><line x1="0" x2="22" y1="4" y2="4" stroke="var(--axis)" strokeWidth="1" /></svg>
-          Diğer 19 yılın ihtiyacı
+          Diğer 19 yılda istenen su
         </li>
         {endMin !== null && (
           <li className="flex items-center gap-1.5">
             <span aria-hidden className="inline-block h-2.5 w-4" style={{ background: 'var(--crit)', opacity: 0.2 }} />
-            Su bitiş tarihlerinin 20 yıllık aralığı
+            Suyun bittiği günler (20 yıl)
           </li>
         )}
       </ul>

@@ -1,7 +1,7 @@
 import { Handshake } from 'lucide-react';
 import { useMemo } from 'react';
 import { BacktestStrip, cropName, HonestyBanner } from '../components/bits';
-import { Card, Empty, H2, Note, NumInput, PageHeader, Stat, Swatch, Tag } from '../components/ui';
+import { Brief, Card, Empty, H2, Note, NumInput, PageHeader, Stat, Swatch, Tag } from '../components/ui';
 import { levelLabel } from '../engine/curves';
 import { maxCommitmentFraction, solvePlan, summarize, type PlanInput } from '../engine/plan';
 import { FALLOW } from '../engine/types';
@@ -42,7 +42,7 @@ export function CommitmentScreen() {
     const lowered = Object.fromEntries(Object.entries(s.settings.commitments).map(([id, t]) => [id, Math.floor(t * f * 10) / 10]));
     out.push({
       title: `Taahhüdü ${Object.entries(lowered).filter(([, t]) => t > 0).map(([id, t]) => `${cropName(id, names)} ${ton(t)}`).join(', ')} düzeyine indirmek`,
-      cost: `Taahhüdün ${pct(1 - f)}'i karşılanmaz; alıcıyla yeniden görüşmek gerekir.`,
+      cost: `Taahhüdün ${pct(1 - f)} kadarı karşılanmaz; alıcıyla yeniden görüşmek gerekir.`,
       revenue: model.planSummary.revenue,
       waterM3: model.planSummary.reservedM3,
       apply: () => s.updateSettings({ commitments: lowered }),
@@ -93,8 +93,46 @@ export function CommitmentScreen() {
 
   return (
     <>
-      <PageHeader icon={Handshake} title="Taahhüt" meta="Satış taahhüdünün üyelere dağıtımı ve geçmişte deneme" />
+      <PageHeader icon={Handshake} title="Taahhüt" meta="Kooperatifin alıcıya verdiği satış sözü tutar mı?" />
       <HonestyBanner />
+      <Brief>
+        {committed.length === 0 ? (
+          <p className="m-0">Kooperatif alıcıya bir satış sözü (taahhüt) vermişse aşağıya ton olarak yazın. Araç, bu sözün bu suyla tutup tutmayacağını ve hangi üyenin ne kadar ekmesi gerektiğini hesaplar.</p>
+        ) : (
+          <>
+            <p className="m-0">
+              Kooperatif alıcıya{' '}
+              {committed.map(([id, t], i) => (
+                <span key={id}>
+                  {i > 0 && ', '}
+                  <b>
+                    {int(t)} ton {cropName(id, names).toLocaleLowerCase('tr')}
+                  </b>
+                </span>
+              ))}{' '}
+              satmaya söz vermiş.{' '}
+              {model.plan.status === 'partial' ? (
+                <>
+                  Üyelerin su hakkı ve "bir ürün tarlanın üçte birini geçmesin" kuralıyla bu kadarı üretilemiyor: en çok{' '}
+                  {committed.map(([id], i) => (
+                    <span key={id}>
+                      {i > 0 && ', '}
+                      <b className="text-crit-ink">{ton(model.plan.maxAlone[id] ?? 0)}</b>
+                    </span>
+                  ))}{' '}
+                  çıkıyor.
+                </>
+              ) : (
+                <>Ortalama bir yılda bu kadarı üretilebiliyor.</>
+              )}
+            </p>
+            <p className="m-0">
+              Plan son 20 yılın gerçek havasında tek tek denendi: söz <b className={held >= 16 ? 'text-good-ink' : held >= 10 ? '' : 'text-crit-ink'}>20 yılın {held}{inSuffix(held)}</b> tutuyor.{' '}
+              {model.plan.status === 'partial' ? 'Aşağıda ne yapılabileceği ve her seçeneğin bedeli yazıyor.' : 'Aşağıdaki şeritte hangi yıllarda tuttuğunu, tabloda da kimin ne kadar ekeceğini görürsünüz.'}
+            </p>
+          </>
+        )}
+      </Brief>
       <Card>
         <H2 right={<Tag kind="kurgusal" />}>Satış taahhüdü</H2>
         <p className="m-0 mb-3 text-[13px] text-ink2">Kooperatifin alıcıya söz verdiği miktarları ton olarak girin. Boş bırakılan (0) ürün için taahhüt yoktur.</p>
@@ -114,18 +152,18 @@ export function CommitmentScreen() {
           <div className="grid gap-5 md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
             <div>
               <div className="flex items-center gap-1.5 text-[12px] font-medium text-ink2">
-                Geçmişte deneme <Tag kind="hesap" />
+                Söz kaç yıl tutardı? <Tag kind="hesap" />
               </div>
               <div className={`text-[28px] font-bold leading-[1.1] tracking-tight sm:text-[34px] ${held >= 16 ? 'text-good-ink' : held >= 10 ? 'text-warn-ink' : 'text-crit-ink'}`}>
                 {held} <span className="text-[15px] font-semibold text-ink2">/ 20 yıl</span>
               </div>
               <div className="mt-1 text-[13px] text-ink2">
-                Önerilen plan 2006-2025'in gerçek havasında çalıştırıldı: taahhüt 20 yılın {held}
+                Plan 2006-2025'in gerçek havasında denendi: söz 20 yılın {held}
                 {inSuffix(held)} tuttu.
                 {worst && (
                   <>
                     {' '}
-                    En kötü yıl <strong className="text-ink">{worst.year}</strong>: taahhüdün {pct(worst.ratio)}'i.
+                    En kötü yıl <strong className="text-ink">{worst.year}</strong>: taahhüdün {pct(worst.ratio)} kadarı.
                   </>
                 )}
               </div>
@@ -142,7 +180,7 @@ export function CommitmentScreen() {
         <Card className="!shadow-[0_0_0_1.5px_var(--crit)]">
           <H2 right={<Tag kind="hesap" />}>Taahhüt bu kısıtlarla karşılanamıyor</H2>
           <p className="m-0 text-[14px]">
-            20 yılın ortalama verimiyle taahhüdün en çok <strong>{pct(model.plan.commitmentFraction)}</strong>'i üretilebiliyor.{' '}
+            20 yılın ortalama verimiyle taahhüdün en çok <strong>{pct(model.plan.commitmentFraction)}</strong> kadarı üretilebiliyor.{' '}
             {committed.map(([id, t]) => (
               <span key={id}>
                 {cropName(id, names)}: taahhüt {int(t)} t, tek başına en çok <strong>{ton(model.plan.maxAlone[id] ?? 0)}</strong>.{' '}
@@ -193,10 +231,10 @@ export function CommitmentScreen() {
       <Card>
         <H2 right={<Tag kind="hesap" />}>Dağıtım: hangi üye ne kadar eker</H2>
         <div className="mb-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <Stat label="Ayrılan toplam su" tag="hesap" value={m3(ps.reservedM3)} sub={`toplam kotanın ${pct(model.totalQuotaM3 > 0 ? ps.reservedM3 / model.totalQuotaM3 : 0)}'i`} />
+          <Stat label="Dağıtılan toplam su" tag="hesap" value={m3(ps.reservedM3)} sub={`toplam kotanın ${pct(model.totalQuotaM3 > 0 ? ps.reservedM3 / model.totalQuotaM3 : 0)} kadarı`} />
           <Stat label="Ortalama kullanılan su" tag="hesap" value={m3(ps.meanUsedM3)} sub="20 yıl ortalaması" />
           <Stat label="Brüt gelir" tag="hesap" value={tlShort(ps.revenue)} sub="20 yıl ortalaması; girdiler düşülmedi" />
-          <Stat label="Toplam kota" tag="kurgusal" value={m3(model.totalQuotaM3)} />
+          <Stat label="Toplam su hakkı" tag="kurgusal" value={m3(model.totalQuotaM3)} />
         </div>
         <div className="overflow-x-auto">
           <table className="data min-w-[680px]">

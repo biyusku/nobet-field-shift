@@ -13,7 +13,7 @@ export function HonestyBanner() {
     <div className="banner banner-info" role="note">
       <Info size={16} aria-hidden />
       <div>
-        <strong>{COOP_NAME} ve üyeleri kurgusaldır.</strong> Gelir brüttür: tohum, gübre, elektrik düşülmedi. NASA POWER verisi yaklaşık 55 km çözünürlüklüdür: tarlayı değil yöre iklimini gösterir.
+        <strong>{COOP_NAME} ve üyeleri kurgusaldır</strong> (örnek olsun diye uyduruldu). Hava verisi NASA'dan gelir ve yaklaşık 55 km'lik bir bölgenin ortalamasıdır: tek bir tarlayı değil, yöreyi anlatır. Gelir brüttür: tohum, gübre, elektrik düşülmedi.
       </div>
     </div>
   );
@@ -93,7 +93,7 @@ export function BacktestStrip({
               type="button"
               onClick={() => setSel(i)}
               onMouseEnter={() => setSel(i)}
-              aria-label={`${o.year}: ${s.label}, taahhüdün ${pct(Math.min(o.ratio, 9.99))}'i`}
+              aria-label={`${o.year}: ${s.label}, taahhüdün ${pct(Math.min(o.ratio, 9.99))} kadarı`}
               aria-pressed={active}
               className="flex h-11 cursor-pointer flex-col items-center justify-center rounded-[3px] border-0 p-0 text-[11px] leading-tight"
               style={{ background: s.bg, color: s.fg, outline: active ? '2px solid var(--ink)' : undefined, outlineOffset: 1 }}
@@ -131,7 +131,7 @@ export function UnreliableMark({ rel }: { rel: number }) {
   if (rel >= RELIABILITY_FLOOR) return null;
   return (
     <span className="ml-1 text-[11.5px] font-semibold text-warn-ink" title="Göreli verim 0,35'in altında">
-      ⚠ model bu kadar az suda güvenilir değil
+      ⚠ bu kadar az suda hesap güvenilir değil
     </span>
   );
 }

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { cropName, CropBar, HonestyBanner, UnreliableMark } from '../components/bits';
 import { Select } from '../components/kit';
 import { MemberEditor } from '../components/MemberEditor';
-import { Bars, Card, Empty, H2, MiniList, Note, PageHeader, Segmented, Shift, Swatch, Tag } from '../components/ui';
+import { Bars, Brief, Card, Empty, H2, MiniList, Note, PageHeader, Segmented, Shift, Swatch, Tag } from '../components/ui';
 import { WaterChart } from '../components/WaterChart';
 import { METHOD_LABEL } from '../data/defaults';
 import { levelLabel } from '../engine/curves';
@@ -12,7 +12,7 @@ import type { FarmEvaluation } from '../engine/farm';
 import { SOIL_FORMULA } from '../engine/soil';
 import { FALLOW, type Weather } from '../engine/types';
 import { dateOfIndex } from '../engine/weather';
-import { da, dec1, fmtDayMonth, inSuffix, int, m3, mm, pct, tlShort, ton } from '../lib/format';
+import { da, dec1, fmtDayMonth, inSuffix, onSuffix, int, m3, mm, pct, tlShort, ton } from '../lib/format';
 import type { MemberView, Model } from '../model';
 import { useStore } from '../state';
 
@@ -35,24 +35,24 @@ function Verdict({ w, ev, kind }: { w: Weather; ev: FarmEvaluation; kind: 'curre
   return (
     <div>
       <div className="flex items-center gap-1.5 text-[12px] font-medium text-ink2">
-        Su bitiş tarihi <Tag kind="hesap" />
+        Su ne zaman bitiyor? <Tag kind="hesap" />
       </div>
       {med ? (
         <>
           <div className="text-[30px] font-bold leading-[1.1] tracking-tight text-crit-ink sm:text-[38px]">{fmtDayMonth(med)}</div>
           <div className="mt-1 text-ink2">
-            20 yılın ortancası: sulama ihtiyacı kotayı bu gün aşıyor. En erken <strong className="text-ink">{fmtDayMonth(dates[0])}</strong>, en geç{' '}
-            <strong className="text-ink">{fmtDayMonth(dates[dates.length - 1])}</strong>. Kota {n} yılın {dates.length}
-            {inSuffix(dates.length)} bitiyor.
+            Tipik bir yılda su hakkı bu gün tükeniyor; sonrası susuz. En erken <strong className="text-ink">{fmtDayMonth(dates[0])}</strong>, en geç{' '}
+            <strong className="text-ink">{fmtDayMonth(dates[dates.length - 1])}</strong>. Su {n} yılın {dates.length}
+            {inSuffix(dates.length)} yetmiyor.
           </div>
         </>
       ) : (
         <>
-          <div className="text-[30px] font-bold leading-[1.1] tracking-tight text-good-ink sm:text-[38px]">Kota yetiyor</div>
+          <div className="text-[30px] font-bold leading-[1.1] tracking-tight text-good-ink sm:text-[38px]">Su yetiyor</div>
           <div className="mt-1 text-ink2">
             {kind === 'planned'
-              ? `Su parsellere önceden paylaştırıldı; ${n} yılın hiçbirinde kota aşılmıyor.`
-              : `${n} yılın hiçbirinde sulama ihtiyacı kotayı aşmıyor.`}
+              ? `Su baştan parsellere paylaştırıldı; ${n} yılın hiçbirinde su hakkı aşılmıyor.`
+              : `${n} yılın hiçbirinde ürünlerin istediği su, su hakkını aşmıyor.`}
           </div>
         </>
       )}
@@ -68,7 +68,7 @@ function WaterCell({ used, need }: { used: number; need: number }) {
       <div className="tnum whitespace-nowrap text-right">
         {int(used)} <span className="text-ink2">/ {int(need)} mm</span>
       </div>
-      <div className="mt-1 h-1.5 overflow-hidden rounded-[3px] bg-sunken" role="img" aria-label={`İhtiyacın ${pct(r)}'i karşılanıyor`}>
+      <div className="mt-1 h-1.5 overflow-hidden rounded-[3px] bg-sunken" role="img" aria-label={`İhtiyacın ${pct(r)} kadarı karşılanıyor`}>
         <div className="h-full rounded-[3px]" style={{ width: `${r * 100}%`, background: 'var(--water)' }} />
       </div>
     </div>
@@ -105,9 +105,9 @@ function Panel({ kind, w, mv, model, yearSel, yMax }: { kind: 'current' | 'plann
         <Bars
           unit={m3}
           rows={[
-            { label: 'Kota', value: mv.quotaM3, color: 'var(--crit)' },
-            { label: 'Tam sulama ihtiyacı (20 yıl ort.)', value: ws.demandM3, color: 'var(--axis)', note: times >= 1.05 ? `kotanın ${dec1(times)} katı` : undefined },
-            { label: kind === 'current' ? 'Kotayla yapılabilen sulama' : 'Planda kullanılan su', value: ws.usedM3, color: 'var(--water)', note: `ihtiyacın ${pct(ws.coverage)}'i` },
+            { label: 'Su hakkı (kota)', value: mv.quotaM3, color: 'var(--crit)' },
+            { label: 'Ürünlerin istediği su', value: ws.demandM3, color: 'var(--axis)', note: times >= 1.05 ? `su hakkının ${dec1(times)} katı` : undefined },
+            { label: kind === 'current' ? 'Verilebilen su' : 'Planda verilen su', value: ws.usedM3, color: 'var(--water)', note: `istenenin ${pct(ws.coverage)} kadarı` },
           ]}
         />
       </div>
@@ -119,11 +119,11 @@ function Panel({ kind, w, mv, model, yearSel, yMax }: { kind: 'current' | 'plann
               <th>Ürün</th>
               <th className="num">Alan</th>
               <th className="num">
-                Su: kullanılan / ihtiyaç
+                Su: verilen / istenen
                 <Tag kind="hesap" compact />
               </th>
               <th className="num">
-                Verim düzeyi
+                Alınan ürün
                 <Tag kind="hesap" compact />
               </th>
               <th className="num">
@@ -180,13 +180,13 @@ function Panel({ kind, w, mv, model, yearSel, yMax }: { kind: 'current' | 'plann
       </div>
       <p className="m-0 -mt-2 text-[11px] text-ink2">
         {kind === 'current'
-          ? 'Su parseller arasında paylaştırılmaz: ihtiyaç duyan sulanır, kota bitince hepsi susuz kalır. Verim düzeyi, tam sulu verimin yüzdesidir (20 yıl ort.).'
-          : 'Her parsele bir su tavanı ayrılır; tavan bitince o parselin suyu kesilir, kota aşılmaz. Plan bütün üyeler için birlikte, kooperatifin taahhüdü gözetilerek çözülür.'}
+          ? 'Su parseller arasında paylaştırılmıyor: hangisi susarsa o sulanıyor, su hakkı bitince hepsi susuz kalıyor. "Alınan ürün", doya doya sulanan tarlaya göre yüzdedir (20 yılın ortalaması).'
+          : 'Her parsele baştan bir su payı ayrılıyor; pay bitince o parselin suyu kesiliyor, su hakkı aşılmıyor. "Susuz" yazan parseller yalnız yağmurla yetişiyor. Plan bütün üyeler için birlikte, kooperatifin satış sözü gözetilerek hesaplanıyor.'}
       </p>
 
       <MiniList
         rows={[
-          { label: 'Ortalama verim düzeyi', value: pct(ws.yieldLevel), sub: 'tam sulu verime göre, alan ağırlıklı' },
+          { label: 'Alınan ürün (tarla ortalaması)', value: pct(ws.yieldLevel), sub: 'doya doya sulanan tarlaya göre' },
           { label: 'Toprak puanı', value: `${soil.score} / 100`, sub: `baklagil ${pct(soil.legumeShare)} · etkin ürün ${dec1(soil.effectiveCrops)}` },
           {
             label: (
@@ -325,6 +325,11 @@ export function MemberScreen() {
   const years = cur.years.map((y) => y.year);
   const medCur = medianDate(weather, cur);
   const medPl = medianDate(weather, mv.planned);
+  const list = (items: { name: string; da: number }[]) => items.map((x) => `${da(x.da)} dekar ${x.name.toLocaleLowerCase('tr')}`).join(', ');
+  const curCrops = list(mv.currentParcels.map((p) => ({ name: p.crop.name, da: p.areaDa })));
+  const plBy = new Map<string, number>();
+  for (const a of mv.plannedAllocs) if (a.option && a.da >= 0.05) plBy.set(a.cropId, (plBy.get(a.cropId) ?? 0) + a.da);
+  const plCrops = list([...plBy].map(([id, d]) => ({ name: model.cropById.get(id)?.name ?? id, da: d })));
 
   return (
     <>
@@ -377,30 +382,49 @@ export function MemberScreen() {
         </div>
       </section>
 
+      <Brief>
+        <p className="m-0">
+          {m.name}, {da(m.areaDa)} dekarlık tarlasına {curCrops || 'şu an bir şey ekmiyor'}
+          {curCrops ? ' ekiyor' : ''}. Bu ürünler yılda yaklaşık <b>{m3(mv.currentWater.demandM3)}</b> su istiyor; üyenin su hakkı ise <b>{m3(mv.quotaM3)}</b>.{' '}
+          {medCur ? (
+            <>
+              Su tipik bir yılda <b className="text-crit-ink">{fmtDayMonth(medCur)}</b>{onSuffix(medCur)} bitiyor, sonrasında tarla susuz kalıyor; bu yüzden doya doya sulanan bir tarlanın vereceği ürünün ancak{' '}
+              <b>{pct(mv.currentWater.yieldLevel)}</b> kadarı alınabiliyor.
+            </>
+          ) : (
+            <>Su yıl boyunca yetiyor.</>
+          )}
+        </p>
+        <p className="m-0">
+          Öneri: tarlaya {plCrops || 'nadas'} ekmek ve suyu baştan parsellere paylaştırmak. {medPl ? <>Bu planda da su {fmtDayMonth(medPl)}{onSuffix(medPl)} bitiyor.</> : <>O zaman <b className="text-good-ink">su yıl boyunca yetiyor</b></>}
+          {!medPl && <> ve alınan ürün <b>{pct(mv.plannedWater.yieldLevel)}</b> oluyor.</>} Aşağıda soldaki sütun bugünkü durumu, sağdaki sütun öneriyi gösterir.
+        </p>
+      </Brief>
+
       {/* bugünkü ekimden önerilen plana ne değişiyor */}
       <div className="kpi-grid">
         <Shift
-          label="Su bitiş tarihi"
+          label="Su ne zaman bitiyor?"
           tag="hesap"
-          from={medCur ? fmtDayMonth(medCur) : 'kota yetiyor'}
-          to={medPl ? fmtDayMonth(medPl) : 'Kota yetiyor'}
+          from={medCur ? fmtDayMonth(medCur) : 'su yetiyor'}
+          to={medPl ? fmtDayMonth(medPl) : 'Su yetiyor'}
           tone={medPl ? 'crit' : 'good'}
-          hint={medCur ? `Bugünkü ekimde kota 20 yılın ${cur.yearsExceeded}${inSuffix(cur.yearsExceeded)} bitiyor` : 'Bugünkü ekimde de kota aşılmıyor'}
+          hint={medCur ? `Bugünkü ekimde su 20 yılın ${cur.yearsExceeded}${inSuffix(cur.yearsExceeded)} yetmiyor` : 'Bugünkü ekimde de su yetiyor'}
         />
         <Shift
-          label="Karşılanan su ihtiyacı"
+          label="İstenen suyun verilebilen kısmı"
           tag="hesap"
           from={pct(mv.currentWater.coverage)}
           to={pct(mv.plannedWater.coverage)}
-          hint={`İhtiyaç ${m3(mv.currentWater.demandM3)} → ${m3(mv.plannedWater.demandM3)}`}
+          hint={`Ürünlerin istediği su ${m3(mv.currentWater.demandM3)} → ${m3(mv.plannedWater.demandM3)}`}
         />
-        <Shift label="Ortalama verim düzeyi" tag="hesap" from={pct(mv.currentWater.yieldLevel)} to={pct(mv.plannedWater.yieldLevel)} hint="Tam sulu verimin yüzdesi, alan ağırlıklı" />
-        <Shift label="Toprak puanı" tag="hesap" from={mv.currentSoil.score} to={`${mv.plannedSoil.score} / 100`} hint={`Baklagil payı ${pct(mv.currentSoil.legumeShare)} → ${pct(mv.plannedSoil.legumeShare)}`} />
+        <Shift label="Alınan ürün" tag="hesap" from={pct(mv.currentWater.yieldLevel)} to={pct(mv.plannedWater.yieldLevel)} hint="Doya doya sulanan tarlaya göre yüzde" />
+        <Shift label="Toprak puanı" tag="hesap" from={mv.currentSoil.score} to={`${mv.plannedSoil.score} / 100`} hint="Ürün çeşitliliği ve baklagil payı, 100 üzerinden" />
       </div>
 
       {model.plan.status === 'partial' && (
         <Note tone="warn">
-          Kooperatifin taahhüdü bu kısıtlarla karşılanamıyor; önerilen plan taahhüde en çok yaklaşan plandır. Ayrıntı için{' '}
+          Kooperatifin alıcıya verdiği satış sözü bu suyla tutmuyor; buradaki öneri, söze en çok yaklaşan plandır. Ayrıntı için{' '}
           <button type="button" className="link-button !text-inherit" onClick={() => s.setTab('taahhut')}>
             Taahhüt
           </button>{' '}
@@ -414,7 +438,7 @@ export function MemberScreen() {
       </div>
 
       <Card>
-        <H2 right={<Tag kind="hesap" />}>Yıl yıl: su ihtiyacının karşılanan kısmı</H2>
+        <H2 right={<Tag kind="hesap" />}>Yıl yıl: istenen suyun ne kadarı verilebildi</H2>
         <YearCoverage mv={mv} />
         <p className="mb-0 mt-3 text-[11px] text-ink2">
           Bugünkü ekimin sonuçları, aynı ekim 2006-2025'in her yılında yapılsaydı ne olacağını gösterir; üyenin o yıllarda gerçekte ne ektiği bilinmiyor. Toprak puanı: {SOIL_FORMULA}. Bir gösterge

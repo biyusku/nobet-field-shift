@@ -296,6 +296,16 @@ export function Bars({ rows, unit }: { rows: { label: string; value: number; col
   );
 }
 
+/** Ekranın başındaki düz Türkçe özet: sayıları bilmeyen biri de ne olduğunu anlasın. */
+export function Brief({ children }: { children: ReactNode }) {
+  return (
+    <section className="card !px-5 !py-4">
+      <h2 className="m-0 mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink2">Kısaca</h2>
+      <div className="flex max-w-[980px] flex-col gap-1.5 text-[14.5px] leading-relaxed text-ink [&_b]:font-semibold">{children}</div>
+    </section>
+  );
+}
+
 /** Etiket solda, değer sağda satırlar. */
 export function MiniList({ rows }: { rows: { label: ReactNode; value: ReactNode; sub?: ReactNode }[] }) {
   return (

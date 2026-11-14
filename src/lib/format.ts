@@ -40,3 +40,8 @@ export function inSuffix(n: number): string {
   if (n === 20) return "'sinde";
   return ["", "'inde", "'sinde", "'ünde", "'ünde", "'inde", "'sında", "'sinde", "'inde", "'unda"][n % 10];
 }
+
+/** "4 Temmuz'da", "12 Ağustos'ta": ay adına uygun bulunma eki. */
+export function onSuffix(d: Date): string {
+  return ["'ta", "'ta", "'ta", "'da", "'ta", "'da", "'da", "'ta", "'de", "'de", "'da", "'ta"][d.getUTCMonth()];
+}
