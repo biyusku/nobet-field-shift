@@ -6,6 +6,8 @@ import { DEFAULT_EFF, DEFAULT_SETTINGS, DEFAULT_SOIL } from '../../data/defaults
 import { DISTRICTS, generateMembers, mulberry32, shuffled } from '../../data/members';
 import { computeModel } from '../../model';
 import { powerCell } from '../climate';
+import { minParcelFor, smallParcels, solvePlan, SMALL_FARM_DA, type PlanSettings } from '../plan';
+import { maxCropScenario, mixedScenario } from '../promise';
 import { scatterCommitments } from '../scatter';
 import { FALLOW, type Weather } from '../types';
 import { buildWeather } from '../weather';
@@ -100,3 +102,74 @@ describe('üç dağıtım (300 ton mısır)', () => {
     expect(m.timing.totalMs).toBeLessThan(3000);
   });
 });
+
+describe('en küçük parsel kuralı', () => {
+  const base = { members, cropDefs: DEFAULT_CROPS, soil: DEFAULT_SOIL, eff: DEFAULT_EFF };
+  const model = computeModel(weathers, 'karapinar', { ...base, settings: DEFAULT_SETTINGS });
+  const check = (allocations: Parameters<typeof smallParcels>[0], settings = DEFAULT_SETTINGS) => {
+    for (const m of members) {
+      const thr = m.areaDa < SMALL_FARM_DA ? 5 : 10;
+      expect(minParcelFor(m, settings)).toBe(thr);
+      const by = new Map<string, number>();
+      for (const a of allocations) if (a.memberId === m.id && a.cropId !== FALLOW) by.set(a.cropId, (by.get(a.cropId) ?? 0) + a.da);
+      for (const [cropId, da] of by) expect(da, `${m.name} ${cropId}`).toBeGreaterThanOrEqual(thr - 1e-6);
+    }
+    expect(smallParcels(allocations, members, settings)).toEqual([]);
+  };
+
+  it('eşik: 10 da; tarlası 60 dekardan küçük üyede 5 da; 0 kuralı kapatır', () => {
+    expect(members.some((m) => m.areaDa < SMALL_FARM_DA)).toBe(true);
+    expect(minParcelFor({ ...members[0], areaDa: 200 }, DEFAULT_SETTINGS)).toBe(10);
+    expect(minParcelFor({ ...members[0], areaDa: 50 }, DEFAULT_SETTINGS)).toBe(5);
+    expect(minParcelFor({ ...members[0], areaDa: 200 }, { ...DEFAULT_SETTINGS, minParcelDa: 0 })).toBe(0);
+  });
+
+  it('kural kapalıyken eşik altı parsel çıkıyor (kuralın bir işe yaradığının kanıtı)', () => {
+    const off = solvePlan({ ...model.planInput, settings: { ...DEFAULT_SETTINGS, minParcelDa: 0 } });
+    expect(smallParcels(off.allocations, members, DEFAULT_SETTINGS).length).toBeGreaterThan(0);
+  });
+
+  it('hiçbir üyede eşik altı parsel yok: üye önerisi ve planlı dağıtım', () => {
+    check(model.plan.allocations);
+    for (const mv of model.members) check(mv.plannedAllocs);
+  });
+
+  it('hiçbir üyede eşik altı parsel yok: taahhütsüz, büyük sözlü, en az su ve nohutlu planlar', () => {
+    const patches: Partial<PlanSettings>[] = [{ commitments: {} }, { commitments: { misir: 3100 } }, { commitments: { misir: 500, bugday: 600 } }, { mode: 'minWater' }, { minLegumeShare: 0.2 }];
+    for (const patch of patches) {
+      const settings = { ...DEFAULT_SETTINGS, ...patch };
+      const plan = solvePlan({ ...model.planInput, settings });
+      expect(plan.status).not.toBe('error');
+      check(plan.allocations, settings);
+    }
+  });
+
+  it('hiçbir üyede eşik altı parsel yok: "söz vermeden önce" senaryoları', () => {
+    check(mixedScenario(model.planInput).plan.allocations);
+    check(maxCropScenario(model.planInput, 'misir').plan.allocations);
+    check(maxCropScenario(model.planInput, 'bugday').plan.allocations);
+  });
+
+  it('kural su hakkını, alan eşitliğini ve pay sınırını bozmaz', () => {
+    for (const mv of model.members) {
+      expect(mv.plannedAllocs.reduce((s, a) => s + a.da, 0)).toBeCloseTo(mv.member.areaDa, 3);
+      expect(mv.plannedAllocs.reduce((s, a) => s + a.da * a.waterMm, 0)).toBeLessThanOrEqual(mv.quotaM3 + 1e-3);
+      const by = new Map<string, number>();
+      for (const a of mv.plannedAllocs) if (a.cropId !== FALLOW) by.set(a.cropId, (by.get(a.cropId) ?? 0) + a.da);
+      for (const v of by.values()) expect(v).toBeLessThanOrEqual(mv.member.areaDa / 3 + 1e-3);
+    }
+    expect(model.scenarios.planned.exceeded).toBe(0);
+  });
+
+  it('üç yıllık nöbet tablosunda eşik altı parça yok', () => {
+    for (const mv of model.members) {
+      const thr = minParcelFor(mv.member, DEFAULT_SETTINGS);
+      for (const row of mv.rotation.table) for (const cells of row) for (const c of cells) if (c.cropId !== FALLOW) expect(c.da, `${mv.member.name} ${c.cropId}`).toBeGreaterThanOrEqual(thr - 1e-6);
+    }
+  });
+
+  it('toplam çözüm 5 saniyenin altında', () => {
+    expect(model.timing.totalMs).toBeLessThan(5000);
+  });
+});
+

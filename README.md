@@ -6,7 +6,7 @@ Kullanıcı bir sulama kooperatifinin ziraat mühendisidir. Araç, üyelerin yı
 
 **Ürün önermiyoruz, su bütçesi yönetiyoruz. Araç karar vermez; seçenekleri ve bedellerini gösterir.**
 
-Pilot bölge Konya: Karapınar (37,72° K, 33,55° D), Çumra, Ereğli, Cihanbeyli ve Altınekin. Açılıştaki "Konya Ovası Örnek Kooperatifi", 50 üyesi ve 2.770 tonluk mısır taahhüdü **kurgusaldır** (söz, planlı dağıtımda 20 yılın en az 16'sında tutan en yüksek miktar olarak hesaplanır).
+Pilot bölge Konya: Karapınar (37,72° K, 33,55° D), Çumra, Ereğli, Cihanbeyli ve Altınekin. Açılıştaki "Konya Ovası Örnek Kooperatifi", 50 üyesi ve 2.690 tonluk mısır taahhüdü **kurgusaldır** (söz, planlı dağıtımda 20 yılın en az 16'sında tutan en yüksek miktar olarak hesaplanır).
 
 ## Çalıştırma
 
@@ -112,7 +112,7 @@ npx netlify deploy --build --prod
 
 Kenar menüde seçili ilçe: Karapınar, Çumra, Ereğli, Cihanbeyli, Altınekin. Her üye kendi ilçesinin NASA verisiyle hesaplanır. Beş ilçe yalnızca üç NASA hücresine düşer (Karapınar ile Ereğli, Cihanbeyli ile Altınekin aynı hücrededir).
 
-Plan kuralları: bir ürün tarlanın en çok 1/3'ü; sulanan ürün tam su ihtiyacının en az %60'ını alır (altı plana girmez); şeker pancarı yalnız sözleşmesi olan üyeye ve yalnız tam sulamayla önerilir.
+Plan kuralları: bir ürün tarlanın en çok 1/3'ü; bir üyede bir ürün ya en az 10 dekar (tarlası 60 dekardan küçükse 5 dekar) ekilir ya hiç ekilmez; sulanan ürün tam su ihtiyacının en az %60'ını alır (altı plana girmez); şeker pancarı yalnız sözleşmesi olan üyeye ve yalnız tam sulamayla önerilir.
 
 ## Kod yapısı
 

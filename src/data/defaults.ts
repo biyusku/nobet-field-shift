@@ -54,7 +54,7 @@ export const DEFAULT_SAFE_YEARS = 16;
  * Varsayılan mısır sözü (ton): planlı dağıtımda 20 yılın en az 16'sında tutan en yüksek miktar, 10 tona aşağı yuvarlanmış.
  * Hesap: engine/promise.ts maxSafeCommitment; değer bir testle (promise.test.ts) hesaba bağlıdır, elle değiştirilmez.
  */
-export const DEFAULT_COMMITMENT_TONS = 2770;
+export const DEFAULT_COMMITMENT_TONS = 2690;
 
 export const DEFAULT_SETTINGS: PlanSettings = {
   maxShare: 1 / 3,
@@ -65,6 +65,7 @@ export const DEFAULT_SETTINGS: PlanSettings = {
   minLegumeShare: 0,
   minIrrigationFraction: 0.6,
   includeOptIn: false,
+  minParcelDa: 10,
 };
 
 /** "Nohutlu plan" seçeneğindeki en düşük baklagil payı. */

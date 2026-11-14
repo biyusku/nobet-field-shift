@@ -312,6 +312,7 @@ function RotationTable({ mv, names }: { mv: MemberView; names: Map<string, strin
         </table>
       </div>
       {!r.guaranteed && <p className="mb-0 mt-2 text-[12px] font-semibold text-warn-ink">Bir ürün tarlanın üçte birini aşıyor; aynı toprağa üst üste aynı ürün gelebilir.</p>}
+      {r.adjusted && <p className="mb-0 mt-2 text-[12px] text-ink2">Ekilemeyecek kadar küçük bir parça komşu parsele katıldı; bu tablodaki alanlar yukarıdaki plandan birkaç dekar sapar.</p>}
     </div>
   );
 }

@@ -23,6 +23,28 @@ export interface PlanSettings {
   minIrrigationFraction?: number;
   /** değerleri doğrulanmamış, isteğe bağlı ürünleri (kırmızı mercimek) öneri kümesine kat */
   includeOptIn?: boolean;
+  /**
+   * En küçük parsel (da): bir üyede bir ürün ya en az bu kadar ekilir ya hiç ekilmez (varsayılan 10).
+   * Tarlası 60 dekardan küçük üyelerde yarısı uygulanır. 0 = kural yok.
+   */
+  minParcelDa?: number;
+}
+
+export const DEFAULT_MIN_PARCEL_DA = 10;
+/** Bu büyüklüğün altındaki tarlalarda en küçük parsel eşiği yarıya iner. */
+export const SMALL_FARM_DA = 60;
+/** En küçük parsel kuralı için en çok kaç kez yeniden çözülür. */
+export const MIN_PARCEL_ROUNDS = 5;
+
+/**
+ * Üyenin en küçük parsel eşiği (da). Ürün payı sınırı eşikten küçükse (çok küçük tarla) eşik o sınıra iner;
+ * aksi halde üyeye hiçbir ürün ekilemezdi.
+ */
+export function minParcelFor(m: Member, settings: PlanSettings): number {
+  const base = settings.minParcelDa ?? DEFAULT_MIN_PARCEL_DA;
+  if (!(base > 0)) return 0;
+  const thr = m.areaDa < SMALL_FARM_DA ? base / 2 : base;
+  return Math.min(thr, settings.maxShare * m.areaDa);
 }
 
 export const DEFAULT_MIN_IRRIGATION = 0.6;
@@ -33,6 +55,8 @@ export interface PlanInput {
   curvesByMethod: Record<IrrigationMethod, Curves>;
   /** verilirse üye başına eğri buradan okunur (üyeler farklı hava noktalarındaysa) */
   curvesOf?: (m: Member) => Curves;
+  /** çözücünün iç kullanımı: bu (üye|ürün) çiftleri plana giremez (en küçük parsel kuralı) */
+  banned?: ReadonlySet<string>;
   settings: PlanSettings;
 }
 
@@ -53,6 +77,8 @@ export interface PlanResult {
   allocations: Allocation[];
   /** taahhütlerin aynı oranda karşılanabilen en yüksek kesri (0-1) */
   commitmentFraction: number;
+  /** tur sınırı dolduğu için en büyük parsele katılan eşik altı parça sayısı (çoğu zaman yok) */
+  merged?: number;
   /** partial ise: her taahhütlü ürün tek başına en çok kaç ton üretilebilir */
   maxAlone: Record<string, number>;
   message?: string;
@@ -101,6 +127,8 @@ function buildBase(input: PlanInput) {
       if (c.contractOnly && !m.beetContract) continue;
       // Değerleri doğrulanmamış ürün (kırmızı mercimek): açıkça dahil edilmedikçe önerilmez.
       if (c.optIn && !settings.includeOptIn) continue;
+      // En küçük parsel kuralı: önceki turda eşiğin altında kalan (üye, ürün) çifti yasaklanır.
+      if (input.banned?.has(`${m.id}|${c.id}`)) continue;
       opts.forEach((o, oi) => {
         if (!o.reliable && !settings.includeUnreliable) return;
         // ... sözleşmesi olana da yalnız tam sulamayla: doğrusal verim modeli az suda pancar için güvenilir değil.
@@ -159,7 +187,80 @@ export function maxCommitmentFraction(input: PlanInput): number {
   return f > 1 - 1e-6 ? 1 : f;
 }
 
+/** Bir üyenin plandaki ürün başına toplam alanı (aynı ürünün farklı su seviyeleri tek parsel sayılır). */
+function areaByCrop(allocations: Allocation[], memberId: string): Map<string, number> {
+  const by = new Map<string, number>();
+  for (const a of allocations) if (a.memberId === memberId && a.cropId !== FALLOW) by.set(a.cropId, (by.get(a.cropId) ?? 0) + a.da);
+  return by;
+}
+
+/** Eşiğin altında kalan (üye, ürün) çiftleri. */
+export function smallParcels(allocations: Allocation[], members: Member[], settings: PlanSettings): { memberId: string; cropId: string; da: number }[] {
+  const out: { memberId: string; cropId: string; da: number }[] = [];
+  for (const m of members) {
+    const thr = minParcelFor(m, settings);
+    if (!(thr > 0)) continue;
+    for (const [cropId, da] of areaByCrop(allocations, m.id)) if (da < thr - 1e-6) out.push({ memberId: m.id, cropId, da });
+  }
+  return out;
+}
+
+/**
+ * Planı çözer ve "en küçük parsel" kuralını uygular.
+ * Tam sayılı değişken yerine yinelemeli: plan çözülür; eşiğin altında kalan (üye, ürün) çiftleri yasaklanıp
+ * yeniden çözülür; en çok MIN_PARCEL_ROUNDS tur. Hâlâ eşik altı parça kalırsa üyenin en büyük parseline katılır.
+ */
 export function solvePlan(input: PlanInput): PlanResult {
+  const banned = new Set<string>(input.banned ?? []);
+  let result = solveOnce({ ...input, banned });
+  for (let round = 0; round < MIN_PARCEL_ROUNDS; round++) {
+    if (result.status === 'error' || result.status === 'empty') return result;
+    const small = smallParcels(result.allocations, input.members, input.settings);
+    if (small.length === 0) return result;
+    for (const x of small) banned.add(`${x.memberId}|${x.cropId}`);
+    result = solveOnce({ ...input, banned });
+  }
+  if (result.status === 'error' || result.status === 'empty') return result;
+  return mergeSmallParcels(result, input);
+}
+
+/**
+ * Son çare: tur sınırı dolduğunda kalan eşik altı parçayı üyenin en büyük parseline katar.
+ * Su hakkını aşmayan en büyük parsel seçilir; hiçbiri uymuyorsa parça nadasa bırakılır.
+ */
+function mergeSmallParcels(result: PlanResult, input: PlanInput): PlanResult {
+  const small = smallParcels(result.allocations, input.members, input.settings);
+  if (small.length === 0) return result;
+  let allocations = result.allocations.map((a) => ({ ...a }));
+  for (const x of small) {
+    const m = input.members.find((mm) => mm.id === x.memberId)!;
+    const mine = () => allocations.filter((a) => a.memberId === m.id);
+    const piece = mine().filter((a) => a.cropId === x.cropId);
+    const pieceDa = piece.reduce((s, a) => s + a.da, 0);
+    allocations = allocations.filter((a) => !(a.memberId === m.id && a.cropId === x.cropId));
+    const used = mine().reduce((s, a) => s + a.da * a.waterMm, 0);
+    const quota = m.areaDa * m.quotaMm;
+    // en büyük parsel: ürün toplam alanına göre; içindeki en büyük su seviyesine eklenir
+    const totals = [...areaByCrop(allocations, m.id)].sort((a, b) => b[1] - a[1]);
+    let target: Allocation | undefined;
+    for (const [cropId] of totals) {
+      const cand = mine().filter((a) => a.cropId === cropId).sort((a, b) => b.da - a.da)[0];
+      if (cand && used + pieceDa * cand.waterMm <= quota + 1e-6) {
+        target = cand;
+        break;
+      }
+    }
+    if (target) target.da += pieceDa;
+    else {
+      const f = mine().find((a) => a.cropId === FALLOW);
+      if (f) f.da += pieceDa;
+      else allocations.push({ memberId: m.id, cropId: FALLOW, option: null, da: pieceDa, waterMm: 0 });
+    }
+  }
+  return { ...result, allocations, merged: small.length };
+}
+
+function solveOnce(input: PlanInput): PlanResult {
   const base = buildBase(input);
   if (base.active.length === 0)
     return { status: 'empty', allocations: [], commitmentFraction: 1, maxAlone: {}, message: 'Üye yok.' };

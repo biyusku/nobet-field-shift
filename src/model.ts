@@ -9,6 +9,7 @@ import { combineFarms, evaluateFarm, waterStats, type FarmEvaluation, type Water
 import {
   backtest,
   heldYears,
+  minParcelFor,
   solvePlan,
   summarize,
   type Allocation,
@@ -212,7 +213,7 @@ export function computeModel(weathers: Record<string, Weather>, fallbackId: stri
       plannedAllocs,
       plannedSoil: soilScore(areas, crops),
       plannedSummary: summarize(plannedAllocs, crops),
-      rotation: buildRotation(areas, member.areaDa),
+      rotation: buildRotation(areas, member.areaDa, minParcelFor(member, inp.settings)),
       options: { free: optionOf(planFree, member.id), legume: legumeOk ? optionOf(planLegume, member.id) : null },
     };
   });

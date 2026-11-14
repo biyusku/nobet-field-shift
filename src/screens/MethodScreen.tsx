@@ -171,9 +171,11 @@ Kısıtlar:   Σ x[üye,·,·] = tarla büyüklüğü
             Σ x[üye, ürün, ·] ≤ pay sınırı · tarla       (varsayılan 1/3: üç yıllık nöbet kurulabilsin)
             Σ x·beklenen verim(ürün) ≥ taahhüt(ürün)     (kooperatif düzeyi, 20 yıl ortalama verimi)
             Σ x[·, küçük pazarlı ürün, ·] ≤ eşik · toplam alan   (isteğe bağlı)
+            Σ x[üye, ürün, ·] = 0  ya da  ≥ en küçük parsel   (yinelemeli: aşağıya bakın)
 Amaç:       en yüksek toplam brüt gelir   ya da   taahhüdü karşılayan en az su (sonra o suyla en yüksek gelir)`}</Formula>
             <p className="mb-0 mt-1 text-ink2">
-              Taahhüt karşılanamıyorsa önce "taahhüdün en çok yüzde kaçı üretilebilir" sorusu çözülür, plan o düzeye göre kurulur ve ekranda açıkça söylenir. Çözücü: javascript-lp-solver (simpleks),
+              <strong className="text-ink">En küçük parsel:</strong> bir üyede bir ürün ya en az 10 dekar (tarlası 60 dekardan küçükse 5 dekar) ekilir ya hiç ekilmez; plan çözülür, eşiğin altında kalan
+              ürünler o üye için yasaklanıp yeniden çözülür (en çok 5 tur), kalan olursa üyenin en büyük parseline katılır. Taahhüt karşılanamıyorsa önce "taahhüdün en çok yüzde kaçı üretilebilir" sorusu çözülür, plan o düzeye göre kurulur ve ekranda açıkça söylenir. Çözücü: javascript-lp-solver (simpleks),
               tarayıcıda çalışır.
             </p>
           </div>

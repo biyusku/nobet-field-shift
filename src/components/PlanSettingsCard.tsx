@@ -1,5 +1,5 @@
 // Plan kuralları: amaç, pay sınırı, küçük pazar eşiği, en az sulama, güvenilmez seçenekler.
-import { DEFAULT_MIN_IRRIGATION } from '../engine/plan';
+import { DEFAULT_MIN_IRRIGATION, DEFAULT_MIN_PARCEL_DA, SMALL_FARM_DA } from '../engine/plan';
 import { useStore } from '../state';
 import { Card, H2, NumInput, Segmented, Tag } from './ui';
 
@@ -9,7 +9,7 @@ export function PlanSettingsCard() {
   return (
     <Card>
       <H2 right={<Tag kind="varsayim" />}>Plan kuralları</H2>
-      <div className="grid gap-x-6 gap-y-4 sm:grid-cols-2 xl:grid-cols-5">
+      <div className="grid gap-x-6 gap-y-4 sm:grid-cols-2 xl:grid-cols-3">
         <div className="text-[12px] font-medium text-ink2">
           <div className="mb-1">Planın amacı</div>
           <Segmented
@@ -38,6 +38,13 @@ export function PlanSettingsCard() {
           )}
           <span className="mt-1 block font-normal">Nohut, ayçiçeği ve kırmızı mercimeğin her biri kooperatif alanının bu payını geçemez.</span>
         </div>
+        <label className="block text-[12px] font-medium text-ink2">
+          En küçük parsel
+          <NumInput className="mt-1 w-full" label="En küçük parsel (dekar)" value={st.minParcelDa ?? DEFAULT_MIN_PARCEL_DA} min={0} max={200} decimals={0} suffix="da" onChange={(v) => s.updateSettings({ minParcelDa: v })} />
+          <span className="mt-1 block font-normal">
+            Bir üyede bir ürün ya en az bu kadar ekilir ya hiç ekilmez. Tarlası {SMALL_FARM_DA} dekardan küçük üyelerde yarısı uygulanır. 0 = kural yok.
+          </span>
+        </label>
         <label className="block text-[12px] font-medium text-ink2">
           Sulanan ürüne verilecek en az su
           <NumInput className="mt-1 w-full" label="Sulanan ürüne en az su (tam ihtiyacın yüzdesi)" value={(st.minIrrigationFraction ?? DEFAULT_MIN_IRRIGATION) * 100} min={0} max={100} decimals={0} suffix="%" onChange={(v) => s.updateSettings({ minIrrigationFraction: v / 100 })} />
