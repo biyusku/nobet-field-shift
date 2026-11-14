@@ -77,6 +77,23 @@ describe('planlama (LP)', () => {
     expect(s.areaByCrop.aycicegi ?? 0).toBeLessThanOrEqual(0.1 * total + 1e-3);
   });
 
+  it('nohutlu plan: her üyede baklagil en az %20, geliri kısıtsız planı aşamaz', () => {
+    const free = solvePlan(input({ commitments: {} }));
+    const plan = checkConstraints(input({ commitments: {}, minLegumeShare: 0.2 }));
+    for (const m of DEFAULT_MEMBERS) {
+      const legume = plan.allocations.filter((a) => a.memberId === m.id && crops.find((c) => c.id === a.cropId)?.legume).reduce((s, a) => s + a.da, 0);
+      expect(legume).toBeGreaterThanOrEqual(0.2 * m.areaDa - 1e-3);
+    }
+    expect(summarize(plan.allocations, crops).revenue).toBeLessThanOrEqual(summarize(free.allocations, crops).revenue + 1);
+  });
+
+  it('varsayılan taahhüt (40 t mısır) önerilen planla 20 yılın çoğunda tutar', () => {
+    const plan = solvePlan(input());
+    expect(plan.status).toBe('ok');
+    const held = backtest(plan.allocations, crops, DEFAULT_SETTINGS.commitments).filter((y) => y.status === 'green').length;
+    expect(held).toBeGreaterThanOrEqual(15);
+  });
+
   it('geçmişte deneme: 20 yıl, hiçbir yıl ayrılan suyu aşmaz, ortalama gelir özetle tutarlı', () => {
     const plan = solvePlan(input({ commitments: { misir: 50 } }));
     const bt = backtest(plan.allocations, crops, { misir: 50 });

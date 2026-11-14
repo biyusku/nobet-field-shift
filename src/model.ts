@@ -1,5 +1,6 @@
 // Arayüzün gösterdiği bütün türetilmiş sonuçlar tek yerde hesaplanır (React'ten bağımsız).
 import { toEngineCrop, type CropDef } from './data/crops';
+import { LEGUME_PLAN_SHARE } from './data/defaults';
 import type { ParcelInput } from './engine/bucket';
 import { buildCurves, type Curves } from './engine/curves';
 import { combineFarms, evaluateFarm, waterStats, type FarmEvaluation, type WaterStats } from './engine/farm';
@@ -31,6 +32,15 @@ export interface MemberView {
   plannedSoil: SoilScore;
   plannedSummary: PlanSummary;
   rotation: Rotation;
+  /** iki plan seçeneği: gelir planı ve en az %20 baklagilli "nohutlu plan"; ikincisi kurulamıyorsa null */
+  options: { free: PlanOption; legume: PlanOption | null };
+}
+
+export interface PlanOption {
+  revenue: number;
+  soil: SoilScore;
+  legumeDa: number;
+  areas: { cropId: string; da: number }[];
 }
 
 export interface Model {
@@ -68,7 +78,21 @@ export function computeModel(w: Weather, inp: Inputs): Model {
     yagmurlama: buildCurves(w, crops, inp.eff.yagmurlama, inp.soil),
     damla: buildCurves(w, crops, inp.eff.damla, inp.soil),
   };
-  const plan = solvePlan({ members: inp.members, crops, curvesByMethod, settings: inp.settings });
+  // İki seçenek her zaman çözülür: baklagil kısıtsız (gelir planı) ve her üyede en az %20 baklagil (nohutlu plan).
+  const planFree = solvePlan({ members: inp.members, crops, curvesByMethod, settings: { ...inp.settings, minLegumeShare: 0 } });
+  const planLegume = solvePlan({ members: inp.members, crops, curvesByMethod, settings: { ...inp.settings, minLegumeShare: LEGUME_PLAN_SHARE } });
+  const legumeOk = planLegume.status === 'ok' || planLegume.status === 'partial';
+  const plan = (inp.settings.minLegumeShare ?? 0) > 0 && legumeOk ? planLegume : planFree;
+  const optionOf = (p: PlanResult, memberId: string): PlanOption => {
+    const mine = p.allocations.filter((a) => a.memberId === memberId);
+    const areas = mine.map((a) => ({ cropId: a.cropId, da: a.da }));
+    return {
+      revenue: summarize(mine, crops).revenue,
+      soil: soilScore(areas, crops),
+      legumeDa: mine.reduce((s, a) => s + (cropById.get(a.cropId)?.legume ? a.da : 0), 0),
+      areas,
+    };
+  };
   const planSummary = summarize(plan.allocations, crops);
   const planBacktest = backtest(plan.allocations, crops, inp.settings.commitments);
 
@@ -108,6 +132,7 @@ export function computeModel(w: Weather, inp: Inputs): Model {
       plannedSoil: soilScore(areas, crops),
       plannedSummary: summarize(plannedAllocs, crops),
       rotation: buildRotation(areas, member.areaDa),
+      options: { free: optionOf(planFree, member.id), legume: legumeOk ? optionOf(planLegume, member.id) : null },
     };
   });
 

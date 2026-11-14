@@ -125,7 +125,7 @@ export function CoopScreen() {
               Bu yüzden {int(model.members.length)} üyenin <b>{exceeded.length}{inSuffix(exceeded.length)}</b> su yaz ortasında bitiyor{earliest ? <> (en erken {fmtDayMonth(earliest.d)})</> : null} ve ürün susuz kalıyor.
             </>
           ) : (
-            <>Bugünkü ekimde herkesin suyu yetiyor.</>
+            <>Bugünkü ekimde kimsenin su hakkı aşılmıyor.</>
           )}
         </p>
         <p className="m-0">
@@ -153,7 +153,7 @@ export function CoopScreen() {
               <span className="text-[12px] font-normal text-ink2"> / {model.members.length}</span>
             </>
           }
-          hint={earliest ? `En erken ${fmtDayMonth(earliest.d)} · ${earliest.mv.member.name}` : 'Bugünkü ekimde herkesin suyu yetiyor'}
+          hint={earliest ? `En erken ${fmtDayMonth(earliest.d)} · ${earliest.mv.member.name}` : 'Bugünkü ekimde kimsenin su hakkı aşılmıyor'}
         />
         <Kpi label="Önerilen planda dağıtılan su" tag="hesap" value={m3(ps.reservedM3)} hint={`Su hakkının ${pct(quota > 0 ? ps.reservedM3 / quota : 0)} kadarı · hiçbir yıl aşılmıyor`} />
       </div>
@@ -228,7 +228,7 @@ export function CoopScreen() {
                             <div className="text-[11px] text-ink2">20 yılın {mv.current.yearsExceeded}{inSuffix(mv.current.yearsExceeded)} bitiyor</div>
                           </>
                         ) : (
-                          <span className="tag tag-success">su yetiyor</span>
+                          <span className="tag tag-success">su hakkı aşılmıyor</span>
                         )}
                       </td>
                       <td className="whitespace-nowrap text-right">

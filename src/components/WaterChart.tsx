@@ -25,6 +25,7 @@ export function WaterChart({
   quotaM3,
   yMax,
   kind,
+  detail = false,
 }: {
   w: Weather;
   ev: FarmEvaluation;
@@ -32,6 +33,8 @@ export function WaterChart({
   quotaM3: number;
   yMax: number;
   kind: 'current' | 'planned';
+  /** true: 20 yılın gri çizgileri ve ürünlerin istediği su çizgisi de görünür */
+  detail?: boolean;
 }) {
   const [ref, width] = useWidth<HTMLDivElement>();
   const [hover, setHover] = useState<number | null>(null);
@@ -121,12 +124,13 @@ export function WaterChart({
         )}
 
         {/* diğer yılların ihtiyaç çizgileri */}
-        {ev.years.map((o, i) =>
+        {detail &&
+          ev.years.map((o, i) =>
           i === yearIndex ? null : <path key={o.year} d={step(o.demandM3)} fill="none" stroke="var(--axis)" strokeWidth={1} opacity={0.55} />,
         )}
 
         {/* seçili yıl: ihtiyaç (kesikli) ve gerçekleşen (dolu) */}
-        <path d={step(fy.demandM3)} fill="none" stroke="var(--ink2)" strokeWidth={1.5} strokeDasharray="5 4" />
+        {detail && <path d={step(fy.demandM3)} fill="none" stroke="var(--ink2)" strokeWidth={1.5} strokeDasharray="5 4" />}
         <path d={step(fy.cumM3)} fill="none" stroke="var(--water)" strokeWidth={2.5} strokeLinejoin="round" />
 
         {/* kota çizgisi */}
@@ -162,10 +166,12 @@ export function WaterChart({
             <span className="text-ink2">Verilen su</span>
             <span>{m3(fy.cumM3[hd])}</span>
           </div>
-          <div className="flex justify-between gap-2">
-            <span className="text-ink2">İstenen su</span>
-            <span>{m3(fy.demandM3[hd])}</span>
-          </div>
+          {detail && (
+            <div className="flex justify-between gap-2">
+              <span className="text-ink2">İstenen su</span>
+              <span>{m3(fy.demandM3[hd])}</span>
+            </div>
+          )}
         </div>
       )}
 
@@ -175,6 +181,12 @@ export function WaterChart({
           {usedLabel} ({fy.year})
         </li>
         <li className="flex items-center gap-1.5">
+          <svg width="22" height="8" aria-hidden><line x1="0" x2="22" y1="4" y2="4" stroke="var(--crit)" strokeWidth="1.5" /></svg>
+          Su hakkı
+        </li>
+        {detail && (
+          <>
+        <li className="flex items-center gap-1.5">
           <svg width="22" height="8" aria-hidden><line x1="0" x2="22" y1="4" y2="4" stroke="var(--ink2)" strokeWidth="1.5" strokeDasharray="5 4" /></svg>
           Ürünlerin istediği su ({fy.year})
         </li>
@@ -182,6 +194,8 @@ export function WaterChart({
           <svg width="22" height="8" aria-hidden><line x1="0" x2="22" y1="4" y2="4" stroke="var(--axis)" strokeWidth="1" /></svg>
           Diğer 19 yılda istenen su
         </li>
+          </>
+        )}
         {endMin !== null && (
           <li className="flex items-center gap-1.5">
             <span aria-hidden className="inline-block h-2.5 w-4" style={{ background: 'var(--crit)', opacity: 0.2 }} />

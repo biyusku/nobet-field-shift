@@ -6,7 +6,7 @@ Kullanıcı bir sulama kooperatifinin ziraat mühendisidir. Araç, üyelerin yı
 
 **Ürün önermiyoruz, su bütçesi yönetiyoruz. Araç karar vermez; seçenekleri ve bedellerini gösterir.**
 
-Pilot nokta Karapınar, Konya (37,72° K, 33,55° D); ikinci nokta Çivril, Denizli (38,30° K, 29,74° D). Açılıştaki "Karapınar Örnek Kooperatifi", üyeleri ve 300 tonluk mısır taahhüdü **kurgusaldır**.
+Pilot nokta Karapınar, Konya (37,72° K, 33,55° D); ikinci nokta Çivril, Denizli (38,30° K, 29,74° D). Açılıştaki "Karapınar Örnek Kooperatifi", üyeleri ve 40 tonluk mısır taahhüdü **kurgusaldır**.
 
 ## Çalıştırma
 
@@ -114,7 +114,7 @@ Hepsi arayüzde "varsayım" etiketiyle gösterilir ve Yöntem sayfasından (ya d
 - Göreli verimi 0,35'in altındaki seçenekler güvenilmez sayılır ve varsayılan olarak planlamaya girmez.
 - Toprak puanının ağırlıkları (60 baklagil, 40 çeşitlilik, %25 baklagil hedefi) takım varsayımıdır.
 - Geçmişte denemede "sarı" eşiği: taahhüdün %90'ı.
-- Kurgusal kooperatif: 80, 120, 200 ve 350 dekarlık dört üye, 200 mm kota, ağırlıklı mısır; 300 ton mısır taahhüdü.
+- Kurgusal kooperatif: 80, 120, 200 ve 350 dekarlık dört üye, 200 mm kota, ağırlıklı mısır; 40 ton mısır taahhüdü (önerilen planın 20 yılın 18'inde tutturduğu değer).
 
 ## Kabul kontrolleri: gerçek sonuçlar (Karapınar)
 
@@ -137,7 +137,7 @@ Bantların dışına düşen yıllar hata değil, yağışlı (2011, 2015) ve ku
 PROBE=1 npx vitest run src/engine/__tests__/probe.test.ts --disable-console-intercept
 ```
 
-Kurgusal kooperatifte sonuç: 300 ton mısır taahhüdü bu kota ve 1/3 kuralıyla karşılanamıyor; 20 yılın ortalama verimiyle en çok yaklaşık 247 ton (%82). Araç bunu saklamaz, açılışta gösterir.
+Kurgusal kooperatifte taahhüt 40 ton mısırdır: önerilen plan bunu 20 yılın 18'inde tutturur. 45 ton ve üstünde taahhüt planı bağlar ve söz yalnız 10 yılda tutar; 247 tonun üstü bu su hakkı ve 1/3 kuralıyla hiç üretilemez.
 
 ## Bilinen sınırlar
 

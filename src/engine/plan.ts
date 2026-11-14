@@ -14,6 +14,8 @@ export interface PlanSettings {
   mode: 'revenue' | 'minWater';
   /** göreli verimi 0,35 altındaki seçenekleri de planlamaya kat */
   includeUnreliable: boolean;
+  /** her üyenin tarlasında baklagilin en düşük payı (0-1); 0 ya da boş = kısıt yok */
+  minLegumeShare?: number;
 }
 
 export interface PlanInput {
@@ -76,6 +78,8 @@ function buildBase(input: PlanInput) {
   active.forEach((m, mi) => {
     constraints[`alan_${mi}`] = { equal: m.areaDa };
     constraints[`su_${mi}`] = { max: m.areaDa * m.quotaMm };
+    const minLegume = settings.minLegumeShare ?? 0;
+    if (minLegume > 0) constraints[`bakla_${mi}`] = { min: minLegume * m.areaDa };
     const curves = curvesByMethod[m.method];
     for (const c of crops) {
       constraints[`pay_${mi}_${c.id}`] = { max: settings.maxShare * m.areaDa };
@@ -92,6 +96,7 @@ function buildBase(input: PlanInput) {
           su: o.maxGross,
         };
         if (c.smallMarket) row[`pazar_${c.id}`] = 1;
+        if (c.legume && minLegume > 0) row[`bakla_${mi}`] = 1;
         variables[key] = row;
         meta.set(key, { member: m, cropId: c.id, option: o });
       });

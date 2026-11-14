@@ -1,19 +1,20 @@
-// Üye ekranı: "Bu üyenin suyu yetiyor mu, ne zaman bitiyor, yetmesi için ne ekilmeli?"
-import { Pencil, Plus, Sprout } from 'lucide-react';
+// Üye ekranı: tek bakışta "bugün ne oluyor, öneri ne, sonuç ne". Ayrıntı en altta, kapalı.
+import { ArrowRight, Check, Pencil, Plus, Sprout } from 'lucide-react';
 import { useState } from 'react';
-import { cropName, CropBar, HonestyBanner, UnreliableMark } from '../components/bits';
+import { cropName, HonestyBanner, UnreliableMark } from '../components/bits';
 import { Select } from '../components/kit';
 import { MemberEditor } from '../components/MemberEditor';
-import { Bars, Brief, Card, Empty, H2, MiniList, Note, PageHeader, Segmented, Shift, Swatch, Tag } from '../components/ui';
+import { Bars, Brief, Card, Empty, H2, Note, PageHeader, Segmented, Swatch, Tag } from '../components/ui';
 import { WaterChart } from '../components/WaterChart';
-import { METHOD_LABEL } from '../data/defaults';
+import { LEGUME_PLAN_SHARE, METHOD_LABEL } from '../data/defaults';
+import type { ParcelInput } from '../engine/bucket';
 import { levelLabel } from '../engine/curves';
-import type { FarmEvaluation } from '../engine/farm';
+import type { FarmEvaluation, WaterStats } from '../engine/farm';
 import { SOIL_FORMULA } from '../engine/soil';
 import { FALLOW, type Weather } from '../engine/types';
 import { dateOfIndex } from '../engine/weather';
-import { da, dec1, fmtDayMonth, inSuffix, onSuffix, int, m3, mm, pct, tlShort, ton } from '../lib/format';
-import type { MemberView, Model } from '../model';
+import { da, dec1, fmtDayMonth, inSuffix, int, m3, onSuffix, pct, tlShort, ton } from '../lib/format';
+import type { MemberView, PlanOption } from '../model';
 import { useStore } from '../state';
 
 const md = (d: Date) => (d.getUTCMonth() + 1) * 100 + d.getUTCDate();
@@ -28,88 +29,178 @@ function medianDate(w: Weather, ev: FarmEvaluation): Date | null {
   return ev.yearsExceeded > 0 && y?.endDay != null ? dateOfIndex(w, y.start + y.endDay) : null;
 }
 
-function Verdict({ w, ev, kind }: { w: Weather; ev: FarmEvaluation; kind: 'current' | 'planned' }) {
-  const dates = endDates(w, ev);
-  const med = medianDate(w, ev);
-  const n = ev.years.length;
-  return (
-    <div>
-      <div className="flex items-center gap-1.5 text-[12px] font-medium text-ink2">
-        Su ne zaman bitiyor? <Tag kind="hesap" />
-      </div>
-      {med ? (
-        <>
-          <div className="text-[30px] font-bold leading-[1.1] tracking-tight text-crit-ink sm:text-[38px]">{fmtDayMonth(med)}</div>
-          <div className="mt-1 text-ink2">
-            Tipik bir yılda su hakkı bu gün tükeniyor; sonrası susuz. En erken <strong className="text-ink">{fmtDayMonth(dates[0])}</strong>, en geç{' '}
-            <strong className="text-ink">{fmtDayMonth(dates[dates.length - 1])}</strong>. Su {n} yılın {dates.length}
-            {inSuffix(dates.length)} yetmiyor.
-          </div>
-        </>
-      ) : (
-        <>
-          <div className="text-[30px] font-bold leading-[1.1] tracking-tight text-good-ink sm:text-[38px]">Su yetiyor</div>
-          <div className="mt-1 text-ink2">
-            {kind === 'planned'
-              ? `Su baştan parsellere paylaştırıldı; ${n} yılın hiçbirinde su hakkı aşılmıyor.`
-              : `${n} yılın hiçbirinde ürünlerin istediği su, su hakkını aşmıyor.`}
-          </div>
-        </>
-      )}
+interface CropRow {
+  cropId: string;
+  name: string;
+  da: number;
+  tons: number;
+  tl: number;
+  irrigated: boolean;
+}
+/** Parselleri ürün bazında toplar: alan, üretim (t), brüt gelir (TL), sulanıyor mu. */
+function cropRows(parcels: ParcelInput[], ws: WaterStats): CropRow[] {
+  const by = new Map<string, CropRow>();
+  parcels.forEach((p, k) => {
+    const st = ws.parcels[k];
+    if (!st || p.areaDa < 0.05) return;
+    const tons = (st.relYield * p.crop.yieldKgDa * p.areaDa) / 1000;
+    const r = by.get(p.crop.id) ?? { cropId: p.crop.id, name: p.crop.name, da: 0, tons: 0, tl: 0, irrigated: false };
+    r.da += p.areaDa;
+    r.tons += tons;
+    r.tl += tons * p.crop.priceTlTon;
+    if (st.usedMm >= 1) r.irrigated = true;
+    by.set(p.crop.id, r);
+  });
+  return [...by.values()].sort((a, b) => b.tl - a.tl);
+}
+const lower = (s: string) => s.toLocaleLowerCase('tr');
+const cap = (s: string) => s.charAt(0).toLocaleUpperCase('tr') + s.slice(1);
+/** "Mısır 27 dekarda sulanıyor, kalan tarla yağmurla yetişen ürünlere ayrılıyor." */
+function irrigationLine(rows: CropRow[]): string {
+  const irr = rows.filter((r) => r.irrigated);
+  const rain = rows.filter((r) => !r.irrigated).reduce((s, r) => s + r.da, 0);
+  if (rows.length === 0) return 'Tarla ekilmiyor.';
+  if (irr.length === 0) return 'Tarlanın tamamı yağmurla yetişen ürünlere ayrılıyor.';
+  const head = cap(irr.map((r) => `${lower(r.name)} ${da(r.da)} dekarda`).join(', '));
+  return rain >= 0.05 ? `${head} sulanıyor, kalan tarla yağmurla yetişen ürünlere ayrılıyor.` : `${head} sulanıyor.`;
+}
+
+/** En üstteki karşılaştırma şeridi: ekrandaki en büyük şey. */
+function CompareStrip({ mv, medCur, medPl }: { mv: MemberView; medCur: Date | null; medPl: Date | null }) {
+  const a = mv.current.meanRevenue;
+  const b = mv.planned.meanRevenue;
+  const diff = a > 0 ? (b - a) / a : null;
+  const side = (title: string, value: number, end: Date | null) => (
+    <div className="min-w-0">
+      <div className="text-[12px] font-semibold uppercase tracking-wide text-ink2">{title}</div>
+      <div className="tnum text-[34px] font-bold leading-[1.1] tracking-tight text-ink sm:text-[46px]">{tlShort(value)}</div>
+      <div className={`mt-1 text-[15px] font-semibold ${end ? 'text-crit-ink' : 'text-good-ink'}`}>{end ? `Su ${fmtDayMonth(end)}${onSuffix(end)} bitiyor` : 'Su hakkı aşılmıyor'}</div>
     </div>
+  );
+  return (
+    <section className="card !px-5 !py-5 sm:!px-7">
+      <div className="grid items-center gap-x-6 gap-y-4 md:grid-cols-[1fr_auto_1fr]">
+        {side('Bugün', a, medCur)}
+        <div className="flex items-center gap-3 md:flex-col md:gap-1.5">
+          <ArrowRight size={26} className="text-muted max-md:rotate-90" aria-hidden />
+          {diff !== null && Math.abs(diff) >= 0.005 && (
+            <span className={`tnum rounded-lg px-2.5 py-1 text-[20px] font-bold ${diff >= 0 ? 'bg-[var(--good-bg)] text-good-ink' : 'bg-[var(--crit-bg)] text-crit-ink'}`}>
+              {diff >= 0 ? '+' : '−'}%{Math.round(Math.abs(diff) * 100)}
+            </span>
+          )}
+        </div>
+        {side('Öneri', b, medPl)}
+      </div>
+      <div className="mt-4 flex flex-wrap items-center gap-1.5 border-t border-line pt-3 text-[12px] text-ink2">
+        Yıllık brüt gelir, son 20 yılın havasıyla ortalama. Tohum, gübre, elektrik düşülmedi. <Tag kind="hesap" />
+      </div>
+    </section>
   );
 }
 
-/** Kullanılan suyun ihtiyaca oranı: parsel satırlarında. */
-function WaterCell({ used, need }: { used: number; need: number }) {
-  const r = need > 0 ? Math.min(1, used / need) : 1;
+function OptionCard({ title, sub, o, active, names, onPick }: { title: string; sub: string; o: PlanOption; active: boolean; names: Map<string, string>; onPick: () => void }) {
+  const by = new Map<string, number>();
+  for (const a of o.areas) if (a.da >= 0.05) by.set(a.cropId, (by.get(a.cropId) ?? 0) + a.da);
   return (
-    <div className="ml-auto w-[120px]">
-      <div className="tnum whitespace-nowrap text-right">
-        {int(used)} <span className="text-ink2">/ {int(need)} mm</span>
+    <button
+      type="button"
+      onClick={onPick}
+      aria-pressed={active}
+      className={`flex min-w-0 cursor-pointer flex-col gap-2 rounded-xl border-0 bg-surface p-4 text-left ${active ? 'shadow-[0_0_0_2px_var(--ink)]' : 'shadow-[0_0_0_1px_var(--line)] hover:bg-sunken'}`}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[14px] font-[650] text-ink">{title}</span>
+        {active ? (
+          <span className="tag tag-success">
+            <Check size={11} /> seçili
+          </span>
+        ) : (
+          <span className="text-[12px] font-medium text-link">Bunu seç</span>
+        )}
       </div>
-      <div className="mt-1 h-1.5 overflow-hidden rounded-[3px] bg-sunken" role="img" aria-label={`İhtiyacın ${pct(r)} kadarı karşılanıyor`}>
-        <div className="h-full rounded-[3px]" style={{ width: `${r * 100}%`, background: 'var(--water)' }} />
+      <div className="text-[12px] text-ink2">{sub}</div>
+      <div className="tnum flex flex-wrap gap-x-6 gap-y-1">
+        <div>
+          <div className="text-[11px] text-ink2">Brüt gelir</div>
+          <div className="text-[20px] font-bold text-ink">{tlShort(o.revenue)}</div>
+        </div>
+        <div>
+          <div className="text-[11px] text-ink2">Toprak puanı</div>
+          <div className="text-[20px] font-bold text-ink">
+            {o.soil.score}
+            <span className="text-[12px] font-normal text-ink2"> / 100</span>
+          </div>
+        </div>
       </div>
-    </div>
+      <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[12px]">
+        {[...by].map(([id, d]) => (
+          <span key={id} className="tnum whitespace-nowrap">
+            <Swatch id={id} />
+            {cropName(id, names)} <span className="text-ink2">{da(d)} da</span>
+          </span>
+        ))}
+      </div>
+    </button>
   );
 }
 
-function Panel({ kind, w, mv, model, yearSel, yMax }: { kind: 'current' | 'planned'; w: Weather; mv: MemberView; model: Model; yearSel: number | 'median'; yMax: number }) {
+function Panel({
+  kind,
+  w,
+  mv,
+  rows,
+  yearSel,
+  detail,
+  onDetail,
+  names,
+}: {
+  kind: 'current' | 'planned';
+  w: Weather;
+  mv: MemberView;
+  rows: CropRow[];
+  yearSel: number | 'median';
+  detail: boolean;
+  onDetail: () => void;
+  names: Map<string, string>;
+}) {
   const ev = kind === 'current' ? mv.current : mv.planned;
-  const ws = kind === 'current' ? mv.currentWater : mv.plannedWater;
   const soil = kind === 'current' ? mv.currentSoil : mv.plannedSoil;
-  const names = new Map(model.crops.map((c) => [c.id, c.name]));
   const yi = yearSel === 'median' ? ev.medianIndex : yearSel;
-  const areas: Record<string, number> = {};
-  if (kind === 'current') {
-    for (const p of mv.currentParcels) areas[p.crop.id] = (areas[p.crop.id] ?? 0) + p.areaDa;
-    if (mv.member.areaDa - mv.currentAreaDa > 0.05) areas[FALLOW] = mv.member.areaDa - mv.currentAreaDa;
-  } else for (const a of mv.plannedAllocs) areas[a.cropId] = (areas[a.cropId] ?? 0) + a.da;
-
-  const parcels = kind === 'current' ? mv.currentParcels : mv.plannedParcels;
-  const withOption = mv.plannedAllocs.filter((a) => a.option);
-  const fallowDa = areas[FALLOW] ?? 0;
-  const times = mv.quotaM3 > 0 ? ws.demandM3 / mv.quotaM3 : 0;
+  const med = medianDate(w, ev);
+  const dates = endDates(w, ev);
+  const n = ev.years.length;
+  const cropped = rows.reduce((s, r) => s + r.da, 0);
+  const fallowDa = Math.max(0, mv.member.areaDa - cropped);
+  const maxDemand = Math.max(...mv.current.years.map((y) => y.demandTotalM3), ...mv.planned.years.map((y) => y.demandTotalM3), 0);
+  const yMax = detail ? Math.max(mv.quotaM3 * 1.25, maxDemand * 1.03, 1) : Math.max(mv.quotaM3 * 1.5, 1);
 
   return (
-    <Card className="flex min-w-0 flex-col gap-4">
-      <H2 right={<span className="text-[12px] text-ink2">{kind === 'current' ? 'Üyenin şu an ektiği' : 'Kota ve nöbet kurallarıyla hesaplandı'}</span>}>{kind === 'current' ? 'Bugünkü ekim' : 'Önerilen plan'}</H2>
-      <Verdict w={w} ev={ev} kind={kind} />
-      <WaterChart w={w} ev={ev} yearIndex={yi} quotaM3={mv.quotaM3} yMax={yMax} kind={kind} />
+    <Card className="flex min-w-0 flex-col gap-3">
+      <H2 right={<span className="text-[12px] text-ink2">{kind === 'current' ? 'Üyenin şu an ektiği' : 'Su hakkı ve nöbet kurallarıyla hesaplandı'}</span>}>{kind === 'current' ? 'Bugün' : 'Öneri'}</H2>
+      <div>
+        {med ? (
+          <>
+            <div className="text-[22px] font-bold leading-tight tracking-tight text-crit-ink">Su {fmtDayMonth(med)}{onSuffix(med)} bitiyor</div>
+            <div className="mt-0.5 text-ink2">
+              Tipik bir yıl. En erken {fmtDayMonth(dates[0])}, en geç {fmtDayMonth(dates[dates.length - 1])}; {n} yılın {dates.length}
+              {inSuffix(dates.length)} böyle. Sonrasında tarla susuz kalıyor.
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="text-[22px] font-bold leading-tight tracking-tight text-good-ink">Su hakkı aşılmıyor</div>
+            <div className="mt-0.5 text-ink2">{irrigationLine(rows)}</div>
+          </>
+        )}
+      </div>
 
       <div>
-        <h3 className="m-0 mb-2 flex items-center gap-1.5 text-[12px] font-semibold text-ink">
-          Su bütçesi <Tag kind="hesap" />
-        </h3>
-        <Bars
-          unit={m3}
-          rows={[
-            { label: 'Su hakkı (kota)', value: mv.quotaM3, color: 'var(--crit)' },
-            { label: 'Ürünlerin istediği su', value: ws.demandM3, color: 'var(--axis)', note: times >= 1.05 ? `su hakkının ${dec1(times)} katı` : undefined },
-            { label: kind === 'current' ? 'Verilebilen su' : 'Planda verilen su', value: ws.usedM3, color: 'var(--water)', note: `istenenin ${pct(ws.coverage)} kadarı` },
-          ]}
-        />
+        <div className="mb-1 flex justify-end">
+          <button type="button" className="link-button text-[12px]" aria-pressed={detail} onClick={onDetail}>
+            {detail ? 'Ayrıntıyı gizle' : 'Ayrıntıyı göster'}
+          </button>
+        </div>
+        <WaterChart w={w} ev={ev} yearIndex={yi} quotaM3={mv.quotaM3} yMax={yMax} kind={kind} detail={detail} />
       </div>
 
       <div className="overflow-x-auto">
@@ -118,44 +209,30 @@ function Panel({ kind, w, mv, model, yearSel, yMax }: { kind: 'current' | 'plann
             <tr>
               <th>Ürün</th>
               <th className="num">Alan</th>
-              <th className="num">
-                Su: verilen / istenen
-                <Tag kind="hesap" compact />
-              </th>
-              <th className="num">
-                Alınan ürün
-                <Tag kind="hesap" compact />
-              </th>
+              <th>Su</th>
               <th className="num">
                 Üretim
+                <Tag kind="hesap" compact />
+              </th>
+              <th className="num">
+                Brüt gelir
                 <Tag kind="hesap" compact />
               </th>
             </tr>
           </thead>
           <tbody>
-            {parcels.map((p, k) => {
-              const st = ws.parcels[k];
-              const opt = kind === 'planned' ? withOption[k]?.option : null;
-              if (p.areaDa < 0.05 || !st) return null;
-              return (
-                <tr key={k}>
-                  <td>
-                    <Swatch id={p.crop.id} />
-                    {p.crop.name}
-                    {opt && <span className="text-ink2"> · {levelLabel(opt.level)}</span>}
-                    <div>
-                      <UnreliableMark rel={st.relYield} />
-                    </div>
-                  </td>
-                  <td className="num">{da(p.areaDa)} da</td>
-                  <td className="num">
-                    <WaterCell used={st.usedMm} need={st.needMm} />
-                  </td>
-                  <td className="num">{pct(st.relYield)}</td>
-                  <td className="num">{ton((st.relYield * p.crop.yieldKgDa * p.areaDa) / 1000)}</td>
-                </tr>
-              );
-            })}
+            {rows.map((r) => (
+              <tr key={r.cropId}>
+                <td>
+                  <Swatch id={r.cropId} />
+                  {r.name}
+                </td>
+                <td className="num">{da(r.da)} da</td>
+                <td className="text-ink2">{r.irrigated ? 'sulanıyor' : 'yağmurla'}</td>
+                <td className="num">{ton(r.tons)}</td>
+                <td className="num">{tlShort(r.tl)}</td>
+              </tr>
+            ))}
             {fallowDa >= 0.05 && (
               <tr>
                 <td>
@@ -163,46 +240,30 @@ function Panel({ kind, w, mv, model, yearSel, yMax }: { kind: 'current' | 'plann
                   Nadas
                 </td>
                 <td className="num">{da(fallowDa)} da</td>
-                <td className="num text-ink2">–</td>
+                <td className="text-ink2">–</td>
                 <td className="num text-ink2">–</td>
                 <td className="num text-ink2">–</td>
               </tr>
             )}
-            {parcels.length === 0 && fallowDa < 0.05 && (
+            {rows.length === 0 && fallowDa < 0.05 && (
               <tr>
                 <td colSpan={5} className="text-ink2">
                   Ekim girilmedi.
                 </td>
               </tr>
             )}
+            <tr className="font-semibold text-ink">
+              <td>Toplam</td>
+              <td className="num">{da(mv.member.areaDa)} da</td>
+              <td></td>
+              <td></td>
+              <td className="num">{tlShort(rows.reduce((s, r) => s + r.tl, 0))}</td>
+            </tr>
           </tbody>
         </table>
       </div>
-      <p className="m-0 -mt-2 text-[11px] text-ink2">
-        {kind === 'current'
-          ? 'Su parseller arasında paylaştırılmıyor: hangisi susarsa o sulanıyor, su hakkı bitince hepsi susuz kalıyor. "Alınan ürün", doya doya sulanan tarlaya göre yüzdedir (20 yılın ortalaması).'
-          : 'Her parsele baştan bir su payı ayrılıyor; pay bitince o parselin suyu kesiliyor, su hakkı aşılmıyor. "Susuz" yazan parseller yalnız yağmurla yetişiyor. Plan bütün üyeler için birlikte, kooperatifin satış sözü gözetilerek hesaplanıyor.'}
-      </p>
-
-      <MiniList
-        rows={[
-          { label: 'Alınan ürün (tarla ortalaması)', value: pct(ws.yieldLevel), sub: 'doya doya sulanan tarlaya göre' },
-          { label: 'Toprak puanı', value: `${soil.score} / 100`, sub: `baklagil ${pct(soil.legumeShare)} · etkin ürün ${dec1(soil.effectiveCrops)}` },
-          {
-            label: (
-              <>
-                Brüt gelir <Tag kind="hesap" />
-              </>
-            ),
-            value: tlShort(kind === 'current' ? ev.meanRevenue : mv.plannedSummary.revenue),
-            sub: 'girdiler düşülmedi · fiyatlar varsayım',
-          },
-        ]}
-      />
-
-      <div>
-        <h3 className="m-0 mb-2 text-[12px] font-semibold text-ink">Alan dağılımı</h3>
-        <CropBar areas={areas} names={names} />
+      <div className="flex flex-wrap items-center gap-1.5 text-[12px] text-ink2">
+        Toprak puanı <strong className="text-ink">{soil.score} / 100</strong> <Tag kind="hesap" /> · üretim ve gelir 20 yılın ortalamasıdır
       </div>
 
       {kind === 'planned' && <RotationTable mv={mv} names={names} />}
@@ -215,7 +276,7 @@ function RotationTable({ mv, names }: { mv: MemberView; names: Map<string, strin
   return (
     <div>
       <h3 className="m-0 mb-2 flex items-center gap-1.5 text-[12px] font-semibold text-ink">
-        Üç yıllık nöbet tablosu <Tag kind="hesap" />
+        Hangi parsele hangi yıl ne ekilecek <Tag kind="hesap" />
       </h3>
       <div className="overflow-x-auto">
         <table className="data">
@@ -250,15 +311,94 @@ function RotationTable({ mv, names }: { mv: MemberView; names: Map<string, strin
           </tbody>
         </table>
       </div>
-      <p className="mb-0 mt-2 text-[11px] text-ink2">
-        Tarla üç eş parsele bölünür, desen her yıl bir parsel kayar; her yıl aynı ürün karışımı ekildiği için su hesabı değişmez.{' '}
-        {r.guaranteed ? 'Hiçbir ürün tarlanın üçte birini aşmadığı için aynı toprağa aynı ürün ancak üç yılda bir gelir.' : 'Uyarı: bir ürün tarlanın üçte birini aşıyor; aynı toprağa üst üste aynı ürün gelebilir.'}
-      </p>
+      {!r.guaranteed && <p className="mb-0 mt-2 text-[12px] font-semibold text-warn-ink">Bir ürün tarlanın üçte birini aşıyor; aynı toprağa üst üste aynı ürün gelebilir.</p>}
     </div>
   );
 }
 
-/** Yıl yıl: ihtiyacın karşılanan kesri, bugünkü ekim ve önerilen plan yan yana. */
+// ---------- Ayrıntılar (kapalı bölüm) ----------
+
+function WaterCell({ used, need }: { used: number; need: number }) {
+  const r = need > 0 ? Math.min(1, used / need) : 1;
+  return (
+    <div className="ml-auto w-[120px]">
+      <div className="tnum whitespace-nowrap text-right">
+        {int(used)} <span className="text-ink2">/ {int(need)} mm</span>
+      </div>
+      <div className="mt-1 h-1.5 overflow-hidden rounded-[3px] bg-sunken" role="img" aria-label={`İstenen suyun ${pct(r)} kadarı veriliyor`}>
+        <div className="h-full rounded-[3px]" style={{ width: `${r * 100}%`, background: 'var(--water)' }} />
+      </div>
+    </div>
+  );
+}
+
+function DetailColumn({ kind, mv }: { kind: 'current' | 'planned'; mv: MemberView }) {
+  const ws = kind === 'current' ? mv.currentWater : mv.plannedWater;
+  const soil = kind === 'current' ? mv.currentSoil : mv.plannedSoil;
+  const parcels = kind === 'current' ? mv.currentParcels : mv.plannedParcels;
+  const withOption = mv.plannedAllocs.filter((a) => a.option);
+  const times = mv.quotaM3 > 0 ? ws.demandM3 / mv.quotaM3 : 0;
+  return (
+    <div className="flex min-w-0 flex-col gap-4">
+      <h3 className="m-0 text-[13px] font-[650] text-ink">{kind === 'current' ? 'Bugün' : 'Öneri'}</h3>
+      <Bars
+        unit={m3}
+        rows={[
+          { label: 'Su hakkı (kota)', value: mv.quotaM3, color: 'var(--crit)' },
+          { label: 'Ürünlerin istediği su', value: ws.demandM3, color: 'var(--axis)', note: times >= 1.05 ? `su hakkının ${dec1(times)} katı` : undefined },
+          { label: kind === 'current' ? 'Verilebilen su' : 'Planda verilen su', value: ws.usedM3, color: 'var(--water)', note: `istenenin ${pct(ws.coverage)} kadarı` },
+        ]}
+      />
+      <div className="overflow-x-auto">
+        <table className="data">
+          <thead>
+            <tr>
+              <th>Parsel</th>
+              <th className="num">Alan</th>
+              <th className="num">
+                Su: verilen / istenen
+                <Tag kind="hesap" compact />
+              </th>
+              <th className="num">
+                Alınan ürün
+                <Tag kind="hesap" compact />
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {parcels.map((p, k) => {
+              const st = ws.parcels[k];
+              const opt = kind === 'planned' ? withOption[k]?.option : null;
+              if (p.areaDa < 0.05 || !st) return null;
+              return (
+                <tr key={k}>
+                  <td>
+                    <Swatch id={p.crop.id} />
+                    {p.crop.name}
+                    {opt && <span className="text-ink2"> · {levelLabel(opt.level)}</span>}
+                    <div>
+                      <UnreliableMark rel={st.relYield} />
+                    </div>
+                  </td>
+                  <td className="num">{da(p.areaDa)} da</td>
+                  <td className="num">
+                    <WaterCell used={st.usedMm} need={st.needMm} />
+                  </td>
+                  <td className="num">{pct(st.relYield)}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <div className="tnum text-[12px] text-ink2">
+        Alınan ürün (tarla ortalaması) <strong className="text-ink">{pct(ws.yieldLevel)}</strong> · toprak puanı <strong className="text-ink">{soil.score} / 100</strong> (baklagil {pct(soil.legumeShare)}, etkin ürün{' '}
+        {dec1(soil.effectiveCrops)})
+      </div>
+    </div>
+  );
+}
+
 function YearCoverage({ mv }: { mv: MemberView }) {
   const cov = (ev: FarmEvaluation) => ev.years.map((y) => (y.demandTotalM3 > 0 ? Math.min(1, y.usedM3 / y.demandTotalM3) : 1));
   const a = cov(mv.current);
@@ -267,7 +407,7 @@ function YearCoverage({ mv }: { mv: MemberView }) {
   const [hi, setHi] = useState<number | null>(null);
   return (
     <div>
-      <div className="flex h-[110px] items-end gap-[3px]" onMouseLeave={() => setHi(null)}>
+      <div className="flex h-[100px] items-end gap-[3px]" onMouseLeave={() => setHi(null)}>
         {years.map((year, i) => (
           <div key={year} className="flex h-full flex-1 items-end gap-[2px]" onMouseEnter={() => setHi(i)}>
             <div className="flex-1 rounded-t-[3px]" style={{ height: `${Math.max(1, a[i] * 100)}%`, background: 'var(--axis)' }} />
@@ -282,14 +422,14 @@ function YearCoverage({ mv }: { mv: MemberView }) {
       <div className="tnum mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px]">
         <span>
           <span aria-hidden className="mr-1.5 inline-block size-2.5 rounded-sm" style={{ background: 'var(--axis)' }} />
-          Bugünkü ekim
+          Bugün
         </span>
         <span>
           <span aria-hidden className="mr-1.5 inline-block size-2.5 rounded-sm" style={{ background: 'var(--water)' }} />
-          Önerilen plan
+          Öneri
         </span>
         <span className="text-ink2">
-          {hi !== null ? `${years[hi]}: bugünkü ${pct(a[hi])} · önerilen ${pct(b[hi] ?? 0)}` : `20 yıl ortalaması: bugünkü ${pct(mv.currentWater.coverage)} · önerilen ${pct(mv.plannedWater.coverage)}`}
+          {hi !== null ? `${years[hi]}: bugün ${pct(a[hi])} · öneri ${pct(b[hi] ?? 0)}` : `20 yıl ortalaması: bugün ${pct(mv.currentWater.coverage)} · öneri ${pct(mv.plannedWater.coverage)}`}
         </span>
       </div>
     </div>
@@ -300,6 +440,7 @@ export function MemberScreen() {
   const s = useStore();
   const [yearSel, setYearSel] = useState<number | 'median'>('median');
   const [editing, setEditing] = useState<string | null>(null);
+  const [detail, setDetail] = useState(false);
   const { model, weather } = s;
   if (!model || !weather) return null;
   if (model.members.length === 0)
@@ -319,34 +460,34 @@ export function MemberScreen() {
     );
   const mv = model.members.find((x) => x.member.id === s.memberId) ?? model.members[0];
   const m = mv.member;
-  const cur = mv.current;
-  const maxDemand = Math.max(...cur.years.map((y) => y.demandTotalM3), ...mv.planned.years.map((y) => y.demandTotalM3), 0);
-  const yMax = Math.max(mv.quotaM3 * 1.25, maxDemand * 1.03, 1);
-  const years = cur.years.map((y) => y.year);
-  const medCur = medianDate(weather, cur);
+  const years = mv.current.years.map((y) => y.year);
+  const medCur = medianDate(weather, mv.current);
   const medPl = medianDate(weather, mv.planned);
-  const list = (items: { name: string; da: number }[]) => items.map((x) => `${da(x.da)} dekar ${x.name.toLocaleLowerCase('tr')}`).join(', ');
-  const curCrops = list(mv.currentParcels.map((p) => ({ name: p.crop.name, da: p.areaDa })));
-  const plBy = new Map<string, number>();
-  for (const a of mv.plannedAllocs) if (a.option && a.da >= 0.05) plBy.set(a.cropId, (plBy.get(a.cropId) ?? 0) + a.da);
-  const plCrops = list([...plBy].map(([id, d]) => ({ name: model.cropById.get(id)?.name ?? id, da: d })));
+  const names = new Map(model.crops.map((c) => [c.id, c.name]));
+  const curRows = cropRows(mv.currentParcels, mv.currentWater);
+  const plRows = cropRows(mv.plannedParcels, mv.plannedWater);
+  const list = (rows: CropRow[]) => rows.map((r) => `${da(r.da)} dekar ${lower(r.name)}`).join(', ');
+  const a = mv.current.meanRevenue;
+  const b = mv.planned.meanRevenue;
+  const diff = a > 0 ? (b - a) / a : null;
+  const showChooser = mv.options.legume !== null && mv.options.free.legumeDa < 0.05;
+  const legumeOn = (s.settings.minLegumeShare ?? 0) > 0;
 
   return (
     <>
-      <PageHeader icon={Sprout} title="Üye" meta={`${weather.name} · 2006–2025 hasat yılları`}>
+      <PageHeader icon={Sprout} title="Üye" meta={`${da(m.areaDa)} da · su hakkı ${m3(mv.quotaM3)} · ${METHOD_LABEL[m.method]} sulama · ${weather.name}`}>
         <Select
           variant="pill"
           prefix="Grafik yılı"
           label="Grafik yılı"
           value={String(yearSel)}
           onChange={(v) => setYearSel(v === 'median' ? 'median' : Number(v))}
-          options={[{ value: 'median', label: 'Ortanca yıl' }, ...years.map((y, i) => ({ value: String(i), label: String(y) }))]}
+          options={[{ value: 'median', label: 'Tipik yıl' }, ...years.map((y, i) => ({ value: String(i), label: String(y) }))]}
         />
         <button type="button" className="btn" onClick={() => setEditing(m.id)}>
           <Pencil /> Üyeyi düzenle
         </button>
       </PageHeader>
-      <HonestyBanner />
 
       {model.members.length <= 6 ? (
         <Segmented label="Üyeler" value={m.id} options={model.members.map((x) => ({ id: x.member.id, label: x.member.name }))} onChange={(id) => s.setMemberId(id)} />
@@ -354,73 +495,49 @@ export function MemberScreen() {
         <Select className="max-w-[320px]" label="Üye" value={m.id} onChange={(id) => s.setMemberId(id)} options={model.members.map((x) => ({ value: x.member.id, label: x.member.name }))} />
       )}
 
-      {/* üye künyesi */}
-      <section className="card flex flex-wrap items-center gap-x-6 gap-y-3 !py-3">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2 text-[14px] font-[650] text-ink">
-            {m.name} <Tag kind="kurgusal" />
-          </div>
-          <div className="tnum text-[12px] text-ink2">
-            {da(m.areaDa)} da · kota {mm(m.quotaMm)} ({m3(mv.quotaM3)}) · {METHOD_LABEL[m.method]} sulama, randıman {pct(s.eff[m.method])}
-          </div>
-        </div>
-        <div className="min-w-[220px] flex-1 text-[12px]">
-          <div className="mb-1 text-ink2">Bugünkü ekim</div>
-          {mv.currentParcels.length ? (
-            <div className="flex flex-wrap gap-x-4 gap-y-1">
-              {mv.currentParcels.map((p, k) => (
-                <span key={k} className="tnum whitespace-nowrap">
-                  <Swatch id={p.crop.id} />
-                  {p.crop.name} <span className="text-ink2">{da(p.areaDa)} da</span>
-                </span>
-              ))}
-            </div>
-          ) : (
-            <span className="text-ink2">girilmedi</span>
-          )}
-          {mv.currentAreaDa > m.areaDa + 0.05 && <div className="font-semibold text-crit-ink">Ekim tarladan büyük: dekarları düzeltin.</div>}
-        </div>
-      </section>
+      <CompareStrip mv={mv} medCur={medCur} medPl={medPl} />
 
       <Brief>
         <p className="m-0">
-          {m.name}, {da(m.areaDa)} dekarlık tarlasına {curCrops || 'şu an bir şey ekmiyor'}
-          {curCrops ? ' ekiyor' : ''}. Bu ürünler yılda yaklaşık <b>{m3(mv.currentWater.demandM3)}</b> su istiyor; üyenin su hakkı ise <b>{m3(mv.quotaM3)}</b>.{' '}
+          <b>Bugün:</b> {m.name} {curRows.length ? `${list(curRows)} ekiyor` : 'tarlasını ekmiyor'};{' '}
           {medCur ? (
             <>
-              Su tipik bir yılda <b className="text-crit-ink">{fmtDayMonth(medCur)}</b>{onSuffix(medCur)} bitiyor, sonrasında tarla susuz kalıyor; bu yüzden doya doya sulanan bir tarlanın vereceği ürünün ancak{' '}
-              <b>{pct(mv.currentWater.yieldLevel)}</b> kadarı alınabiliyor.
+              su hakkı tipik bir yılda <b className="text-crit-ink">{fmtDayMonth(medCur)}</b>
+              {onSuffix(medCur)} bitiyor ve tarla susuz kalıyor.
             </>
           ) : (
-            <>Su yıl boyunca yetiyor.</>
+            <>su hakkı aşılmıyor.</>
           )}
         </p>
         <p className="m-0">
-          Öneri: tarlaya {plCrops || 'nadas'} ekmek ve suyu baştan parsellere paylaştırmak. {medPl ? <>Bu planda da su {fmtDayMonth(medPl)}{onSuffix(medPl)} bitiyor.</> : <>O zaman <b className="text-good-ink">su yıl boyunca yetiyor</b></>}
-          {!medPl && <> ve alınan ürün <b>{pct(mv.plannedWater.yieldLevel)}</b> oluyor.</>} Aşağıda soldaki sütun bugünkü durumu, sağdaki sütun öneriyi gösterir.
+          <b>Öneri:</b> {plRows.length ? `${list(plRows)} ekmek` : 'tarlayı nadasa bırakmak'}. {irrigationLine(plRows)}
+        </p>
+        <p className="m-0">
+          <b>Sonuç:</b> {medPl ? <>su {fmtDayMonth(medPl)}{onSuffix(medPl)} bitiyor</> : <b className="text-good-ink">su hakkı aşılmıyor</b>}, yıllık brüt gelir {tlShort(a)} yerine <b>{tlShort(b)}</b> oluyor
+          {diff !== null && Math.abs(diff) >= 0.005 ? ` (${diff >= 0 ? '+' : '−'}%${Math.round(Math.abs(diff) * 100)})` : ''}.
         </p>
       </Brief>
 
-      {/* bugünkü ekimden önerilen plana ne değişiyor */}
-      <div className="kpi-grid">
-        <Shift
-          label="Su ne zaman bitiyor?"
-          tag="hesap"
-          from={medCur ? fmtDayMonth(medCur) : 'su yetiyor'}
-          to={medPl ? fmtDayMonth(medPl) : 'Su yetiyor'}
-          tone={medPl ? 'crit' : 'good'}
-          hint={medCur ? `Bugünkü ekimde su 20 yılın ${cur.yearsExceeded}${inSuffix(cur.yearsExceeded)} yetmiyor` : 'Bugünkü ekimde de su yetiyor'}
-        />
-        <Shift
-          label="İstenen suyun verilebilen kısmı"
-          tag="hesap"
-          from={pct(mv.currentWater.coverage)}
-          to={pct(mv.plannedWater.coverage)}
-          hint={`Ürünlerin istediği su ${m3(mv.currentWater.demandM3)} → ${m3(mv.plannedWater.demandM3)}`}
-        />
-        <Shift label="Alınan ürün" tag="hesap" from={pct(mv.currentWater.yieldLevel)} to={pct(mv.plannedWater.yieldLevel)} hint="Doya doya sulanan tarlaya göre yüzde" />
-        <Shift label="Toprak puanı" tag="hesap" from={mv.currentSoil.score} to={`${mv.plannedSoil.score} / 100`} hint="Ürün çeşitliliği ve baklagil payı, 100 üzerinden" />
-      </div>
+      {showChooser && mv.options.legume && (
+        <Card>
+          <H2 right={<Tag kind="hesap" />}>İki seçenek: hangisi olsun?</H2>
+          <p className="m-0 mb-3 text-ink2">
+            En yüksek geliri veren planda bu üyenin tarlasında baklagil yok. Nohut toprağı dinlendirir; gelire ve toprak puanına etkisi aşağıda. Araç seçmez, ikisini yan yana gösterir.
+          </p>
+          <div className="grid gap-3 md:grid-cols-2">
+            <OptionCard title="Gelir planı" sub="En yüksek brüt gelir; baklagil şartı yok." o={mv.options.free} active={!legumeOn} names={names} onPick={() => s.updateSettings({ minLegumeShare: 0 })} />
+            <OptionCard
+              title="Nohutlu plan"
+              sub={`Her üyenin tarlasının en az ${pct(LEGUME_PLAN_SHARE)} kadarı baklagil.`}
+              o={mv.options.legume}
+              active={legumeOn}
+              names={names}
+              onPick={() => s.updateSettings({ minLegumeShare: LEGUME_PLAN_SHARE })}
+            />
+          </div>
+          <p className="mb-0 mt-2 text-[11px] text-ink2">Seçim bütün kooperatifin planına uygulanır; öbür üyelerin önerisi de değişir.</p>
+        </Card>
+      )}
 
       {model.plan.status === 'partial' && (
         <Note tone="warn">
@@ -433,19 +550,34 @@ export function MemberScreen() {
       )}
 
       <div className="grid items-start gap-3 lg:grid-cols-2">
-        <Panel kind="current" w={weather} mv={mv} model={model} yearSel={yearSel} yMax={yMax} />
-        <Panel kind="planned" w={weather} mv={mv} model={model} yearSel={yearSel} yMax={yMax} />
+        <Panel kind="current" w={weather} mv={mv} rows={curRows} yearSel={yearSel} detail={detail} onDetail={() => setDetail((v) => !v)} names={names} />
+        <Panel kind="planned" w={weather} mv={mv} rows={plRows} yearSel={yearSel} detail={detail} onDetail={() => setDetail((v) => !v)} names={names} />
       </div>
 
-      <Card>
-        <H2 right={<Tag kind="hesap" />}>Yıl yıl: istenen suyun ne kadarı verilebildi</H2>
-        <YearCoverage mv={mv} />
-        <p className="mb-0 mt-3 text-[11px] text-ink2">
-          Bugünkü ekimin sonuçları, aynı ekim 2006-2025'in her yılında yapılsaydı ne olacağını gösterir; üyenin o yıllarda gerçekte ne ektiği bilinmiyor. Toprak puanı: {SOIL_FORMULA}. Bir gösterge
-          olarak okunmalı; toprak analizi değildir.
-        </p>
-      </Card>
+      <details className="card group">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-2 text-[13px] font-[650] text-ink">
+          <span>Ayrıntılar</span>
+          <span className="text-[12px] font-normal text-ink2 group-open:hidden">su bütçesi, parsel parsel su, yıl yıl sonuç, toprak puanı formülü</span>
+        </summary>
+        <div className="mt-4 flex flex-col gap-6">
+          <div className="grid gap-6 lg:grid-cols-2">
+            <DetailColumn kind="current" mv={mv} />
+            <DetailColumn kind="planned" mv={mv} />
+          </div>
+          <div>
+            <h3 className="m-0 mb-2 flex items-center gap-1.5 text-[13px] font-[650] text-ink">
+              Yıl yıl: istenen suyun ne kadarı verilebildi <Tag kind="hesap" />
+            </h3>
+            <YearCoverage mv={mv} />
+          </div>
+          <p className="m-0 text-[12px] text-ink2">
+            Bugünkü ekimin sonuçları, aynı ekim 2006-2025'in her yılında yapılsaydı ne olacağını gösterir; üyenin o yıllarda gerçekte ne ektiği bilinmiyor. "Alınan ürün", doya doya sulanan tarlaya göre
+            yüzdedir. Toprak puanı: {SOIL_FORMULA}. Bir göstergedir; toprak analizi değildir.
+          </p>
+        </div>
+      </details>
 
+      <HonestyBanner />
       <MemberEditor id={editing} onClose={() => setEditing(null)} />
     </>
   );

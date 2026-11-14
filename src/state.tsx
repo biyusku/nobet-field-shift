@@ -20,7 +20,7 @@ interface Persisted {
   point: PointSel;
 }
 
-const KEY = 'nobet-durum-v1';
+const KEY = 'nobet-durum-v2';
 const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
 
 function defaults(): Persisted {
@@ -41,7 +41,7 @@ function load(): Persisted {
     const p = JSON.parse(raw) as Partial<Persisted>;
     const d = defaults();
     if (!Array.isArray(p.members) || !Array.isArray(p.cropDefs) || p.cropDefs.length !== d.cropDefs.length) return d;
-    return { ...d, ...p, settings: { ...d.settings, ...p.settings }, soil: { ...d.soil, ...p.soil }, eff: { ...d.eff, ...p.eff } } as Persisted;
+    return { ...d, ...p, point: d.point, settings: { ...d.settings, ...p.settings }, soil: { ...d.soil, ...p.soil }, eff: { ...d.eff, ...p.eff } } as Persisted;
   } catch {
     return defaults();
   }

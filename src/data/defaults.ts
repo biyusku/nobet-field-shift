@@ -49,10 +49,15 @@ export const METHOD_LABEL = { salma: 'Salma', yagmurlama: 'Yağmurlama', damla: 
 export const DEFAULT_SETTINGS: PlanSettings = {
   maxShare: 1 / 3,
   smallMarketCap: 0.25,
-  commitments: { misir: 300 },
+  // 40 ton: önerilen planın 20 yılın 18'inde tutturduğu en yüksek yuvarlak değer (bkz. DECISIONS.md)
+  commitments: { misir: 40 },
   mode: 'revenue',
   includeUnreliable: false,
+  minLegumeShare: 0,
 };
+
+/** "Nohutlu plan" seçeneğindeki en düşük baklagil payı. */
+export const LEGUME_PLAN_SHARE = 0.2;
 
 export interface PointDef {
   id: string;
