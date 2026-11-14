@@ -23,7 +23,7 @@ test.runIf(process.env.PROBE)('plan özeti', () => {
             .join('  '),
       );
   }
-  for (const commitments of [{ misir: 300 }, {}] as Record<string, number>[]) {
+  for (const commitments of [DEFAULT_SETTINGS.commitments, {}] as Record<string, number>[]) {
     for (const mode of ['revenue', 'minWater'] as const) {
       const t0 = performance.now();
       const plan = solvePlan({ members: DEFAULT_MEMBERS, crops, curvesByMethod, settings: { ...DEFAULT_SETTINGS, commitments, mode } });

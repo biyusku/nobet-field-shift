@@ -41,6 +41,8 @@ export interface Crop {
   name: string;
   legume: boolean;
   smallMarket: boolean;
+  /** yalnız sözleşmesi olan üyeye ve yalnız tam sulamayla önerilir (şeker pancarı) */
+  contractOnly?: boolean;
   plantMonth: number;
   plantDay: number;
   /** baş, gelişme, orta, son (gün) */
@@ -70,6 +72,8 @@ export interface Member {
   quotaMm: number;
   method: IrrigationMethod;
   current: { cropId: string; da: number }[];
+  /** şeker pancarı sözleşmesi var mı; yoksa pancar bu üyeye önerilmez */
+  beetContract?: boolean;
 }
 
 export const FALLOW = 'nadas';

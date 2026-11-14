@@ -16,7 +16,14 @@ export interface PlanSettings {
   includeUnreliable: boolean;
   /** her üyenin tarlasında baklagilin en düşük payı (0-1); 0 ya da boş = kısıt yok */
   minLegumeShare?: number;
+  /**
+   * Sulanan bir seçenek, o ürünün tam su ihtiyacının en az bu kesrini almalıdır (varsayılan 0,6).
+   * Altındaki kısıntılı seçenekler plana girmez: ürün ya yeterince sulanır, ya yağmura bırakılır, ya ekilmez.
+   */
+  minIrrigationFraction?: number;
 }
+
+export const DEFAULT_MIN_IRRIGATION = 0.6;
 
 export interface PlanInput {
   members: Member[];
@@ -83,8 +90,17 @@ function buildBase(input: PlanInput) {
     const curves = curvesByMethod[m.method];
     for (const c of crops) {
       constraints[`pay_${mi}_${c.id}`] = { max: settings.maxShare * m.areaDa };
-      (curves[c.id] ?? []).forEach((o, oi) => {
+      const opts = curves[c.id] ?? [];
+      const full = opts[opts.length - 1];
+      const minFrac = settings.minIrrigationFraction ?? DEFAULT_MIN_IRRIGATION;
+      // Sözleşmeye bağlı ürün (şeker pancarı): sözleşmesi olmayan üyeye hiç önerilmez.
+      if (c.contractOnly && !m.beetContract) continue;
+      opts.forEach((o, oi) => {
         if (!o.reliable && !settings.includeUnreliable) return;
+        // ... sözleşmesi olana da yalnız tam sulamayla: doğrusal verim modeli az suda pancar için güvenilir değil.
+        if (c.contractOnly && o.level !== null) return;
+        // Kısıntılı sulama alt sınırı: tam ihtiyacın minFrac kesrinden azıyla sulanan seçenek yok.
+        if (o.level !== null && o.level > 0 && full && o.meanGross < minFrac * full.meanGross) return;
         const tons = expectedTonsPerDa(c, o);
         const key = `x|${mi}|${c.id}|${oi}`;
         const row: Row = {

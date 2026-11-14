@@ -20,7 +20,7 @@ interface Persisted {
   point: PointSel;
 }
 
-const KEY = 'nobet-durum-v2';
+const KEY = 'nobet-durum-v3';
 const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
 
 function defaults(): Persisted {

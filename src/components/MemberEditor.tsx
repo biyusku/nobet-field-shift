@@ -98,6 +98,14 @@ export function MemberEditor({ id, onClose }: { id: string | null; onClose: () =
           />
         </div>
 
+        <label className="flex cursor-pointer items-start gap-2 text-[13px] text-ink">
+          <input type="checkbox" className="mt-0.5 size-4 shrink-0 accent-[var(--primary)]" checked={!!m.beetContract} onChange={(e) => s.updateMember(m.id, { beetContract: e.target.checked })} />
+          <span>
+            Şeker pancarı sözleşmesi var
+            <span className="block text-[12px] text-ink2">İşaretli değilse pancar bu üyeye önerilmez. İşaretliyse yalnız tam sulamayla önerilir.</span>
+          </span>
+        </label>
+
         <div>
           <div className="mb-1.5 flex items-baseline justify-between">
             <span className="text-[12px] font-medium text-ink2">Bugünkü ekim</span>

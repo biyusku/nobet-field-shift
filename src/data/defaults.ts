@@ -27,6 +27,8 @@ export const DEFAULT_MEMBERS: Member[] = [
       { cropId: 'misir', da: 140 },
       { cropId: 'pancar', da: 60 },
     ],
+    // bugün pancar ektiği için sözleşmesi var sayıldı (kurgusal)
+    beetContract: true,
   },
   {
     id: 'u4',
@@ -49,11 +51,12 @@ export const METHOD_LABEL = { salma: 'Salma', yagmurlama: 'Yağmurlama', damla: 
 export const DEFAULT_SETTINGS: PlanSettings = {
   maxShare: 1 / 3,
   smallMarketCap: 0.25,
-  // 40 ton: önerilen planın 20 yılın 18'inde tutturduğu en yüksek yuvarlak değer (bkz. DECISIONS.md)
+  // 40 ton: önerilen plan bunu 20 yılın 20'sinde tutturuyor (bkz. DECISIONS.md)
   commitments: { misir: 40 },
   mode: 'revenue',
   includeUnreliable: false,
   minLegumeShare: 0,
+  minIrrigationFraction: 0.6,
 };
 
 /** "Nohutlu plan" seçeneğindeki en düşük baklagil payı. */

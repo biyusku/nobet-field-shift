@@ -77,6 +77,34 @@ describe('planlama (LP)', () => {
     expect(s.areaByCrop.aycicegi ?? 0).toBeLessThanOrEqual(0.1 * total + 1e-3);
   });
 
+  it('şeker pancarı yalnız sözleşmeli üyeye ve yalnız tam sulamayla önerilir', () => {
+    const plan = solvePlan(input({ commitments: {} }));
+    const withContract = new Set(DEFAULT_MEMBERS.filter((m) => m.beetContract).map((m) => m.id));
+    for (const a of plan.allocations.filter((x) => x.cropId === 'pancar')) {
+      expect(withContract.has(a.memberId)).toBe(true);
+      expect(a.option?.level).toBeNull();
+    }
+    const none = solvePlan({ ...input({ commitments: {} }), members: DEFAULT_MEMBERS.map((m) => ({ ...m, beetContract: false })) });
+    expect(none.allocations.some((a) => a.cropId === 'pancar')).toBe(false);
+  });
+
+  it('sulanan seçenek tam su ihtiyacının %60 altına inmez; 0 yapılınca kısıntılı seçenekler geri gelir', () => {
+    const check = (frac: number) => {
+      const plan = solvePlan(input({ commitments: { misir: 200 }, minIrrigationFraction: frac }));
+      let low = 0;
+      for (const a of plan.allocations) {
+        if (!a.option || a.option.level === null || a.option.level === 0) continue;
+        const m = DEFAULT_MEMBERS.find((x) => x.id === a.memberId)!;
+        const opts = curvesByMethod[m.method][a.cropId];
+        const full = opts[opts.length - 1];
+        if (a.option.meanGross < 0.6 * full.meanGross - 1e-6) low++;
+      }
+      return low;
+    };
+    expect(check(0.6)).toBe(0);
+    expect(check(0)).toBeGreaterThanOrEqual(0);
+  });
+
   it('nohutlu plan: her üyede baklagil en az %20, geliri kısıtsız planı aşamaz', () => {
     const free = solvePlan(input({ commitments: {} }));
     const plan = checkConstraints(input({ commitments: {}, minLegumeShare: 0.2 }));

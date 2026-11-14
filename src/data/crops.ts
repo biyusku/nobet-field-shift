@@ -13,6 +13,8 @@ export interface CropDef {
   legume: boolean;
   /** pazarı küçük ürün: kooperatif toplamında eşiklenebilir */
   smallMarket: boolean;
+  /** yalnız sözleşmeli üyeye, yalnız tam sulamayla önerilir */
+  contractOnly: boolean;
   plant: Assumed<{ month: number; day: number }>;
   stages: Assumed<[number, number, number, number]>;
   kc: Assumed<[number, number, number]>;
@@ -39,13 +41,14 @@ function def(
   ky: number,
   yieldKgDa: number,
   priceTlTon: number,
-  flags: { legume?: boolean; smallMarket?: boolean } = {},
+  flags: { legume?: boolean; smallMarket?: boolean; contractOnly?: boolean } = {},
 ): CropDef {
   return {
     id,
     name,
     legume: !!flags.legume,
     smallMarket: !!flags.smallMarket,
+    contractOnly: !!flags.contractOnly,
     plant: a({ month: plant[0], day: plant[1] }, S_CAL),
     stages: a(stages, S_CAL),
     kc: a(kc, S_KC),
@@ -57,7 +60,7 @@ function def(
 
 export const DEFAULT_CROPS: CropDef[] = [
   def('misir', 'Mısır', [5, 1], [30, 40, 50, 30], [0.3, 1.2, 0.5], 1.25, 1265, 15025),
-  def('pancar', 'Şeker pancarı', [4, 10], [30, 45, 80, 35], [0.35, 1.2, 0.7], 1.0, 7000, 3720),
+  def('pancar', 'Şeker pancarı', [4, 10], [30, 45, 80, 35], [0.35, 1.2, 0.7], 1.0, 7000, 3720, { contractOnly: true }),
   def('aycicegi', 'Ayçiçeği', [5, 1], [25, 35, 45, 25], [0.35, 1.1, 0.35], 0.95, 350, 34250, { smallMarket: true }),
   def('bugday', 'Buğday (kışlık)', [10, 20], [146, 47, 40, 25], [0.4, 1.15, 0.3], 1.05, 550, 16500),
   def('arpa', 'Arpa (kışlık)', [10, 20], [141, 42, 35, 25], [0.3, 1.15, 0.25], 1.0, 500, 12750),
@@ -71,6 +74,7 @@ export function toEngineCrop(d: CropDef): Crop {
     name: d.name,
     legume: d.legume,
     smallMarket: d.smallMarket,
+    contractOnly: d.contractOnly,
     plantMonth: d.plant.value.month,
     plantDay: d.plant.value.day,
     stages: d.stages.value,

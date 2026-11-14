@@ -73,3 +73,9 @@ Belirsiz kalan yerlerde verilen kararlar, her biri tek satır.
 - "Nohutlu plan": her üyenin tarlasında en az %20 baklagil kısıtıyla ikinci bir LP çözümü. Üyenin gelir planında hiç baklagil yoksa iki plan gelir ve toprak puanıyla yan yana gösterilir; seçim kooperatifin tamamına uygulanır (plan tek LP olduğu için). Bunun için motora isteğe bağlı tek bir kısıt eklendi; varsayılan davranış değişmedi.
 - Nokta seçimi artık saklanmaz: uygulama her açılışta Karapınar (37,72° K, 33,55° D) ile başlar. Saklanan durumun anahtarı v2 oldu; eski kayıtlar (300 tonluk taahhüt dahil) yok sayılır.
 - "Su yetiyor" ifadesi her yerde "Su hakkı aşılmıyor" oldu: su, ürünlerin istediği kadar değil; yalnızca hak aşılmıyor.
+- Şeker pancarı öneri kümesinden çıkarıldı: yalnız "pancar sözleşmesi var" işaretli üyeye ve yalnız tam sulama seviyesinde seçilebilir. Gerekçe: bölgenin en çok su isteyen ürünü ve doğrusal verim modeli az suda pancar için güvenilir değil.
+- Genel kural eklendi: sulanan bir seçenek, o ürünün tam su ihtiyacının (20 yıl ort.) en az %60'ını almalı; altı plana girmez. Ürün ya yeterince sulanır, ya yağmura bırakılır, ya ekilmez. Eşik "Plan kuralları"ndan değiştirilebilir.
+- Kurgusal Üye 3 bugün pancar ektiği için "sözleşmesi var" sayıldı; öbür üç üyede sözleşme yok.
+- Düzeltmeden sonra Üye 1: bugün 333 bin TL → öneri 524 bin TL (+%57; düzeltmeden önce 602 bin TL, +%81). Kooperatif önerilen brüt gelir 6,85 → 5,99 milyon TL.
+- 40 tonluk mısır taahhüdü artık planı zorlamıyor: pancar çıkınca plan zaten ortalama 164 ton mısır üretiyor, söz 20 yılın 20'sinde tutuyor. Değer değiştirilmedi.
+- Saklanan durumun anahtarı v3 oldu (üyeye sözleşme alanı eklendi).
