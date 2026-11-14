@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { type Context, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { DEFAULT_CROPS, type CropDef } from './data/crops';
 import { DEFAULT_EFF, DEFAULT_MEMBERS, DEFAULT_SETTINGS, DEFAULT_SOIL, PRESET_POINTS } from './data/defaults';
 import type { PlanSettings } from './engine/plan';
@@ -6,9 +6,10 @@ import type { Efficiencies, Member, Soil, Weather } from './engine/types';
 import { buildWeather } from './engine/weather';
 import { loadCustom, loadPreset } from './lib/weatherSource';
 import { computeModel, type Model } from './model';
+import { StoreCtx } from './storeContext';
 
 export type PointSel = { kind: 'preset'; id: string } | { kind: 'custom'; lat: number; lon: number };
-export type Tab = 'giris' | 'uye' | 'kooperatif' | 'taahhut' | 'yontem';
+export type Tab = 'uye' | 'kooperatif' | 'taahhut' | 'yontem';
 
 interface Persisted {
   members: Member[];
@@ -68,7 +69,7 @@ interface Store extends Persisted {
   setMemberId: (id: string) => void;
 }
 
-const Ctx = createContext<Store | null>(null);
+const Ctx = StoreCtx as Context<Store | null>;
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [p, setP] = useState<Persisted>(load);
@@ -76,7 +77,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [weatherStatus, setStatus] = useState<Store['weatherStatus']>('loading');
   const [weatherError, setWeatherError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [tab, setTab] = useState<Tab>('giris');
+  const [tab, setTab] = useState<Tab>('uye');
   const [memberId, setMemberId] = useState<string>(() => p.members[0]?.id ?? '');
   const lastGood = useRef<PointSel>({ kind: 'preset', id: PRESET_POINTS[0].id });
 

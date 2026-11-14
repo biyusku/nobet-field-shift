@@ -42,7 +42,7 @@ export default function MapModal({ initial, onPick, onClose }: { initial: { lat:
     <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/50 p-3" role="dialog" aria-modal="true" aria-label="Haritadan nokta seç" onClick={onClose}>
       <div className="flex max-h-full w-full max-w-[760px] flex-col rounded-lg border border-line bg-surface p-4" onClick={(e) => e.stopPropagation()}>
         <div className="mb-2 flex items-baseline justify-between gap-3">
-          <h2 className="m-0 text-[17px] font-semibold">Haritadan nokta seç</h2>
+          <h2 className="m-0 text-[14px] font-[650]">Haritadan nokta seç</h2>
           <button type="button" className="btn" onClick={onClose}>
             Vazgeç
           </button>
@@ -52,9 +52,9 @@ export default function MapModal({ initial, onPick, onClose }: { initial: { lat:
           yakın noktalar aynı sonucu verebilir.
         </p>
         <div ref={el} className="h-[52vh] min-h-[260px] w-full rounded-md border border-line" />
-        {tileError && <p className="m-0 mt-2 text-[12.5px] text-warn-ink">Harita karoları yüklenemedi (ağ bağlantısı?). Koordinat seçimi yine de çalışır, ama haritayı göremeyebilirsiniz.</p>}
+        {tileError && <p className="m-0 mt-2 text-[12px] text-warn-ink">Harita karoları yüklenemedi (ağ bağlantısı?). Koordinat seçimi yine de çalışır, ama haritayı göremeyebilirsiniz.</p>}
         <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-          <span className="text-[13.5px] tnum">{pt ? `Seçilen: ${pt.lat.toFixed(2)}° K, ${pt.lon.toFixed(2)}° D` : 'Henüz nokta seçilmedi.'}</span>
+          <span className="text-[13px] tnum">{pt ? `Seçilen: ${pt.lat.toFixed(2)}° K, ${pt.lon.toFixed(2)}° D` : 'Henüz nokta seçilmedi.'}</span>
           <button type="button" className="btn btn-primary disabled:cursor-not-allowed disabled:opacity-40" disabled={!pt} onClick={() => pt && onPick(pt.lat, pt.lon)}>
             Bu noktayı kullan
           </button>

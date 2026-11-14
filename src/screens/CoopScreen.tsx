@@ -1,5 +1,6 @@
-import { cropName, CropBar } from '../components/bits';
-import { Card, H2, Note, NumInput, Stat, Swatch, Tag } from '../components/ui';
+import { Pencil, Plus, RotateCcw, Trash2, Users } from 'lucide-react';
+import { cropName, CropBar, HonestyBanner } from '../components/bits';
+import { Card, Change, H2, Kpi, Note, NumInput, PageHeader, Stat, Swatch, Tag } from '../components/ui';
 import { COOP_NAME, METHOD_LABEL } from '../data/defaults';
 import { FALLOW, type IrrigationMethod } from '../engine/types';
 import { dateOfIndex } from '../engine/weather';
@@ -15,7 +16,7 @@ export function PlanSettingsCard() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="text-[12px] text-ink2">
           <div>Amaç</div>
-          <div className="mt-1 flex flex-col gap-1 text-[13.5px] text-ink">
+          <div className="mt-1 flex flex-col gap-1 text-[13px] text-ink">
             <label className="flex cursor-pointer items-center gap-2">
               <input type="radio" name="mode" checked={st.mode === 'revenue'} onChange={() => s.updateSettings({ mode: 'revenue' })} />
               En yüksek brüt gelir
@@ -71,46 +72,37 @@ export function CoopScreen() {
   const smallArea = model.crops.filter((c) => c.smallMarket).reduce((x, c) => x + (ps.areaByCrop[c.id] ?? 0), 0);
 
   return (
-    <div className="flex flex-col gap-4">
-      <Card>
-        <H2 right={<Tag kind="kurgusal" />}>{COOP_NAME}</H2>
-        <p className="m-0 mb-3 text-[13.5px] text-ink2">
-          Bu kooperatif ve üyeleri gerçek değildir; aracı dolu göstermek için uydurulmuştur. Üyeleri kendi verinizle değiştirebilirsiniz; değişiklikler bu tarayıcıda saklanır.
-        </p>
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <Stat label="Üye" tag="kurgusal" value={int(model.members.length)} />
-          <Stat label="Toplam alan" tag="kurgusal" value={`${int(model.totalAreaDa)} da`} />
-          <Stat label="Toplam kota" tag="kurgusal" value={m3(model.totalQuotaM3)} />
-          <Stat label="Nokta" tag="nasa" value={<span className="text-[16px]">{weather.name}</span>} sub={`${weather.lat.toFixed(2)}°K ${weather.lon.toFixed(2)}°D · ${int(weather.elevation)} m`} />
-        </div>
-      </Card>
+    <>
+      <PageHeader icon={Users} title="Kooperatif" meta={<>{COOP_NAME} <Tag kind="kurgusal" /></>}>
+        <button
+          type="button"
+          className="btn"
+          onClick={() => {
+            if (confirm('Üyeler, taahhüt ve bütün varsayımlar kurgusal örneğe döndürülsün mü?')) s.reset();
+          }}
+        >
+          <RotateCcw /> Kurgusal örneğe dön
+        </button>
+        <button type="button" className="btn btn-primary" onClick={() => s.addMember()}>
+          <Plus /> Üye ekle
+        </button>
+      </PageHeader>
+      <HonestyBanner />
+
+      <div className="kpi-grid">
+        <Kpi label="Üye" tag="kurgusal" value={int(model.members.length)} hint={`Toplam ${int(model.totalAreaDa)} da`} />
+        <Kpi label="Toplam kota" tag="kurgusal" value={m3(model.totalQuotaM3)} hint={`Bugün kullanılan ${m3(model.current.meanUsedM3)}`} />
+        <Kpi label="Brüt gelir" tag="hesap" value={tlShort(model.planSummary.revenue)} change={<Change from={model.current.meanRevenue} to={model.planSummary.revenue} />} hint={`Önerilen plan · bugünkü ${tlShort(model.current.meanRevenue)}`} />
+        <Kpi label="İklim noktası" tag="nasa" value={<span className="text-[14px]">{weather.name}</span>} hint={`${weather.lat.toFixed(2)}°K ${weather.lon.toFixed(2)}°D · ${int(weather.elevation)} m`} />
+      </div>
 
       <Card>
-        <H2
-          right={
-            <span className="flex gap-2">
-              <button type="button" className="btn btn-primary" onClick={() => s.addMember()}>
-                + Üye ekle
-              </button>
-              <button
-                type="button"
-                className="btn"
-                onClick={() => {
-                  if (confirm('Üyeler, taahhüt ve bütün varsayımlar kurgusal örneğe döndürülsün mü?')) s.reset();
-                }}
-              >
-                Kurgusal örneğe dön
-              </button>
-            </span>
-          }
-        >
-          Üyeler
-        </H2>
+        <H2>Üyeler</H2>
         {model.members.length === 0 ? (
-          <div className="text-[13.5px] text-ink2">Üye yok. "Üye ekle" ile başlayın.</div>
+          <div className="text-[13px] text-ink2">Üye yok. "Üye ekle" ile başlayın.</div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="data min-w-[760px] text-[13.5px]">
+            <table className="data min-w-[760px]">
               <thead>
                 <tr>
                   <th>Ad</th>
@@ -171,16 +163,18 @@ export function CoopScreen() {
                             s.setTab('uye');
                           }}
                         >
-                          Düzenle
+                          <Pencil /> Düzenle
                         </button>
                         <button
                           type="button"
-                          className="btn"
+                          className="icon-button align-middle"
+                          aria-label={`${m.name}: sil`}
+                          title="Sil"
                           onClick={() => {
                             if (confirm(`${m.name} silinsin mi?`)) s.removeMember(m.id);
                           }}
                         >
-                          Sil
+                          <Trash2 size={15} />
                         </button>
                       </td>
                     </tr>
@@ -194,7 +188,7 @@ export function CoopScreen() {
 
       {model.members.length > 0 && (
         <>
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div className="grid items-start gap-3 lg:grid-cols-2">
             <Card>
               <H2>Bugünkü ekim (toplam)</H2>
               <div className="mb-4 grid grid-cols-2 gap-4">
@@ -216,7 +210,7 @@ export function CoopScreen() {
           <Card>
             <H2>Ürün başına toplam</H2>
             <div className="overflow-x-auto">
-              <table className="data min-w-[640px] text-[13.5px]">
+              <table className="data min-w-[640px]">
                 <thead>
                   <tr>
                     <th>Ürün</th>
@@ -275,7 +269,7 @@ export function CoopScreen() {
           <Card>
             <H2 right={<Tag kind="hesap" />}>Fiyat riski</H2>
             {revBy.length === 0 ? (
-              <div className="text-[13.5px] text-ink2">Önerilen planda gelir getiren ürün yok.</div>
+              <div className="text-[13px] text-ink2">Önerilen planda gelir getiren ürün yok.</div>
             ) : (
               <>
                 <Note tone={topShare > 0.4 ? 'warn' : 'plain'}>
@@ -289,7 +283,7 @@ export function CoopScreen() {
                   )}
                 </Note>
                 <div className="mt-3 overflow-x-auto">
-                  <table className="data min-w-[520px] text-[13.5px]">
+                  <table className="data min-w-[520px]">
                     <thead>
                       <tr>
                         <th>Ürün</th>
@@ -322,6 +316,6 @@ export function CoopScreen() {
           <PlanSettingsCard />
         </>
       )}
-    </div>
+    </>
   );
 }

@@ -53,5 +53,9 @@ Belirsiz kalan yerlerde verilen kararlar, her biri tek satır.
 - Kullanıcının değişiklikleri localStorage'da saklanır; "Kurgusal örneğe dön" düğmesi başlangıca döndürür.
 - Sayı girişlerinde binlik ayırıcı yok; virgül de nokta da ondalık kabul edilir.
 - Ürün tablosunda ad, baklagil ve küçük pazar işaretleri sabit; ekim tarihi, evre süreleri, Kc, Ky, verim ve fiyat değiştirilebilir.
-- Sonradan istenen görsele göre karşılama sayfası eklendi (ortalanmış başlık, tek düğme, elle çizilmiş SVG tarla manzarası); ilk tanımdaki "süslü hero yok" kuralı bu istekle değişti. Rozetteki "500+ ajans" gibi bir sosyal kanıt uydurulmadı; yerine veri kaynağı yazıldı.
-- Karşılama manzarası iki temada da gündüzdür; koyu temada yalnız çevresi kararır.
+- Karşılama sayfası ve elle çizilmiş SVG manzara kaldırıldı: istenen şey bir açılış sayfası değil, panelin kendisinin estetik olmasıydı.
+- Tasarım dili kullanıcının kendi iki projesinden (shopify ve creator.rusk.agency panelleri) alındı: koyu, daraltılabilir kenar menü; açık gri zemin; ince gölgeli beyaz kartlar; 13 px Inter; KPI kartları, hap seçiciler, bölmeli seçici, etiket çipleri ve bantlar. Kod kopyalanmadı, yalnız görsel dil uyarlandı.
+- İkonlar için lucide-react eklendi; Inter yazı tipi Google Fonts'tan yüklenir (çevrimdışıyken sistem yazı tipine düşer).
+- Su bitiş tarihi kartın içindeki en büyük sayı olarak kaldı ama panel ölçeğine indirildi (34 px); ayrıca her ekranın başına dört KPI kartı geldi.
+- Nokta seçici ve tema düğmesi kenar menüye taşındı; "Veri kaynağı" satırı NASA POWER yükleme durumunu gösterir.
+- Dürüstlük notları (kurgusal, brüt gelir, 55 km) her ekranın başında mavi bantta ve sayfa altında durur.

@@ -1,22 +1,19 @@
+import { AlertTriangle, ArrowDownRight, ArrowUpRight, CheckCircle2, Info, type LucideIcon } from 'lucide-react';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { FALLOW } from '../engine/types';
 
 // ---------- Dürüstlük etiketleri ----------
 export type TagKind = 'nasa' | 'hesap' | 'varsayim' | 'kurgusal';
-const TAGS: Record<TagKind, { text: string; fg: string; bg: string; title: string }> = {
-  nasa: { text: 'NASA verisi', fg: 'var(--tag-nasa)', bg: 'var(--tag-nasa-bg)', title: 'NASA POWER günlük verisinden doğrudan gelen değer' },
-  hesap: { text: 'hesap', fg: 'var(--tag-calc)', bg: 'var(--tag-calc-bg)', title: 'NASA verisi ve varsayımlardan modelle hesaplanan değer' },
-  varsayim: { text: 'varsayım', fg: 'var(--tag-assume)', bg: 'var(--tag-assume-bg)', title: 'Doğrulanmamış varsayım; Yöntem sayfasından değiştirilebilir' },
-  kurgusal: { text: 'KURGUSAL', fg: 'var(--tag-fiction)', bg: 'var(--tag-fiction-bg)', title: 'Gerçek kişi ya da kurum değildir; örnek olsun diye uydurulmuştur' },
+const TAGS: Record<TagKind, { text: string; cls: string; title: string }> = {
+  nasa: { text: 'NASA verisi', cls: 'tag-info', title: 'NASA POWER günlük verisinden doğrudan gelen değer' },
+  hesap: { text: 'hesap', cls: '', title: 'NASA verisi ve varsayımlardan modelle hesaplanan değer' },
+  varsayim: { text: 'varsayım', cls: 'tag-warning', title: 'Doğrulanmamış varsayım; Yöntem sayfasından değiştirilebilir' },
+  kurgusal: { text: 'kurgusal', cls: 'tag-critical', title: 'Gerçek kişi ya da kurum değildir; örnek olsun diye uydurulmuştur' },
 };
 export function Tag({ kind, className = '' }: { kind: TagKind; className?: string }) {
   const t = TAGS[kind];
   return (
-    <span
-      title={t.title}
-      className={`inline-block align-middle rounded px-1.5 py-px text-[10.5px] font-semibold leading-4 tracking-wide whitespace-nowrap ${className}`}
-      style={{ color: t.fg, background: t.bg }}
-    >
+    <span title={t.title} className={`tag ${t.cls} ${className}`}>
       {t.text}
     </span>
   );
@@ -35,30 +32,137 @@ export function Swatch({ id }: { id: string }) {
 
 // ---------- Yerleşim ----------
 export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <section className={`rounded-lg border border-line bg-surface p-4 sm:p-5 ${className}`}>{children}</section>;
+  return <section className={`card ${className}`}>{children}</section>;
 }
 export function H2({ children, right }: { children: ReactNode; right?: ReactNode }) {
   return (
-    <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-      <h2 className="m-0 text-[17px] font-semibold">{children}</h2>
+    <div className="mb-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+      <h2 className="card-title flex items-center gap-2">{children}</h2>
       {right}
     </div>
   );
 }
-export function Note({ children, tone = 'plain' }: { children: ReactNode; tone?: 'plain' | 'warn' | 'crit' | 'good' }) {
-  const c = tone === 'warn' ? 'border-warn' : tone === 'crit' ? 'border-crit' : tone === 'good' ? 'border-good' : 'border-axis';
-  return <div className={`rounded-md border-l-4 ${c} bg-sunken px-3 py-2 text-[13.5px] text-ink2`}>{children}</div>;
+
+const NOTE = {
+  plain: { cls: '', Icon: Info },
+  warn: { cls: 'banner-warning', Icon: AlertTriangle },
+  crit: { cls: 'banner-critical', Icon: AlertTriangle },
+  good: { cls: 'banner-success', Icon: CheckCircle2 },
+  info: { cls: 'banner-info', Icon: Info },
+} as const;
+export function Note({ children, tone = 'plain' }: { children: ReactNode; tone?: keyof typeof NOTE }) {
+  const { cls, Icon } = NOTE[tone];
+  return (
+    <div className={`banner ${cls}`} role="status">
+      <Icon size={16} aria-hidden />
+      <div className="min-w-0">{children}</div>
+    </div>
+  );
 }
 
-/** Küçük gösterge: etiket + değer + kaynak etiketi */
+/** Kart içi küçük gösterge: etiket + değer + kaynak etiketi */
 export function Stat({ label, value, tag, sub }: { label: string; value: ReactNode; tag: TagKind; sub?: ReactNode }) {
   return (
-    <div className="min-w-0">
-      <div className="text-[12px] text-ink2">
+    <div className="flex min-w-0 flex-col gap-0.5">
+      <div className="flex flex-wrap items-center gap-1.5 text-[12px] text-ink2">
         {label} <Tag kind={tag} />
       </div>
-      <div className="text-[22px] font-semibold leading-tight">{value}</div>
-      {sub && <div className="text-[12px] text-muted">{sub}</div>}
+      <div className="tnum text-[17px] font-bold leading-tight text-ink">{value}</div>
+      {sub && <div className="text-[11px] text-ink2">{sub}</div>}
+    </div>
+  );
+}
+
+/** Küçük çizgi grafik: KPI kartının sağında, eksen ve etiket olmadan. */
+export function Sparkline({ values, compare }: { values: number[]; compare?: number[] }) {
+  const all = [...values, ...(compare ?? [])];
+  if (values.length < 2) return null;
+  const min = Math.min(...all);
+  const max = Math.max(...all);
+  const W = 84;
+  const H = 36;
+  const path = (v: number[]) =>
+    v.map((y, i) => `${i ? 'L' : 'M'}${((i / (v.length - 1)) * (W - 4) + 2).toFixed(1)},${(H - 4 - ((y - min) / (max - min || 1)) * (H - 8)).toFixed(1)}`).join('');
+  return (
+    <svg width={W} height={H} aria-hidden className="shrink-0">
+      {compare && compare.length > 1 && <path d={path(compare)} fill="none" stroke="var(--axis)" strokeWidth={1.25} strokeDasharray="3 3" />}
+      <path d={path(values)} fill="none" stroke="var(--water)" strokeWidth={1.5} strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** Önceki değere göre yüzde değişim; lowerIsBetter maliyet türü ölçüler için. */
+export function Change({ from, to, lowerIsBetter = false }: { from: number; to: number; lowerIsBetter?: boolean }) {
+  if (!(from > 0) || !Number.isFinite(to)) return null;
+  const ch = (to - from) / from;
+  if (Math.abs(ch) < 0.0005) return null;
+  const up = ch > 0;
+  const good = lowerIsBetter ? !up : up;
+  const Arrow = up ? ArrowUpRight : ArrowDownRight;
+  return (
+    <span className={`change ${good ? 'is-good' : 'is-bad'}`} title="Bugünkü ekime göre">
+      <Arrow size={12} aria-hidden />%{Math.round(Math.abs(ch) * 100)}
+    </span>
+  );
+}
+
+/** Üst sıradaki özet kartı. */
+export function Kpi({
+  label,
+  value,
+  tag,
+  hint,
+  change,
+  spark,
+  tone,
+}: {
+  label: string;
+  value: ReactNode;
+  tag: TagKind;
+  hint?: ReactNode;
+  change?: ReactNode;
+  spark?: ReactNode;
+  tone?: 'crit' | 'good';
+}) {
+  return (
+    <section className="card kpi-card">
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
+        <h2 className="card-title flex flex-wrap items-center gap-1.5">
+          {label} <Tag kind={tag} />
+        </h2>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className={`kpi-value ${tone === 'crit' ? '!text-crit-ink' : tone === 'good' ? '!text-good-ink' : ''}`}>{value}</span>
+          {change}
+        </div>
+        {hint && <span className="text-[11px] text-ink2">{hint}</span>}
+      </div>
+      {spark}
+    </section>
+  );
+}
+
+/** Sayfa başlığı: ikon + başlık + soluk bilgi, sağda eylemler. */
+export function PageHeader({ icon: Icon, title, meta, children }: { icon: LucideIcon; title: string; meta?: ReactNode; children?: ReactNode }) {
+  return (
+    <header className="flex min-h-9 flex-wrap items-center justify-between gap-x-3 gap-y-2">
+      <div className="flex min-w-0 flex-wrap items-center gap-x-2 text-ink">
+        <Icon size={16} aria-hidden />
+        <h1 className="m-0 text-[14px] font-[650]">{title}</h1>
+        {meta && <span className="text-[12px] text-ink2">{meta}</span>}
+      </div>
+      {children && <div className="flex flex-wrap items-center gap-2">{children}</div>}
+    </header>
+  );
+}
+
+export function Segmented<T extends string>({ value, options, onChange, label }: { value: T; options: { id: T; label: string }[]; onChange: (v: T) => void; label: string }) {
+  return (
+    <div className="segmented" role="tablist" aria-label={label}>
+      {options.map((o) => (
+        <button key={o.id} type="button" role="tab" aria-selected={o.id === value} className={o.id === value ? 'is-active' : ''} onClick={() => onChange(o.id)}>
+          {o.label}
+        </button>
+      ))}
     </div>
   );
 }
@@ -134,8 +238,8 @@ export function useWidth<T extends HTMLElement>(): [React.RefObject<T | null>, n
 
 export function Empty({ title, children }: { title: string; children?: ReactNode }) {
   return (
-    <div className="rounded-lg border border-dashed border-axis p-8 text-center">
-      <div className="font-semibold">{title}</div>
+    <div className="card !py-10 text-center">
+      <div className="text-[14px] font-[650] text-ink">{title}</div>
       {children && <div className="mt-1 text-[13.5px] text-ink2">{children}</div>}
     </div>
   );

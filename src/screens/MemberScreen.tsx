@@ -1,6 +1,7 @@
+import { Plus, Sprout, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import { cropName, CropBar, UnreliableMark } from '../components/bits';
-import { Card, Empty, H2, Note, NumInput, Stat, Swatch, Tag } from '../components/ui';
+import { cropName, CropBar, HonestyBanner, UnreliableMark } from '../components/bits';
+import { Card, Change, Empty, H2, Kpi, Note, NumInput, PageHeader, Segmented, Sparkline, Stat, Swatch, Tag } from '../components/ui';
 import { WaterChart } from '../components/WaterChart';
 import { METHOD_LABEL } from '../data/defaults';
 import { levelLabel } from '../engine/curves';
@@ -23,11 +24,11 @@ function Hero({ w, ev, kind }: { w: Weather; ev: FarmEvaluation; kind: 'current'
   if (dates.length === 0) {
     return (
       <div>
-        <div className="text-[12px] font-semibold tracking-wide text-ink2">
-          SU BİTİŞ TARİHİ <Tag kind="hesap" />
+        <div className="flex items-center gap-1.5 text-[12px] font-medium text-ink2">
+          Su bitiş tarihi <Tag kind="hesap" />
         </div>
-        <div className="text-[40px] font-bold leading-[1.05] text-good-ink sm:text-[52px]">Kota yetiyor</div>
-        <div className="mt-1 text-[13.5px] text-ink2">
+        <div className="text-[28px] font-bold leading-[1.1] tracking-tight text-good-ink sm:text-[34px]">Kota yetiyor</div>
+        <div className="mt-1 text-[13px] text-ink2">
           {kind === 'planned'
             ? `Su parsellere önceden paylaştırıldı; ${n} yılın hiçbirinde kota aşılmıyor.`
             : `${n} yılın hiçbirinde sulama ihtiyacı kotayı aşmıyor.`}
@@ -39,11 +40,11 @@ function Hero({ w, ev, kind }: { w: Weather; ev: FarmEvaluation; kind: 'current'
   const medDate = medYear.endDay !== null ? dateOfIndex(w, medYear.start + medYear.endDay) : dates[Math.floor((dates.length - 1) / 2)];
   return (
     <div>
-      <div className="text-[12px] font-semibold tracking-wide text-ink2">
-        SU BİTİŞ TARİHİ <Tag kind="hesap" />
+      <div className="flex items-center gap-1.5 text-[12px] font-medium text-ink2">
+        Su bitiş tarihi <Tag kind="hesap" />
       </div>
-      <div className="text-[44px] font-bold leading-[1.05] text-crit-ink sm:text-[60px]">{fmtDayMonth(medDate)}</div>
-      <div className="mt-1 text-[13.5px] text-ink2">
+      <div className="text-[28px] font-bold leading-[1.1] tracking-tight text-crit-ink sm:text-[34px]">{fmtDayMonth(medDate)}</div>
+      <div className="mt-1 text-[13px] text-ink2">
         20 yılın ortancası: sulama ihtiyacı kotayı bu gün aşıyor. En erken <strong className="text-ink">{fmtDayMonth(dates[0])}</strong>, en geç{' '}
         <strong className="text-ink">{fmtDayMonth(dates[dates.length - 1])}</strong>. Kota {n} yılın {dates.length}
         {inSuffix(dates.length)} bitiyor.
@@ -132,7 +133,7 @@ function Panel({
       </div>
 
       <div className="mt-3 overflow-x-auto">
-        <table className="data text-[13.5px]">
+        <table className="data">
           <thead>
             <tr>
               <th>Ürün</th>
@@ -215,11 +216,11 @@ function RotationTable({ mv, names }: { mv: MemberView; names: Map<string, strin
   const r = mv.rotation;
   return (
     <div className="mt-5">
-      <h3 className="m-0 mb-1 text-[14px] font-semibold">
+      <h3 className="m-0 mb-1 text-[13px] font-[650]">
         Üç yıllık nöbet tablosu <Tag kind="hesap" />
       </h3>
       <div className="overflow-x-auto">
-        <table className="data text-[13px]">
+        <table className="data">
           <thead>
             <tr>
               <th>Parsel</th>
@@ -290,7 +291,7 @@ function Editor({ m, model }: { m: Member; model: Model }) {
                   type="button"
                   onClick={() => setUnit(u)}
                   aria-pressed={unit === u}
-                  className={`cursor-pointer rounded border px-1.5 text-[11px] ${unit === u ? 'border-ink bg-ink text-bg' : 'border-axis bg-surface'}`}
+                  className={`cursor-pointer rounded-md border px-1.5 text-[11px] font-medium ${unit === u ? 'border-transparent bg-[var(--primary)] text-[var(--primary-ink)]' : 'border-line bg-surface text-ink2'}`}
                 >
                   {u === 'mm' ? 'mm' : 'm³'}
                 </button>
@@ -331,8 +332,8 @@ function Editor({ m, model }: { m: Member; model: Model }) {
                 ))}
               </select>
               <NumInput className="w-[120px]" label="Dekar" value={c.da} max={100000} decimals={1} suffix="da" onChange={(v) => setCurrent(i, { da: v })} />
-              <button type="button" className="btn" aria-label="Bu ürünü sil" onClick={() => s.updateMember(m.id, { current: m.current.filter((_, k) => k !== i) })}>
-                Sil
+              <button type="button" className="icon-button" aria-label="Bu ürünü sil" title="Sil" onClick={() => s.updateMember(m.id, { current: m.current.filter((_, k) => k !== i) })}>
+                <Trash2 size={15} />
               </button>
             </div>
           ))}
@@ -346,7 +347,7 @@ function Editor({ m, model }: { m: Member; model: Model }) {
               s.updateMember(m.id, { current: [...m.current, { cropId: free.id, da: Math.max(0, +(m.areaDa - sum).toFixed(1)) }] });
             }}
           >
-            + Ürün ekle
+            <Plus /> Ürün ekle
           </button>
           <span className={`text-[13px] tnum ${over ? 'font-semibold text-crit-ink' : 'text-ink2'}`}>
             Toplam {da(sum)} / {da(m.areaDa)} da
@@ -367,7 +368,7 @@ export function MemberScreen() {
     return (
       <Empty title="Kooperatifte üye yok">
         <button type="button" className="btn btn-primary mt-3" onClick={() => s.addMember()}>
-          + Üye ekle
+          <Plus /> Üye ekle
         </button>
       </Empty>
     );
@@ -376,26 +377,17 @@ export function MemberScreen() {
   const yMax = Math.max(mv.quotaM3 * 1.25, maxDemand * 1.03, 1);
   const years = mv.current.years.map((y) => y.year);
 
+  const cur = mv.current;
+  const pl = mv.planned;
+  const medCur = cur.years[cur.medianIndex];
+  const curDates = cur.years.filter((y) => y.endDay !== null).map((y) => dateOfIndex(weather, y.start + y.endDay!)).sort((a, b) => md(a) - md(b));
+
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Üyeler">
-          {model.members.map((x) => (
-            <button
-              key={x.member.id}
-              type="button"
-              role="tab"
-              aria-selected={x.member.id === mv.member.id}
-              onClick={() => s.setMemberId(x.member.id)}
-              className={`btn ${x.member.id === mv.member.id ? 'btn-primary' : ''}`}
-            >
-              {x.member.name}
-            </button>
-          ))}
-        </div>
-        <label className="ml-auto flex items-center gap-2 text-[13px] text-ink2">
-          Grafik yılı
-          <select className="field !w-auto" value={String(yearSel)} onChange={(e) => setYearSel(e.target.value === 'median' ? 'median' : Number(e.target.value))}>
+    <>
+      <PageHeader icon={Sprout} title="Üye" meta={`${mv.member.name} · ${weather.name} · 2006–2025`}>
+        <label className="pill">
+          <span className="font-normal text-ink2">Grafik yılı</span>
+          <select aria-label="Grafik yılı" value={String(yearSel)} onChange={(e) => setYearSel(e.target.value === 'median' ? 'median' : Number(e.target.value))}>
             <option value="median">Ortanca yıl</option>
             {years.map((y, i) => (
               <option key={y} value={i}>
@@ -404,6 +396,39 @@ export function MemberScreen() {
             ))}
           </select>
         </label>
+      </PageHeader>
+      <HonestyBanner />
+      <Segmented label="Üyeler" value={mv.member.id} options={model.members.map((x) => ({ id: x.member.id, label: x.member.name }))} onChange={(id) => s.setMemberId(id)} />
+
+      <div className="kpi-grid">
+        <Kpi
+          label="Su bitiş tarihi"
+          tag="hesap"
+          tone={cur.yearsExceeded > 0 ? 'crit' : 'good'}
+          value={cur.yearsExceeded > 0 && medCur?.endDay != null ? fmtDayMonth(dateOfIndex(weather, medCur.start + medCur.endDay)) : 'Kota yetiyor'}
+          hint={curDates.length ? `Bugünkü ekim · en erken ${fmtDayMonth(curDates[0])}, en geç ${fmtDayMonth(curDates[curDates.length - 1])}` : 'Bugünkü ekim · 20 yılın hiçbirinde aşılmıyor'}
+        />
+        <Kpi
+          label="Brüt gelir"
+          tag="hesap"
+          value={tlShort(pl.meanRevenue)}
+          change={<Change from={cur.meanRevenue} to={pl.meanRevenue} />}
+          hint={`Önerilen plan · bugünkü ${tlShort(cur.meanRevenue)}`}
+          spark={<Sparkline values={pl.years.map((y) => y.revenue)} compare={cur.years.map((y) => y.revenue)} />}
+        />
+        <Kpi label="Kullanılan su" tag="hesap" value={m3(pl.meanUsedM3)} hint={`Önerilen plan · kota ${m3(mv.quotaM3)}`} spark={<Sparkline values={pl.years.map((y) => y.usedM3)} />} />
+        <Kpi
+          label="Toprak puanı"
+          tag="hesap"
+          value={
+            <>
+              {mv.plannedSoil.score}
+              <span className="text-[12px] font-normal text-ink2"> / 100</span>
+            </>
+          }
+          change={<Change from={mv.currentSoil.score} to={mv.plannedSoil.score} />}
+          hint={`Önerilen plan · bugünkü ${mv.currentSoil.score}`}
+        />
       </div>
 
       <Editor m={mv.member} model={model} />
@@ -418,7 +443,7 @@ export function MemberScreen() {
         </Note>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid items-start gap-3 lg:grid-cols-2">
         <Panel kind="current" w={weather} mv={mv} model={model} yearSel={yearSel} yMax={yMax} />
         <Panel kind="planned" w={weather} mv={mv} model={model} yearSel={yearSel} yMax={yMax} />
       </div>
@@ -431,7 +456,7 @@ export function MemberScreen() {
           yılında yapılsaydı ne olacağını gösterir; üyenin gerçekte o yıllarda ne ektiği bilinmiyor.
         </p>
       </Card>
-    </div>
+    </>
   );
 }
 
@@ -456,7 +481,7 @@ function YearCompare({ mv }: { mv: MemberView }) {
         <span>{a[0]?.year}</span>
         <span>{a[a.length - 1]?.year}</span>
       </div>
-      <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12.5px] tnum">
+      <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] tnum">
         <span>
           <span aria-hidden className="mr-1.5 inline-block h-2.5 w-2.5 rounded-sm" style={{ background: 'var(--axis)' }} />
           Bugünkü ekim

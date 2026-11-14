@@ -1,6 +1,7 @@
+import { BookOpen, RotateCcw } from 'lucide-react';
 import { useState } from 'react';
 import { UnreliableMark } from '../components/bits';
-import { Card, H2, Note, NumInput, Swatch, Tag } from '../components/ui';
+import { Card, H2, Note, NumInput, PageHeader, Swatch, Tag } from '../components/ui';
 import type { CropDef } from '../data/crops';
 import { METHOD_LABEL } from '../data/defaults';
 import { levelLabel, LEVELS, RELIABILITY_FLOOR } from '../engine/curves';
@@ -12,7 +13,7 @@ import { dec2, fmtFull, int, pct } from '../lib/format';
 import { useStore } from '../state';
 
 function Formula({ children }: { children: string }) {
-  return <pre className="m-0 overflow-x-auto rounded-md bg-sunken p-3 text-[12.5px] leading-relaxed">{children}</pre>;
+  return <pre className="m-0 overflow-x-auto rounded-md bg-sunken p-3 text-[12px] leading-relaxed">{children}</pre>;
 }
 
 export function MethodScreen() {
@@ -30,7 +31,8 @@ export function MethodScreen() {
   const curves = model.curvesByMethod[method];
 
   return (
-    <div className="flex flex-col gap-4">
+    <>
+      <PageHeader icon={BookOpen} title="Yöntem ve kaynaklar" meta="Formüller, varsayımlar, veri kaynağı ve modelin sınırları" />
       <Card>
         <H2>Bu araç ne yapar, ne yapmaz</H2>
         <div className="grid gap-4 text-[14px] md:grid-cols-2">
@@ -41,7 +43,7 @@ export function MethodScreen() {
             </p>
             <p className="mb-0">Araç karar vermez: seçenekleri ve bedellerini gösterir. Karar mühendisin ve üyelerindir.</p>
           </div>
-          <ul className="m-0 flex list-none flex-col gap-2 p-0 text-[13.5px]">
+          <ul className="m-0 flex list-none flex-col gap-2 p-0">
             <li>
               <Tag kind="nasa" /> NASA POWER günlük verisinden doğrudan gelen değerler (sıcaklık, yağış, güneş, rüzgâr, nem, rakım).
             </li>
@@ -61,7 +63,7 @@ export function MethodScreen() {
       <Card>
         <H2 right={<Tag kind="nasa" />}>Veri kaynağı: NASA POWER</H2>
         <div className="grid gap-4 md:grid-cols-2">
-          <div className="text-[13.5px]">
+          <div className="text-[13px]">
             <table className="data">
               <tbody>
                 <tr><td className="text-ink2">Nokta</td><td>{weather.name}</td></tr>
@@ -86,7 +88,7 @@ export function MethodScreen() {
               istasyonu ölçümü değildir.
             </Note>
             <div className="mt-3 max-h-[260px] overflow-auto">
-              <table className="data text-[12.5px]">
+              <table className="data text-[12px]">
                 <thead>
                   <tr>
                     <th>Yıl</th>
@@ -122,9 +124,9 @@ export function MethodScreen() {
 
       <Card>
         <H2 right={<Tag kind="hesap" />}>Formüller</H2>
-        <div className="flex flex-col gap-4 text-[13.5px]">
+        <div className="flex flex-col gap-4">
           <div>
-            <h3 className="m-0 mb-1 text-[14px] font-semibold">1. Günlük referans buharlaşma (ET0): FAO-56 Penman-Monteith</h3>
+            <h3 className="m-0 mb-1 text-[13px] font-[650]">1. Günlük referans buharlaşma (ET0): FAO-56 Penman-Monteith</h3>
             <Formula>{`T = (Tmax+Tmin)/2            e0(T) = 0,6108·exp(17,27·T/(T+237,3))
 Δ = 4098·e0(T)/(T+237,3)²     P = 101,3·((293−0,0065·z)/293)^5,26     γ = 0,000665·P
 es = (e0(Tmax)+e0(Tmin))/2    ea = RH/100·es
@@ -138,7 +140,7 @@ Güneş, rüzgâr ya da nem eksikse (Hargreaves):  ET0 = 0,0023·(T+17,8)·√(T
             <p className="mb-0 mt-1 text-ink2">Rs = ALLSKY_SFC_SW_DWN, u2 = WS2M, RH = RH2M, J = yılın günü, φ = enlem, z = rakım. Toprak ısı akısı günlük adımda 0 alınır. Birim testi: FAO-56 Örnek 18 (Uccle, 6 Temmuz, 3,9 mm/gün).</p>
           </div>
           <div>
-            <h3 className="m-0 mb-1 text-[14px] font-semibold">2. Bitki su tüketimi ve toprak-su dengesi (günlük kova modeli)</h3>
+            <h3 className="m-0 mb-1 text-[13px] font-[650]">2. Bitki su tüketimi ve toprak-su dengesi (günlük kova modeli)</h3>
             <Formula>{`ETc = Kc·ET0      Kc: baş evrede sabit, gelişmede doğrusal artış, ortada sabit, sonda doğrusal iniş
 Su yılı 1 Ekim'de S = 0,3·TAW ile başlar. Ekimden önce ve hasattan sonra tarla boş: S −= 0,2·ET0
 Her gün:  S = min(TAW, S + yağış)
@@ -153,7 +155,7 @@ Birim: 1 mm su, 1 dekarda 1 m³`}</Formula>
             </p>
           </div>
           <div>
-            <h3 className="m-0 mb-1 text-[14px] font-semibold">3. Su-verim eğrileri</h3>
+            <h3 className="m-0 mb-1 text-[13px] font-[650]">3. Su-verim eğrileri</h3>
             <p className="m-0 text-ink2">
               Her ürün ve {FIRST_YEAR}-{LAST_YEAR} arası her hasat yılı için brüt su tavanı {LEVELS.map((l) => levelLabel(l)).join(', ')} seviyelerinde model çalıştırılır. 20 yılın ortalama göreli
               verimi {dec2(RELIABILITY_FLOOR)}'in altında kalan seçenek "model bu kadar az suda güvenilir değil" diye işaretlenir ve varsayılan olarak planlamaya girmez. Tavanı hiçbir yıl bağlamayan
@@ -161,7 +163,7 @@ Birim: 1 mm su, 1 dekarda 1 m³`}</Formula>
             </p>
           </div>
           <div>
-            <h3 className="m-0 mb-1 text-[14px] font-semibold">4. Planlama (doğrusal programlama)</h3>
+            <h3 className="m-0 mb-1 text-[13px] font-[650]">4. Planlama (doğrusal programlama)</h3>
             <Formula>{`Karar değişkeni:  x[üye, ürün, su seviyesi] ≥ 0  (dekar);  ayrıca x[üye, nadas]
 Kısıtlar:   Σ x[üye,·,·] = tarla büyüklüğü
             Σ x·ayrılan su(mm) ≤ üyenin kotası (m³)      ayrılan su = o seçeneğin 20 yıldaki en yüksek kullanımı
@@ -175,7 +177,7 @@ Amaç:       en yüksek toplam brüt gelir   ya da   taahhüdü karşılayan en 
             </p>
           </div>
           <div>
-            <h3 className="m-0 mb-1 text-[14px] font-semibold">5. Toprak puanı ve nöbet</h3>
+            <h3 className="m-0 mb-1 text-[13px] font-[650]">5. Toprak puanı ve nöbet</h3>
             <Formula>{SOIL_FORMULA}</Formula>
             <p className="mb-0 mt-1 text-ink2">
               Paylar tarla alanına göredir; nadas ayrı bir ürün gibi sayılır. Bu puan bir toprak analizi değil, baklagil payını ve çeşitliliği özetleyen kaba bir göstergedir; ağırlıkları (60/40, %25)
@@ -183,7 +185,7 @@ Amaç:       en yüksek toplam brüt gelir   ya da   taahhüdü karşılayan en 
             </p>
           </div>
           <div>
-            <h3 className="m-0 mb-1 text-[14px] font-semibold">6. Geçmişte deneme</h3>
+            <h3 className="m-0 mb-1 text-[13px] font-[650]">6. Geçmişte deneme</h3>
             <p className="m-0 text-ink2">
               Plan (alanlar ve su tavanları sabit) {FIRST_YEAR}-{LAST_YEAR}'in her hasat yılında o yılın gerçek NASA havasıyla çalıştırılır. Yeşil: bütün taahhütler karşılandı. Sarı: en zayıf ürün
               taahhüdün en az {pct(YELLOW_FLOOR)}'ini verdi. Kırmızı: daha azı. Bu bir tahmin değil, "bu plan geçmişte uygulansaydı" denemesidir; gelecek 20 yıl geçmişe benzemeyebilir.
@@ -204,19 +206,19 @@ Amaç:       en yüksek toplam brüt gelir   ya da   taahhüdü karşılayan en 
                   if (confirm('Üyeler, taahhüt ve bütün varsayımlar başlangıç değerlerine döndürülsün mü?')) s.reset();
                 }}
               >
-                Başlangıç değerlerine dön
+                <RotateCcw /> Başlangıç değerlerine dön
               </button>
             </span>
           }
         >
           Varsayımlar: ürün tablosu
         </H2>
-        <p className="m-0 mb-3 text-[13.5px] text-ink2">
+        <p className="m-0 mb-3 text-[13px] text-ink2">
           Aşağıdaki değerlerin <strong className="text-ink">hiçbiri doğrulanmadı</strong> (kodda her alan <code>verified: false</code> taşır). Yörenin gerçek değerlerini biliyorsanız değiştirin; bütün
           ekranlar anında yeniden hesaplanır.
         </p>
         <div className="overflow-x-auto">
-          <table className="data min-w-[1080px] text-[13px]">
+          <table className="data min-w-[1080px]">
             <thead>
               <tr>
                 <th>Ürün</th>
@@ -325,7 +327,7 @@ Amaç:       en yüksek toplam brüt gelir   ya da   taahhüdü karşılayan en 
           Su-verim eğrileri <Tag kind="hesap" />
         </H2>
         <div className="overflow-x-auto">
-          <table className="data min-w-[720px] text-[13px]">
+          <table className="data min-w-[720px]">
             <thead>
               <tr>
                 <th>Ürün</th>
@@ -366,7 +368,7 @@ Amaç:       en yüksek toplam brüt gelir   ya da   taahhüdü karşılayan en 
 
       <Card>
         <H2>Modelin sınırları</H2>
-        <ul className="m-0 flex flex-col gap-1.5 pl-5 text-[13.5px] text-ink2">
+        <ul className="m-0 flex flex-col gap-1.5 pl-5 text-[13px] text-ink2">
           <li><strong className="text-ink">Gelir brüttür.</strong> Tohum, gübre, ilaç, mazot, elektrik (pompaj), işçilik, su ücreti ve kira düşülmemiştir. Damla ve yağmurlama yatırım maliyeti yoktur. Net kârlılık sıralaması farklı çıkabilir.</li>
           <li><strong className="text-ink">İklim verisi yöre ölçeğindedir</strong> (yaklaşık 55 km). Tarlaya özgü yağış, don, dolu ve rüzgâr zararını göstermez.</li>
           <li><strong className="text-ink">Ürün parametreleri doğrulanmadı.</strong> Kc, evre süreleri, Ky, verim ve fiyatların hepsi varsayımdır; sonuçlar bu girdilere doğrudan bağlıdır.</li>
@@ -380,6 +382,6 @@ Amaç:       en yüksek toplam brüt gelir   ya da   taahhüdü karşılayan en 
           <li><strong className="text-ink">Yeraltı suyu ve obruk riski modellenmez.</strong> Kota, verildiği gibi alınır; kotanın kendisinin sürdürülebilir olup olmadığı bu aracın konusu değildir.</li>
         </ul>
       </Card>
-    </div>
+    </>
   );
 }

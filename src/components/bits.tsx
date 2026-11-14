@@ -1,9 +1,23 @@
+import { Info } from 'lucide-react';
 import { useState } from 'react';
+import { COOP_NAME } from '../data/defaults';
 import { RELIABILITY_FLOOR } from '../engine/curves';
 import type { YearOutcome } from '../engine/plan';
 import { FALLOW } from '../engine/types';
 import { da, inSuffix, int, m3, pct, tlShort, ton } from '../lib/format';
 import { cropColor, Swatch, Tag } from './ui';
+
+/** Her ekranın başında duran dürüstlük bandı. */
+export function HonestyBanner() {
+  return (
+    <div className="banner banner-info" role="note">
+      <Info size={16} aria-hidden />
+      <div>
+        <strong>{COOP_NAME} ve üyeleri kurgusaldır.</strong> Gelir brüttür: tohum, gübre, elektrik düşülmedi. NASA POWER verisi yaklaşık 55 km çözünürlüklüdür: tarlayı değil yöre iklimini gösterir.
+      </div>
+    </div>
+  );
+}
 
 export function cropName(id: string, names: Map<string, string>): string {
   return id === FALLOW ? 'Nadas' : (names.get(id) ?? id);
@@ -16,12 +30,12 @@ export function CropBar({ areas, names }: { areas: Record<string, number>; names
   if (total <= 0) return <div className="text-[13px] text-muted">Ekili alan yok.</div>;
   return (
     <div>
-      <div className="flex h-4 w-full gap-[2px] overflow-hidden rounded" role="img" aria-label="Ürünlerin alan payları">
+      <div className="flex h-2.5 w-full gap-[2px] overflow-hidden rounded-[4px]" role="img" aria-label="Ürünlerin alan payları">
         {entries.map(([id, v]) => (
           <div key={id} title={`${cropName(id, names)}: ${da(v)} da (${pct(v / total)})`} style={{ width: `${(v / total) * 100}%`, background: cropColor(id) }} />
         ))}
       </div>
-      <ul className="m-0 mt-2 flex list-none flex-wrap gap-x-4 gap-y-1 p-0 text-[12.5px]">
+      <ul className="m-0 mt-2 flex list-none flex-wrap gap-x-4 gap-y-1 p-0 text-[12px]">
         {entries.map(([id, v]) => (
           <li key={id} className="tnum whitespace-nowrap">
             <Swatch id={id} />
@@ -64,7 +78,7 @@ export function BacktestStrip({
         <div className="text-[13px] text-ink2">
           {committed.length === 0 ? 'Taahhüt girilmedi.' : (
             <>
-              Taahhüt 20 yılın <strong className="text-ink text-[15px]">{held}{inSuffix(held)}</strong> tuttu <Tag kind="hesap" />
+              Taahhüt 20 yılın <strong className="text-ink">{held}{inSuffix(held)}</strong> tuttu <Tag kind="hesap" />
             </>
           )}
         </div>

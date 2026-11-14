@@ -1,6 +1,7 @@
+import { Handshake } from 'lucide-react';
 import { useMemo } from 'react';
-import { BacktestStrip, cropName } from '../components/bits';
-import { Card, Empty, H2, Note, NumInput, Stat, Swatch, Tag } from '../components/ui';
+import { BacktestStrip, cropName, HonestyBanner } from '../components/bits';
+import { Card, Empty, H2, Note, NumInput, PageHeader, Stat, Swatch, Tag } from '../components/ui';
 import { levelLabel } from '../engine/curves';
 import { maxCommitmentFraction, solvePlan, summarize, type PlanInput } from '../engine/plan';
 import { FALLOW } from '../engine/types';
@@ -91,10 +92,12 @@ export function CommitmentScreen() {
   const worst = bt.length ? bt.reduce((a, b) => (b.ratio < a.ratio ? b : a)) : null;
 
   return (
-    <div className="flex flex-col gap-4">
+    <>
+      <PageHeader icon={Handshake} title="Taahhüt" meta="Satış taahhüdünün üyelere dağıtımı ve geçmişte deneme" />
+      <HonestyBanner />
       <Card>
         <H2 right={<Tag kind="kurgusal" />}>Satış taahhüdü</H2>
-        <p className="m-0 mb-3 text-[13.5px] text-ink2">Kooperatifin alıcıya söz verdiği miktarları ton olarak girin. Boş bırakılan (0) ürün için taahhüt yoktur.</p>
+        <p className="m-0 mb-3 text-[13px] text-ink2">Kooperatifin alıcıya söz verdiği miktarları ton olarak girin. Boş bırakılan (0) ürün için taahhüt yoktur.</p>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
           {model.crops.map((c) => (
             <label key={c.id} className="block text-[12px] text-ink2">
@@ -110,13 +113,13 @@ export function CommitmentScreen() {
         <Card>
           <div className="grid gap-5 md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
             <div>
-              <div className="text-[12px] font-semibold tracking-wide text-ink2">
-                GEÇMİŞTE DENEME <Tag kind="hesap" />
+              <div className="flex items-center gap-1.5 text-[12px] font-medium text-ink2">
+                Geçmişte deneme <Tag kind="hesap" />
               </div>
-              <div className={`text-[44px] font-bold leading-[1.05] sm:text-[60px] ${held >= 16 ? 'text-good-ink' : held >= 10 ? 'text-warn-ink' : 'text-crit-ink'}`}>
-                {held} <span className="text-[22px] font-semibold text-ink2">/ 20 yıl</span>
+              <div className={`text-[28px] font-bold leading-[1.1] tracking-tight sm:text-[34px] ${held >= 16 ? 'text-good-ink' : held >= 10 ? 'text-warn-ink' : 'text-crit-ink'}`}>
+                {held} <span className="text-[15px] font-semibold text-ink2">/ 20 yıl</span>
               </div>
-              <div className="mt-1 text-[13.5px] text-ink2">
+              <div className="mt-1 text-[13px] text-ink2">
                 Önerilen plan 2006-2025'in gerçek havasında çalıştırıldı: taahhüt 20 yılın {held}
                 {inSuffix(held)} tuttu.
                 {worst && (
@@ -136,7 +139,7 @@ export function CommitmentScreen() {
       )}
 
       {model.plan.status === 'partial' && (
-        <Card className="!border-crit">
+        <Card className="!shadow-[0_0_0_1.5px_var(--crit)]">
           <H2 right={<Tag kind="hesap" />}>Taahhüt bu kısıtlarla karşılanamıyor</H2>
           <p className="m-0 text-[14px]">
             20 yılın ortalama verimiyle taahhüdün en çok <strong>{pct(model.plan.commitmentFraction)}</strong>'i üretilebiliyor.{' '}
@@ -148,7 +151,7 @@ export function CommitmentScreen() {
             Aşağıdaki plan, taahhüde en çok yaklaşan plandır. Araç karar vermez; seçenekler ve bedelleri şunlar:
           </p>
           <div className="mt-3 overflow-x-auto">
-            <table className="data min-w-[640px] text-[13.5px]">
+            <table className="data min-w-[640px]">
               <thead>
                 <tr>
                   <th>Seçenek</th>
@@ -196,7 +199,7 @@ export function CommitmentScreen() {
           <Stat label="Toplam kota" tag="kurgusal" value={m3(model.totalQuotaM3)} />
         </div>
         <div className="overflow-x-auto">
-          <table className="data min-w-[680px] text-[13.5px]">
+          <table className="data min-w-[680px]">
             <thead>
               <tr>
                 <th>Üye</th>
@@ -284,7 +287,7 @@ export function CommitmentScreen() {
           <details>
             <summary className="cursor-pointer text-[15px] font-semibold">Yıl yıl sonuçlar (tablo)</summary>
             <div className="mt-3 overflow-x-auto">
-              <table className="data min-w-[560px] text-[13px]">
+              <table className="data min-w-[560px]">
                 <thead>
                   <tr>
                     <th>Hasat yılı</th>
@@ -321,6 +324,6 @@ export function CommitmentScreen() {
         </Card>
       )}
       <PlanSettingsCard />
-    </div>
+    </>
   );
 }
