@@ -3,10 +3,12 @@ import { useMemo, useState } from 'react';
 import type { FarmEvaluation } from '../engine/farm';
 import type { Weather } from '../engine/types';
 import { dateOfIndex, dayIndex } from '../engine/weather';
+import { L } from '../i18n';
 import { fmtDayMonth, int, m3 } from '../lib/format';
 import { useWidth } from './ui';
 
-const MONTHS = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
+const MONTHS_TR = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
+const MONTHS_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 function niceTicks(max: number, count = 4): number[] {
   if (max <= 0) return [0];
@@ -77,7 +79,7 @@ export function WaterChart({
   const endMax = ev.endDays.length ? Math.max(...ev.endDays) : null;
   const end = fy.endDay;
   const hd = hover === null ? null : Math.max(d0, Math.min(d1, hover));
-  const usedLabel = kind === 'current' ? 'Verilebilen su' : 'Planda verilen su';
+  const usedLabel = kind === 'current' ? L('Verilebilen su', 'Water that can be applied') : L('Planda verilen su', 'Water applied in the plan');
 
   return (
     <div ref={ref} className="relative">
@@ -85,9 +87,14 @@ export function WaterChart({
         width={W}
         height={H}
         role="img"
-        aria-label={`${fy.year} hasat yılı kümülatif sulama grafiği. Kota ${int(quotaM3)} metreküp. ${
-          end !== null ? `Su bitiş tarihi ${fmtDayMonth(dateOfIndex(w, fy.start + end))}.` : 'Kota aşılmıyor.'
-        }`}
+        aria-label={L(
+          `${fy.year} hasat yılı kümülatif sulama grafiği. Kota ${int(quotaM3)} metreküp. ${
+            end !== null ? `Su bitiş tarihi ${fmtDayMonth(dateOfIndex(w, fy.start + end))}.` : 'Kota aşılmıyor.'
+          }`,
+          `Cumulative irrigation chart for harvest year ${fy.year}. Allowance ${int(quotaM3)} cubic metres. ${
+            end !== null ? `Water runs out on ${fmtDayMonth(dateOfIndex(w, fy.start + end))}.` : 'Allowance is not exceeded.'
+          }`,
+        )}
         onMouseMove={(e) => {
           const r = e.currentTarget.getBoundingClientRect();
           setHover(Math.round(d0 + ((e.clientX - r.left - M.l) / iw) * (d1 - d0)));
@@ -105,7 +112,7 @@ export function WaterChart({
           </g>
         ))}
         <text x={M.l - 44} y={12} fontSize={11} fill="var(--muted)">
-          m³ (1 Ekim'den beri toplam)
+          {L("m³ (1 Ekim'den beri toplam)", 'm³ (total since 1 October)')}
         </text>
         {/* x ekseni: ay başları */}
         <line x1={M.l} x2={W - M.r} y1={M.t + ih} y2={M.t + ih} stroke="var(--axis)" />
@@ -113,7 +120,7 @@ export function WaterChart({
           <g key={m}>
             <line x1={x(d)} x2={x(d)} y1={M.t + ih} y2={M.t + ih + 4} stroke="var(--axis)" />
             <text x={x(d) + 3} y={M.t + ih + 17} fontSize={11} fill="var(--muted)">
-              {MONTHS[m - 1]}
+              {L(MONTHS_TR, MONTHS_EN)[m - 1]}
             </text>
           </g>
         ))}
@@ -136,7 +143,7 @@ export function WaterChart({
         {/* kota çizgisi */}
         <line x1={M.l} x2={W - M.r} y1={y(quotaM3)} y2={y(quotaM3)} stroke="var(--crit)" strokeWidth={1.5} />
         <text x={M.l + 4} y={y(quotaM3) - 5} fontSize={11.5} fontWeight={600} fill="var(--crit-ink)">
-          Su hakkı {int(quotaM3)} m³
+          {L('Su hakkı', 'Water allowance')} {int(quotaM3)} m³
         </text>
 
         {/* su bitiş işareti */}
@@ -163,12 +170,12 @@ export function WaterChart({
         >
           <div className="font-semibold">{fmtDayMonth(dateOfIndex(w, fy.start + hd))} {dateOfIndex(w, fy.start + hd).getUTCFullYear()}</div>
           <div className="flex justify-between gap-2">
-            <span className="text-ink2">Verilen su</span>
+            <span className="text-ink2">{L('Verilen su', 'Water applied')}</span>
             <span>{m3(fy.cumM3[hd])}</span>
           </div>
           {detail && (
             <div className="flex justify-between gap-2">
-              <span className="text-ink2">İstenen su</span>
+              <span className="text-ink2">{L('İstenen su', 'Water demanded')}</span>
               <span>{m3(fy.demandM3[hd])}</span>
             </div>
           )}
@@ -182,24 +189,24 @@ export function WaterChart({
         </li>
         <li className="flex items-center gap-1.5">
           <svg width="22" height="8" aria-hidden><line x1="0" x2="22" y1="4" y2="4" stroke="var(--crit)" strokeWidth="1.5" /></svg>
-          Su hakkı
+          {L('Su hakkı', 'Water allowance')}
         </li>
         {detail && (
           <>
         <li className="flex items-center gap-1.5">
           <svg width="22" height="8" aria-hidden><line x1="0" x2="22" y1="4" y2="4" stroke="var(--ink2)" strokeWidth="1.5" strokeDasharray="5 4" /></svg>
-          Ürünlerin istediği su ({fy.year})
+          {L('Ürünlerin istediği su', 'Water the crops demanded')} ({fy.year})
         </li>
         <li className="flex items-center gap-1.5">
           <svg width="22" height="8" aria-hidden><line x1="0" x2="22" y1="4" y2="4" stroke="var(--axis)" strokeWidth="1" /></svg>
-          Diğer 19 yılda istenen su
+          {L('Diğer 19 yılda istenen su', 'Water demanded in the other 19 years')}
         </li>
           </>
         )}
         {endMin !== null && (
           <li className="flex items-center gap-1.5">
             <span aria-hidden className="inline-block h-2.5 w-4" style={{ background: 'var(--crit)', opacity: 0.2 }} />
-            Suyun bittiği günler (20 yıl)
+            {L('Suyun bittiği günler (20 yıl)', 'Days the water ran out (20 years)')}
           </li>
         )}
       </ul>

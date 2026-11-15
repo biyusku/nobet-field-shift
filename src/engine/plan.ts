@@ -1,6 +1,7 @@
 // Planlama: doğrusal programlama ile her üyenin her (ürün, su seviyesi) çiftine dekar dağıtımı.
 import solver from 'javascript-lp-solver';
 import type { Curves, WaterOption } from './curves';
+import { cropLabel, L, lower } from '../i18n';
 import { FALLOW, type Crop, type IrrigationMethod, type Member } from './types';
 
 export interface PlanSettings {
@@ -234,13 +235,16 @@ function overLimit(input: PlanInput): PlanResult | null {
     const limit = maxProductionT(input, id);
     if (tons > limit + 1e-6) {
       const name = input.crops.find((c) => c.id === id)?.name ?? id;
-      const t = Math.floor(limit).toLocaleString('tr-TR');
+      const t = Math.floor(limit).toLocaleString(L('tr-TR', 'en-US'));
       return {
         status: 'error',
         allocations: [],
         commitmentFraction: 0,
         maxAlone: { [id]: limit },
-        message: `Bu söz bu tarlalarla karşılanamaz: ${name.toLocaleLowerCase('tr')} için en çok yaklaşık ${t} ton üretilebilir (her üyede izin verilen en yüksek pay × tam sulu verim; su hesaba katılmadan).`,
+        message: L(
+          `Bu söz bu tarlalarla karşılanamaz: ${name.toLocaleLowerCase('tr')} için en çok yaklaşık ${t} ton üretilebilir (her üyede izin verilen en yüksek pay × tam sulu verim; su hesaba katılmadan).`,
+          `This commitment cannot be met with these fields: at most about ${t} t of ${lower(cropLabel(id, name))} can be produced (highest allowed share per member × fully irrigated yield; water not counted).`,
+        ),
       };
     }
   }
@@ -302,7 +306,7 @@ function mergeSmallParcels(result: PlanResult, input: PlanInput): PlanResult {
 function solveOnce(input: PlanInput): PlanResult {
   const base = buildBase(input);
   if (base.active.length === 0)
-    return { status: 'empty', allocations: [], commitmentFraction: 1, maxAlone: {}, message: 'Üye yok.' };
+    return { status: 'empty', allocations: [], commitmentFraction: 1, maxAlone: {}, message: L('Üye yok.', 'No members.') };
   const { settings, crops } = input;
   const commits = Object.entries(settings.commitments).filter(
     ([id, t]) => t > 0 && crops.some((c) => c.id === id),
@@ -339,13 +343,13 @@ function solveOnce(input: PlanInput): PlanResult {
   let res: Record<string, number | boolean>;
   if (settings.mode === 'minWater') {
     const rw = run('su', 'min', cc);
-    if (!rw.feasible) return fail('En az su modeli çözülemedi.');
+    if (!rw.feasible) return fail(L('En az su modeli çözülemedi.', 'The minimum-water model could not be solved.'));
     const wStar = Number(rw.result);
     res = run('gelir', 'max', { ...cc, su_toplam: { max: wStar * (1 + 1e-6) + 1e-6 } }, suToplamColumns(base.variables));
   } else {
     res = run('gelir', 'max', cc);
   }
-  if (!res.feasible) return fail('Plan bulunamadı: kısıtlar birlikte sağlanamıyor.');
+  if (!res.feasible) return fail(L('Plan bulunamadı: kısıtlar birlikte sağlanamıyor.', 'No plan found: the constraints cannot all be met.'));
 
   const allocations: Allocation[] = [];
   for (const [key, m] of base.meta) {

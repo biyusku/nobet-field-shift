@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import type { CalcRequest, CalcTask } from '../workers/calc.worker';
 import type { Inputs, Model } from '../model';
 import type { Weather } from '../engine/types';
+import { getLang } from '../i18n';
 
 export const CALC_LIMIT_MS = 5000;
 
@@ -48,7 +49,7 @@ function pump() {
   const w = getWorker();
   const modelKey = keyOf(job.ctx.model);
   const id = ++seq;
-  const req: CalcRequest = { id, modelKey, task: job.task };
+  const req: CalcRequest = { id, modelKey, task: job.task, lang: getLang() };
   if (workerKey !== modelKey) req.setup = { weathers: job.ctx.weathers, fallbackId: job.ctx.fallbackId, inputs: job.ctx.inputs };
   const finish = (s: CalcState<unknown>) => {
     clearTimeout(timer);
@@ -84,6 +85,6 @@ export function useCalc<T>(ctx: CalcContext | null, task: CalcTask | null, depKe
       job.cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ctx?.model, depKey]);
+  }, [ctx?.model, depKey, getLang()]);
   return state;
 }

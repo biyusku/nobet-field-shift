@@ -7,6 +7,7 @@ import { DISTRICTS } from '../data/members';
 import { climateSummary, powerCell } from '../engine/climate';
 import { FALLOW, type Weather } from '../engine/types';
 import { dateOfIndex } from '../engine/weather';
+import { cropLabel, getLang, L as tx, memberLabel } from '../i18n';
 import { da, fmtDayMonth, int, m3, pct } from '../lib/format';
 import { modeParts, type MemberView, type Mode } from '../model';
 import { cropColor, Segmented } from './ui';
@@ -14,14 +15,15 @@ import { cropColor, Segmented } from './ui';
 type Base = 'osm' | 'uydu' | 'modis';
 /** GIBS MODIS gerçek renk katmanı için gösterilen gün. */
 export const MODIS_DATE = '2025-07-15';
-const LAYERS: Record<Base, { url: string; options: L.TileLayerOptions }> = {
-  osm: { url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', options: { attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> katkıcıları', maxZoom: 19 } },
-  uydu: { url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', options: { attribution: 'Uydu görüntüsü &copy; Esri, Maxar, Earthstar Geographics', maxZoom: 18 } },
+// Altlıklar; kaynak notları seçili dile göre (bu yüzden işlev).
+const LAYERS = (): Record<Base, { url: string; options: L.TileLayerOptions }> => ({
+  osm: { url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', options: { attribution: tx('&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> katkıcıları', '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'), maxZoom: 19 } },
+  uydu: { url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', options: { attribution: tx('Uydu görüntüsü &copy; Esri, Maxar, Earthstar Geographics', 'Satellite imagery &copy; Esri, Maxar, Earthstar Geographics'), maxZoom: 18 } },
   modis: {
     url: `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/${MODIS_DATE}/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg`,
-    options: { attribution: 'NASA EOSDIS GIBS · MODIS Terra gerçek renk', maxNativeZoom: 9, maxZoom: 15 },
+    options: { attribution: tx('NASA EOSDIS GIBS · MODIS Terra gerçek renk', 'NASA EOSDIS GIBS · MODIS Terra true colour'), maxNativeZoom: 9, maxZoom: 15 },
   },
-};
+});
 const LABEL_PANE = 'hucre-etiketleri';
 const LABEL_H = 20;
 /** Bu yakınlaştırma düzeyinden itibaren daireler yerine tarla dikdörtgenleri çizilir. */
@@ -33,7 +35,7 @@ function shares(mv: MemberView, mode: Mode): { cropId: string; name: string; da:
   const by = new Map<string, { cropId: string; name: string; da: number }>();
   for (const p of modeParts(mv, mode).parcels) {
     if (p.areaDa < 0.05) continue;
-    const r = by.get(p.crop.id) ?? { cropId: p.crop.id, name: p.crop.name, da: 0 };
+    const r = by.get(p.crop.id) ?? { cropId: p.crop.id, name: cropLabel(p.crop.id, p.crop.name), da: 0 };
     r.da += p.areaDa;
     by.set(p.crop.id, r);
   }
@@ -81,6 +83,8 @@ export default function CoopMap({
   onDistrict: (id: string) => void;
   onMember: (id: string) => void;
 }) {
+  // dil değişince Leaflet içeriği (karolar, etiketler, ipuçları) yeniden çizilsin
+  const lang = getLang();
   const el = useRef<HTMLDivElement | null>(null);
   const map = useRef<L.Map | null>(null);
   const tiles = useRef<L.TileLayer | null>(null);
@@ -141,11 +145,12 @@ export default function CoopMap({
     if (!m) return;
     setTileError(false);
     tiles.current?.remove();
-    const t = L.tileLayer(LAYERS[base].url, LAYERS[base].options).addTo(m);
+    const layer = LAYERS()[base];
+    const t = L.tileLayer(layer.url, layer.options).addTo(m);
     t.on('tileerror', () => setTileError(true));
     t.bringToBack();
     tiles.current = t;
-  }, [base]);
+  }, [base, lang]);
 
   // NASA hücreleri
   useEffect(() => {
@@ -168,7 +173,7 @@ export default function CoopMap({
       // Metin hep tam yazılır. Köşe görünümün dışına çıkarsa etiket, hücre görünürken haritanın içinde kalacak
       // biçimde kaydırılır (sağda yakınlaştırma düğmelerine yer bırakılır); hücre hiç görünmüyorsa etiket çizilmez.
       const m = map.current;
-      const text = `NASA hücresi · ${c.names.join(' + ')}`;
+      const text = `${tx('NASA hücresi', 'NASA cell')} · ${c.names.join(' + ')}`;
       const estWidth = Math.ceil(text.length * 6.4) + 14;
       let dx = 0;
       let dy = -(LABEL_H + 3); // köşenin hemen üstü
@@ -184,11 +189,11 @@ export default function CoopMap({
       const label = L.divIcon({
         className: '',
         iconSize: [0, 0],
-        html: `<div class="cell-label" title="NASA POWER hücresi: ${esc(c.names.join(' + '))}" style="position:absolute;left:${dx}px;top:${dy}px;box-sizing:border-box;height:${LABEL_H}px;padding:0 6px;white-space:nowrap;border-radius:5px;background:rgba(255,255,255,.86);border:1px solid rgba(0,64,143,.35);box-shadow:0 1px 2px rgba(0,0,0,.12);font:600 11px/${LABEL_H - 2}px Inter,system-ui,sans-serif;color:#00408f">${esc(text)}</div>`,
+        html: `<div class="cell-label" title="${tx('NASA POWER hücresi', 'NASA POWER cell')}: ${esc(c.names.join(' + '))}" style="position:absolute;left:${dx}px;top:${dy}px;box-sizing:border-box;height:${LABEL_H}px;padding:0 6px;white-space:nowrap;border-radius:5px;background:rgba(255,255,255,.86);border:1px solid rgba(0,64,143,.35);box-shadow:0 1px 2px rgba(0,0,0,.12);font:600 11px/${LABEL_H - 2}px Inter,system-ui,sans-serif;color:#00408f">${esc(text)}</div>`,
       });
       L.marker([c.bounds.north, c.bounds.west], { icon: label, interactive: false, keyboard: false, pane: LABEL_PANE }).addTo(g);
     }
-  }, [cells, districtId, base, zoom, view]);
+  }, [cells, districtId, base, zoom, view, lang]);
 
   // üyeler: pasta daireler ve tarla dikdörtgenleri
   useEffect(() => {
@@ -211,18 +216,18 @@ export default function CoopMap({
       const cl = climate[m.pointId ?? ''];
       const tip =
         `<div style="font:13px Inter,system-ui,sans-serif;min-width:210px;line-height:1.45">` +
-        `<div style="font-weight:650">${esc(m.name)} <span style="font-weight:500;color:#b4231a;background:#fedad9;border-radius:8px;padding:0 6px;font-size:11px">kurgusal</span></div>` +
-        `<div style="color:#616161;font-size:12px">${da(m.areaDa)} da · su hakkı ${m3(mv.quotaM3)}${mode === 'scatter' && mv.scatterCrop ? ' · söz bu üyeye verildi' : ''}</div>` +
+        `<div style="font-weight:650">${esc(memberLabel(m.name))} <span style="font-weight:500;color:#b4231a;background:#fedad9;border-radius:8px;padding:0 6px;font-size:11px">${tx('kurgusal', 'fictional')}</span></div>` +
+        `<div style="color:#616161;font-size:12px">${da(m.areaDa)} da · ${tx('su hakkı', 'water allowance')} ${m3(mv.quotaM3)}${mode === 'scatter' && mv.scatterCrop ? tx(' · söz bu üyeye verildi', ' · commitment given to this member') : ''}</div>` +
         `<div style="margin-top:4px">${parts.map((p) => `<span style="white-space:nowrap"><i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${cropColor(p.cropId)};margin-right:4px"></i>${esc(p.name)} ${da(p.da)} da</span>`).join('<br>')}</div>` +
-        `<div style="margin-top:4px">${end ? `<b style="color:#b4231a">Su ${fmtDayMonth(end)} bitiyor</b>` : `<b style="color:#0c7a43">Su hakkı aşılmıyor</b>`} · beklenen verim <b>${pct(water.yieldLevel)}</b></div>` +
-        (cl ? `<div style="margin-top:4px;color:#616161;font-size:12px;border-top:1px solid #e3e3e3;padding-top:4px">NASA hücresi (${esc(mv.weather.name)}): yılda ${int(cl.meanPrec)} mm yağış · temmuz ET0 ${int(cl.months[6].et0)} mm</div>` : '') +
+        `<div style="margin-top:4px">${end ? `<b style="color:#b4231a">${tx(`Su ${fmtDayMonth(end)} bitiyor`, `Water runs out on ${fmtDayMonth(end)}`)}</b>` : `<b style="color:#0c7a43">${tx('Su hakkı aşılmıyor', 'Water allowance not exceeded')}</b>`} · ${tx('beklenen verim', 'expected yield')} <b>${pct(water.yieldLevel)}</b></div>` +
+        (cl ? `<div style="margin-top:4px;color:#616161;font-size:12px;border-top:1px solid #e3e3e3;padding-top:4px">${tx(`NASA hücresi (${esc(mv.weather.name)}): yılda ${int(cl.meanPrec)} mm yağış · temmuz ET0 ${int(cl.months[6].et0)} mm`, `NASA cell (${esc(mv.weather.name)}): ${int(cl.meanPrec)} mm rain a year · July ET0 ${int(cl.months[6].et0)} mm`)}</div>` : '') +
         `</div>`;
       // uzaktan bakarken daireler küçülür ki üst üste binmesin
       const r = Math.round((7 + 11 * Math.sqrt(Math.min(1, m.areaDa / 400))) * scale);
       const size = r * 2 + 6;
       const marker = L.marker([lat, lon], {
         icon: L.divIcon({ className: 'coop-pie', iconSize: [size, size], iconAnchor: [size / 2, size / 2], html: pieSvg(parts, r, end ? '#d03b3b' : '#ffffff') }),
-        title: m.name,
+        title: memberLabel(m.name),
         riseOnHover: true,
       }).addTo(gp);
       marker.bindTooltip(tip, { direction: 'auto', offset: [r, 0], opacity: 1 });
@@ -241,7 +246,7 @@ export default function CoopMap({
         x += wdt;
       }
     }
-  }, [members, mode, climate, zoom < 8.75 ? 8 : zoom < 9.75 ? 9 : 10]);
+  }, [members, mode, climate, zoom < 8.75 ? 8 : zoom < 9.75 ? 9 : 10, lang]);
 
   // yakınlaşınca daireden tarlaya geç
   useEffect(() => {
@@ -261,11 +266,11 @@ export default function CoopMap({
     <div className="flex h-full min-h-0 flex-col gap-2">
       <div className="flex justify-end">
         <Segmented
-          label="Harita altlığı"
+          label={tx('Harita altlığı', 'Base map')}
           value={base}
           options={[
-            { id: 'osm', label: 'Harita' },
-            { id: 'uydu', label: 'Uydu' },
+            { id: 'osm', label: tx('Harita', 'Map') },
+            { id: 'uydu', label: tx('Uydu', 'Satellite') },
             { id: 'modis', label: 'NASA MODIS' },
           ]}
           onChange={setBase}
@@ -279,12 +284,12 @@ export default function CoopMap({
           <svg width="16" height="16" aria-hidden>
             <circle cx="8" cy="8" r="5.5" fill="var(--sunken)" stroke="#d03b3b" strokeWidth="2.5" />
           </svg>
-          kırmızı halka: su sezon ortasında bitiyor
+          {tx('kırmızı halka: su sezon ortasında bitiyor', 'red ring: water runs out mid-season')}
         </span>
-        <span>daire büyüklüğü: dekar · dilimler: ürün payı</span>
-        <span>{zoom >= FIELD_ZOOM ? 'tarlalar gerçek alanında kare olarak çizili (konum ve biçim kurgusal)' : 'yakınlaşınca tarla dikdörtgeni görünür'}</span>
+        <span>{tx('daire büyüklüğü: dekar · dilimler: ürün payı', 'circle size: decares · slices: crop share')}</span>
+        <span>{zoom >= FIELD_ZOOM ? tx('tarlalar gerçek alanında kare olarak çizili (konum ve biçim kurgusal)', 'fields drawn as squares at their real area (location and shape fictional)') : tx('yakınlaşınca tarla dikdörtgeni görünür', 'zoom in to see field rectangles')}</span>
         {base === 'modis' && <span>NASA GIBS, MODIS Terra, {MODIS_DATE.split('-').reverse().join('.')}</span>}
-        {tileError && <span className="font-semibold text-warn-ink">Harita karoları yüklenemedi (ağ bağlantısı?).</span>}
+        {tileError && <span className="font-semibold text-warn-ink">{tx('Harita karoları yüklenemedi (ağ bağlantısı?).', 'Map tiles could not be loaded (network connection?).')}</span>}
       </div>
     </div>
   );

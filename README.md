@@ -44,6 +44,12 @@ npm run fetch-data
 
 Betik (`scripts/fetch-power.mjs`) NASA POWER günlük API'sinden 1 Ekim 2004 – 31 Aralık 2025 arasını indirir ve parametre başına gün dizisi olarak yazar. Başka bir nokta eklemek için betikteki `POINTS` listesine ve `src/data/defaults.ts` içindeki `PRESET_POINTS` listesine satır ekleyin.
 
+## Dil / Language
+
+Arayüz İngilizce ve Türkçe. Varsayılan İngilizce; kenar menüdeki **Türkçe / English** düğmesi dili değiştirir ve seçim tarayıcıda hatırlanır. Adres sonuna `?lang=tr` ya da `?lang=en` eklenerek de açılabilir. Metinler kodda yerinde iki dillidir: `L('Türkçe', 'English')` (`src/i18n.ts`). MCP sunucusu, `npm run kanit` ve testler Türkçe çalışır.
+
+The interface is available in English (default) and Turkish. Use the **Türkçe / English** button in the side menu, or add `?lang=tr` / `?lang=en` to the address.
+
 ## Yayınlama
 
 **Yayın yolu: Railway.** Tek bir Node süreci (`npm start`, `mcp/start.ts`) hem siteyi (`dist/`) hem MCP sunucusunu (`/mcp`) sunar. Adımlar aşağıda "Railway" başlığında. Vercel ve Netlify bölümleri yalnız siteyi (MCP olmadan) statik yayınlamak içindir; `api/mcp.ts` ve `vercel.json` depoda duruyor ama kullanılmıyor.

@@ -2,6 +2,7 @@
 import { Check, ChevronDown, X } from 'lucide-react';
 import { AlertDialog, Dialog, Popover, Select as RSelect, Tooltip } from 'radix-ui';
 import type { ReactNode } from 'react';
+import { L } from '../i18n';
 
 export const TooltipProvider = Tooltip.Provider;
 
@@ -24,8 +25,8 @@ export function Tip({ text, children }: { text: ReactNode; children: ReactNode }
 export function SourcePop({ name, url, table, quote, accessed, note }: { name: string; url: string; table: string; quote: string; accessed: string; note?: string }) {
   return (
     <Popover.Root>
-      <Popover.Trigger className="tag tag-success cursor-pointer border-0" aria-label={`Kaynak: ${name}`}>
-        kaynak
+      <Popover.Trigger className="tag tag-success cursor-pointer border-0" aria-label={`${L('Kaynak', 'Source')}: ${name}`}>
+        {L('kaynak', 'source')}
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Content sideOffset={6} collisionPadding={12} className="z-[1100] w-[320px] max-w-[calc(100vw-24px)] rounded-[10px] bg-surface p-3 text-[12.5px] leading-snug text-ink shadow-[0_8px_28px_rgba(0,0,0,.16),0_0_0_1px_var(--line)]">
@@ -35,9 +36,9 @@ export function SourcePop({ name, url, table, quote, accessed, note }: { name: s
           {note && <div className="mt-2 text-ink2">{note}</div>}
           <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
             <a href={url} target="_blank" rel="noreferrer" className="font-medium text-link underline underline-offset-2">
-              Kaynağı aç
+              {L('Kaynağı aç', 'Open source')}
             </a>
-            <span className="text-[11px] text-ink2">erişim: {accessed.split('-').reverse().join('.')}</span>
+            <span className="text-[11px] text-ink2">{L('erişim', 'accessed')}: {accessed.split('-').reverse().join('.')}</span>
           </div>
           <Popover.Arrow className="fill-surface" />
         </Popover.Content>
@@ -128,7 +129,7 @@ export function Sheet({ open, onOpenChange, title, description, children, footer
               <Dialog.Title className="m-0 text-[15px] font-[650] text-ink">{title}</Dialog.Title>
               {description && <Dialog.Description className="m-0 mt-0.5 text-[12px] text-ink2">{description}</Dialog.Description>}
             </div>
-            <Dialog.Close className="icon-button !text-ink2" aria-label="Kapat">
+            <Dialog.Close className="icon-button !text-ink2" aria-label={L('Kapat', 'Close')}>
               <X size={16} />
             </Dialog.Close>
           </div>
@@ -151,7 +152,7 @@ export function Confirm({ trigger, title, description, action, danger = false, o
           <AlertDialog.Title className="m-0 text-[15px] font-[650] text-ink">{title}</AlertDialog.Title>
           <AlertDialog.Description className="mb-0 mt-1.5 text-[13px] text-ink2">{description}</AlertDialog.Description>
           <div className="mt-5 flex justify-end gap-2">
-            <AlertDialog.Cancel className="btn">Vazgeç</AlertDialog.Cancel>
+            <AlertDialog.Cancel className="btn">{L('Vazgeç', 'Cancel')}</AlertDialog.Cancel>
             <AlertDialog.Action className={`btn ${danger ? 'btn-danger' : 'btn-primary'}`} onClick={onConfirm}>
               {action}
             </AlertDialog.Action>

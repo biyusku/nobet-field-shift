@@ -5,6 +5,7 @@ import { DISTRICTS, generateMembers } from './data/members';
 import type { PlanSettings } from './engine/plan';
 import type { Efficiencies, Member, Soil, Weather } from './engine/types';
 import { buildWeather } from './engine/weather';
+import { initialLang, L, LANG_KEY, setLang as setGlobalLang, type Lang } from './i18n';
 import { loadPreset } from './lib/weatherSource';
 import { computeModel, type Model } from './model';
 import { StoreCtx } from './storeContext';
@@ -68,6 +69,9 @@ interface Store extends Persisted {
   modelError: string | null;
   tab: Tab;
   setTab: (t: Tab) => void;
+  /** arayüz dili (src/i18n.ts) */
+  lang: Lang;
+  setLang: (l: Lang) => void;
   memberId: string;
   setMemberId: (id: string) => void;
 }
@@ -81,6 +85,23 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [weatherError, setWeatherError] = useState<string | null>(null);
   const [districtId, setDistrictId] = useState<string>(DISTRICTS[0].id);
   // adres '#yontem' ile bitiyorsa Yöntem sayfası açılır (slayttaki bağlantı için)
+  const [lang, setLangState] = useState<Lang>(() => {
+    const l = initialLang();
+    setGlobalLang(l);
+    return l;
+  });
+  const changeLang = useCallback((l: Lang) => {
+    setGlobalLang(l);
+    try {
+      localStorage.setItem(LANG_KEY, l);
+    } catch {
+      /* saklanamadı */
+    }
+    setLangState(l);
+  }, []);
+  useEffect(() => {
+    document.title = L('Nöbet: su bütçesi ve ekim planı', 'Nöbet: water budget and crop plan');
+  }, [lang]);
   const [tab, setTab] = useState<Tab>(() => (typeof location !== 'undefined' && location.hash === '#yontem' ? 'yontem' : 'genel'));
   const [memberId, setMemberId] = useState<string>(() => p.members[0]?.id ?? '');
   useEffect(() => {
@@ -107,7 +128,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         const loaded = await Promise.all(
           DISTRICTS.map(async (d) => {
             const w = buildWeather(await loadPreset(d.id));
-            if (w.n < 7700) throw new Error(`${d.name} verisi eksik (2004-2025 arası bekleniyordu).`);
+            if (w.n < 7700) throw new Error(L(`${d.name} verisi eksik (2004-2025 arası bekleniyordu).`, `${d.name} data is incomplete (2004-2025 expected).`));
             return [d.id, { ...w, name: d.name }] as const;
           }),
         );
@@ -182,6 +203,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     modelError,
     tab,
     setTab,
+    lang,
+    setLang: changeLang,
     memberId,
     setMemberId,
   };

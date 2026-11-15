@@ -1,6 +1,6 @@
 # Nöbet: veri kaynakları ve kanıt
 
-Bu dosya `npm run kanit` ile üretilir (son çalıştırma: 2026-11-15T09:26:34.435Z). Elle düzenlenmez; aynı içerik uygulamanın "Yöntem ve kaynaklar" sayfasındaki "Veri kaynakları ve kanıt" bölümünde süzülebilir tablo olarak durur.
+Bu dosya `npm run kanit` ile üretilir (son çalıştırma: 2026-11-15T13:15:06.842Z). Elle düzenlenmez; aynı içerik uygulamanın "Yöntem ve kaynaklar" sayfasındaki "Veri kaynakları ve kanıt" bölümünde süzülebilir tablo olarak durur.
 
 ## 1. Dürüst özet
 
@@ -211,11 +211,11 @@ Bir gün, altı parametrenin altısı da kayıtlı değerle birebir eşitse "ayn
 
 | İlçe | Yeniden indirme | Gün | Birebir aynı | Farklı | Ayrıntı |
 |---|---|---:|---:|---:|---|
-| karapinar | 2026-11-15T09:26:37.944Z | 7.762 | 7.762 | 0 | fark yok; rakım aynı |
-| cumra | 2026-11-15T09:26:47.359Z | 7.762 | 7.762 | 0 | fark yok; rakım aynı |
-| eregli | 2026-11-15T09:26:50.379Z | 7.762 | 7.762 | 0 | fark yok; rakım aynı |
-| cihanbeyli | 2026-11-15T09:26:55.397Z | 7.762 | 7.762 | 0 | fark yok; rakım aynı |
-| altinekin | 2026-11-15T09:26:58.329Z | 7.762 | 7.762 | 0 | fark yok; rakım aynı |
+| karapinar | 2026-11-15T13:15:17.740Z | 7.762 | 7.762 | 0 | fark yok; rakım aynı |
+| cumra | 2026-11-15T13:15:22.371Z | 7.762 | 7.762 | 0 | fark yok; rakım aynı |
+| eregli | 2026-11-15T13:15:26.919Z | 7.762 | 7.762 | 0 | fark yok; rakım aynı |
+| cihanbeyli | 2026-11-15T13:15:31.948Z | 7.762 | 7.762 | 0 | fark yok; rakım aynı |
+| altinekin | 2026-11-15T13:15:48.066Z | 7.762 | 7.762 | 0 | fark yok; rakım aynı |
 
 ## 5. Yeniden üretim
 
@@ -230,7 +230,7 @@ Betik (`scripts/kanit.mjs`) veriyi yeniden indirir, kayıtlı dosyalarla karşı
 Son çıktı:
 
 ```text
-Nöbet · veri kanıtı · 2026-11-15T09:26:34.435Z
+Nöbet · veri kanıtı · 2026-11-15T13:15:06.842Z
 
 1) Kayıtlı NASA POWER dosyaları (public/data)
    karapinar   7.762 gün · eksik 0 · indirme 2026-11-14T09:02:30.206Z · sha256 68837bdd977cf000d5a8964aa30cdb2d28eaa388b17e29de123fc209bf780dbf
@@ -263,7 +263,7 @@ Nöbet · veri kanıtı · 2026-11-15T09:26:34.435Z
    Suyu biten üye, planlı                        0                  0                  0  aynı
    Güvenli mısır sözü, bugün (t)             1.505              1.505              1.505  aynı
    Güvenli mısır sözü, planlı (t)            2.639              2.639              2.639  aynı
-   hesap süresi 1,6 sn
+   hesap süresi 1,5 sn
 
 4) Girdi dökümü (sayım)
    NASA verisi  7 girdi

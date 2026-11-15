@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-15T09:26:34.435Z",
+  "generatedAt": "2026-11-15T13:15:06.842Z",
   "command": "npm run kanit",
   "files": [
     {
@@ -246,7 +246,7 @@
     {
       "id": "karapinar",
       "ok": true,
-      "at": "2026-11-15T09:26:37.944Z",
+      "at": "2026-11-15T13:15:17.740Z",
       "days": 7762,
       "same": 7762,
       "different": 0,
@@ -283,7 +283,7 @@
     {
       "id": "cumra",
       "ok": true,
-      "at": "2026-11-15T09:26:47.359Z",
+      "at": "2026-11-15T13:15:22.371Z",
       "days": 7762,
       "same": 7762,
       "different": 0,
@@ -320,7 +320,7 @@
     {
       "id": "eregli",
       "ok": true,
-      "at": "2026-11-15T09:26:50.379Z",
+      "at": "2026-11-15T13:15:26.919Z",
       "days": 7762,
       "same": 7762,
       "different": 0,
@@ -357,7 +357,7 @@
     {
       "id": "cihanbeyli",
       "ok": true,
-      "at": "2026-11-15T09:26:55.397Z",
+      "at": "2026-11-15T13:15:31.948Z",
       "days": 7762,
       "same": 7762,
       "different": 0,
@@ -394,7 +394,7 @@
     {
       "id": "altinekin",
       "ok": true,
-      "at": "2026-11-15T09:26:58.329Z",
+      "at": "2026-11-15T13:15:48.066Z",
       "days": 7762,
       "same": 7762,
       "different": 0,
@@ -530,5 +530,5 @@
   },
   "total": 84,
   "verdict": "SONUÇ: 5 ilçe dosyası yeniden indirildi; 5 tanesi kayıtlı dosyayla gün gün birebir aynı. Baştan hesaplanan ET0 ve üç ana sayı kayıtlı sonuçlarla aynı.",
-  "output": "Nöbet · veri kanıtı · 2026-11-15T09:26:34.435Z\n\n1) Kayıtlı NASA POWER dosyaları (public/data)\n   karapinar   7.762 gün · eksik 0 · indirme 2026-11-14T09:02:30.206Z · sha256 68837bdd977cf000d5a8964aa30cdb2d28eaa388b17e29de123fc209bf780dbf\n   cumra       7.762 gün · eksik 0 · indirme 2026-11-14T14:04:06.241Z · sha256 dd8804afa97263e4124d8d3d4198aa2514f93b496a9400618315a2d7b7c408bd\n   eregli      7.762 gün · eksik 0 · indirme 2026-11-14T14:04:11.712Z · sha256 890734c5f5922af98ce2f4e0a095f4aab0af10e23f57022b4d144e7ed3088806\n   cihanbeyli  7.762 gün · eksik 0 · indirme 2026-11-14T14:04:19.759Z · sha256 a076a1c20e4bdc31771549fb3749c152963f0fb590198107bc8ac26c8a0ec41b\n   altinekin   7.762 gün · eksik 0 · indirme 2026-11-14T14:04:26.818Z · sha256 e8579921cec9832638d4ba98cf5c04a89634b5f8d1433a241944dca1664385c9\n   civril      7.762 gün · eksik 0 · indirme 2026-11-14T09:02:33.231Z · sha256 2040d98959f5d9ccdc0b03d1005656ed7de3ecd576f6d1d9a4d0d0d6c4b68ac3 · kooperatif hesabında kullanılmıyor\n   not: karapinar ile eregli dosyalarında T2M_MAX, T2M_MIN, PRECTOTCORR, WS2M, RH2M gün gün aynı; ALLSKY_SFC_SW_DWN 7.721 günde farklı\n   not: cihanbeyli ile altinekin dosyalarında altı parametrenin altısı da gün gün aynı\n\n2) Yeniden indirme ve gün gün karşılaştırma (NASA POWER API, şimdi)\n   karapinar   7.762 gün: 7.762 gün birebir aynı, 0 gün farklı · rakım aynı\n   cumra       7.762 gün: 7.762 gün birebir aynı, 0 gün farklı · rakım aynı\n   eregli      7.762 gün: 7.762 gün birebir aynı, 0 gün farklı · rakım aynı\n   cihanbeyli  7.762 gün: 7.762 gün birebir aynı, 0 gün farklı · rakım aynı\n   altinekin   7.762 gün: 7.762 gün birebir aynı, 0 gün farklı · rakım aynı\n\n3) ET0 ve üç ana sayı: baştan hesap\n   kayıt tarihi 2026-11-15T09:03:56.290Z\n   sayı                                    kayıtlı   kayıtlı dosyadan  yeni indirilenden  sonuç\n   ET0 karapinar (mm/yıl)                  1.241,1            1.241,1            1.241,1  aynı\n   ET0 cumra (mm/yıl)                      1.195,3            1.195,3            1.195,3  aynı\n   ET0 eregli (mm/yıl)                     1.215,3            1.215,3            1.215,3  aynı\n   ET0 cihanbeyli (mm/yıl)                 1.251,7            1.251,7            1.251,7  aynı\n   ET0 altinekin (mm/yıl)                  1.253,9            1.253,9            1.253,9  aynı\n   Brüt gelir, bugün (TL)               62.676.555         62.676.555         62.676.555  aynı\n   Brüt gelir, planlı (TL)              80.165.398         80.165.398         80.165.398  aynı\n   Suyu biten üye, bugün                        50                 50                 50  aynı\n   Suyu biten üye, planlı                        0                  0                  0  aynı\n   Güvenli mısır sözü, bugün (t)             1.505              1.505              1.505  aynı\n   Güvenli mısır sözü, planlı (t)            2.639              2.639              2.639  aynı\n   hesap süresi 1,6 sn\n\n4) Girdi dökümü (sayım)\n   NASA verisi  7 girdi\n   Kaynaklı     17 girdi\n   Varsayım     48 girdi\n   Kurgusal     12 girdi\n   toplam       84 girdi\n\nSONUÇ: 5 ilçe dosyası yeniden indirildi; 5 tanesi kayıtlı dosyayla gün gün birebir aynı. Baştan hesaplanan ET0 ve üç ana sayı kayıtlı sonuçlarla aynı."
+  "output": "Nöbet · veri kanıtı · 2026-11-15T13:15:06.842Z\n\n1) Kayıtlı NASA POWER dosyaları (public/data)\n   karapinar   7.762 gün · eksik 0 · indirme 2026-11-14T09:02:30.206Z · sha256 68837bdd977cf000d5a8964aa30cdb2d28eaa388b17e29de123fc209bf780dbf\n   cumra       7.762 gün · eksik 0 · indirme 2026-11-14T14:04:06.241Z · sha256 dd8804afa97263e4124d8d3d4198aa2514f93b496a9400618315a2d7b7c408bd\n   eregli      7.762 gün · eksik 0 · indirme 2026-11-14T14:04:11.712Z · sha256 890734c5f5922af98ce2f4e0a095f4aab0af10e23f57022b4d144e7ed3088806\n   cihanbeyli  7.762 gün · eksik 0 · indirme 2026-11-14T14:04:19.759Z · sha256 a076a1c20e4bdc31771549fb3749c152963f0fb590198107bc8ac26c8a0ec41b\n   altinekin   7.762 gün · eksik 0 · indirme 2026-11-14T14:04:26.818Z · sha256 e8579921cec9832638d4ba98cf5c04a89634b5f8d1433a241944dca1664385c9\n   civril      7.762 gün · eksik 0 · indirme 2026-11-14T09:02:33.231Z · sha256 2040d98959f5d9ccdc0b03d1005656ed7de3ecd576f6d1d9a4d0d0d6c4b68ac3 · kooperatif hesabında kullanılmıyor\n   not: karapinar ile eregli dosyalarında T2M_MAX, T2M_MIN, PRECTOTCORR, WS2M, RH2M gün gün aynı; ALLSKY_SFC_SW_DWN 7.721 günde farklı\n   not: cihanbeyli ile altinekin dosyalarında altı parametrenin altısı da gün gün aynı\n\n2) Yeniden indirme ve gün gün karşılaştırma (NASA POWER API, şimdi)\n   karapinar   7.762 gün: 7.762 gün birebir aynı, 0 gün farklı · rakım aynı\n   cumra       7.762 gün: 7.762 gün birebir aynı, 0 gün farklı · rakım aynı\n   eregli      7.762 gün: 7.762 gün birebir aynı, 0 gün farklı · rakım aynı\n   cihanbeyli  7.762 gün: 7.762 gün birebir aynı, 0 gün farklı · rakım aynı\n   altinekin   7.762 gün: 7.762 gün birebir aynı, 0 gün farklı · rakım aynı\n\n3) ET0 ve üç ana sayı: baştan hesap\n   kayıt tarihi 2026-11-15T09:03:56.290Z\n   sayı                                    kayıtlı   kayıtlı dosyadan  yeni indirilenden  sonuç\n   ET0 karapinar (mm/yıl)                  1.241,1            1.241,1            1.241,1  aynı\n   ET0 cumra (mm/yıl)                      1.195,3            1.195,3            1.195,3  aynı\n   ET0 eregli (mm/yıl)                     1.215,3            1.215,3            1.215,3  aynı\n   ET0 cihanbeyli (mm/yıl)                 1.251,7            1.251,7            1.251,7  aynı\n   ET0 altinekin (mm/yıl)                  1.253,9            1.253,9            1.253,9  aynı\n   Brüt gelir, bugün (TL)               62.676.555         62.676.555         62.676.555  aynı\n   Brüt gelir, planlı (TL)              80.165.398         80.165.398         80.165.398  aynı\n   Suyu biten üye, bugün                        50                 50                 50  aynı\n   Suyu biten üye, planlı                        0                  0                  0  aynı\n   Güvenli mısır sözü, bugün (t)             1.505              1.505              1.505  aynı\n   Güvenli mısır sözü, planlı (t)            2.639              2.639              2.639  aynı\n   hesap süresi 1,5 sn\n\n4) Girdi dökümü (sayım)\n   NASA verisi  7 girdi\n   Kaynaklı     17 girdi\n   Varsayım     48 girdi\n   Kurgusal     12 girdi\n   toplam       84 girdi\n\nSONUÇ: 5 ilçe dosyası yeniden indirildi; 5 tanesi kayıtlı dosyayla gün gün birebir aynı. Baştan hesaplanan ET0 ve üç ana sayı kayıtlı sonuçlarla aynı."
 }

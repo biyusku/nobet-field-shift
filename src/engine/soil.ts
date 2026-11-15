@@ -18,6 +18,9 @@ export const SOIL_FORMULA =
  * Basit, ekranda formülü yazan bir gösterge; toprak analizi değildir.
  * Paylar ekili + nadas toplam alana göre alınır; nadas ayrı bir "ürün" sayılır.
  */
+export const SOIL_FORMULA_EN =
+  'Score = 60 × min(1, legume share ÷ 0.25) + 40 × min(1, (effective number of crops − 1) ÷ 2);  effective number of crops = 1 ÷ Σ(share²)';
+
 export function soilScore(areas: { cropId: string; da: number }[], crops: Crop[]): SoilScore {
   const total = areas.reduce((s, a) => s + a.da, 0);
   if (total <= 0) return { score: 0, legumeShare: 0, effectiveCrops: 0, legumePoints: 0, diversityPoints: 0 };

@@ -1,4 +1,5 @@
 // Su-verim eğrileri: her ürün, her su seviyesi ve 2006-2025 arası her hasat yılı için göreli verim.
+import { L } from '../i18n';
 import { simulateCropYear } from './bucket';
 import { FIRST_YEAR, LAST_YEAR, type Crop, type Soil, type Weather } from './types';
 
@@ -83,5 +84,5 @@ export function buildCurves(w: Weather, crops: Crop[], efficiency: number, soil:
 }
 
 export function levelLabel(level: number | null): string {
-  return level === null ? 'tam' : level === 0 ? 'susuz' : `${level} mm`;
+  return level === null ? L('tam', 'full') : level === 0 ? L('susuz', 'rain-fed') : `${level} mm`;
 }

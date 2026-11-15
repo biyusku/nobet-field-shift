@@ -1,6 +1,6 @@
 import { Sidebar } from './components/Sidebar';
 import { Empty } from './components/ui';
-import { COOP_NAME } from './data/defaults';
+import { coopLabel, L } from './i18n';
 import { CommitmentScreen } from './screens/CommitmentScreen';
 import { OverviewScreen } from './screens/OverviewScreen';
 import { MemberScreen } from './screens/MemberScreen';
@@ -13,14 +13,14 @@ export default function App() {
     <div className="flex min-h-screen">
       <Sidebar />
       <main className="flex min-w-0 flex-1 flex-col gap-4 px-3 pb-12 pt-3 md:px-5">
-        {s.weatherStatus === 'loading' && !s.weather && <Empty title="İklim verisi yükleniyor…">Beş ilçenin 2004-2025 günlük NASA POWER verisi okunuyor.</Empty>}
+        {s.weatherStatus === 'loading' && !s.weather && <Empty title={L('İklim verisi yükleniyor…', 'Loading climate data…')}>{L('Beş ilçenin 2004-2025 günlük NASA POWER verisi okunuyor.', 'Reading 2004-2025 daily NASA POWER data for five districts.')}</Empty>}
         {s.weatherStatus === 'error' && (
-          <Empty title="İklim verisi yüklenemedi">
+          <Empty title={L('İklim verisi yüklenemedi', 'Climate data could not be loaded')}>
             {s.weatherError}
-            <div className="mt-2">İlçe verileri public/data altında olmalı; eksikse "npm run fetch-data" çalıştırın.</div>
+            <div className="mt-2">{L('İlçe verileri public/data altında olmalı; eksikse "npm run fetch-data" çalıştırın.', 'District data must be under public/data; if missing, run "npm run fetch-data".')}</div>
           </Empty>
         )}
-        {s.modelError && <Empty title="Hesap yapılamadı">{s.modelError} Yöntem sayfasındaki varsayımları kontrol edin ya da başlangıç değerlerine dönün.</Empty>}
+        {s.modelError && <Empty title={L('Hesap yapılamadı', 'Calculation failed')}>{s.modelError} {L('Yöntem sayfasındaki varsayımları kontrol edin ya da başlangıç değerlerine dönün.', 'Check the assumptions on the Method page or return to the default values.')}</Empty>}
 
         {s.weather && s.model && (
           <div key={s.tab} className="fade-up flex flex-col gap-4">
@@ -32,8 +32,10 @@ export default function App() {
         )}
 
         <footer className="mt-auto pt-4 text-[11px] text-muted">
-          {COOP_NAME} ve üyeleri kurgusaldır · Gelir brüttür: tohum, gübre, elektrik düşülmedi · NASA POWER verisi yaklaşık 55 km çözünürlüklüdür: tarlayı değil yöre iklimini gösterir · İklim verisi:
-          NASA Langley Research Center POWER Project · Bu araç tarımsal danışmanlık yerine geçmez.
+          {L(
+            `${coopLabel()} ve üyeleri kurgusaldır · Gelir brüttür: tohum, gübre, elektrik düşülmedi · NASA POWER verisi yaklaşık 55 km çözünürlüklüdür: tarlayı değil yöre iklimini gösterir · İklim verisi: NASA Langley Research Center POWER Project · Bu araç tarımsal danışmanlık yerine geçmez.`,
+            `${coopLabel()} and its members are fictional · Revenue is gross: seed, fertiliser and electricity are not deducted · NASA POWER data has ~55 km resolution: it shows the local climate, not the field · Climate data: NASA Langley Research Center POWER Project · This tool does not replace agricultural advice.`,
+          )}
         </footer>
       </main>
     </div>

@@ -1,16 +1,17 @@
 // Daraltılabilir koyu kenar menü. Telefonda ikon şeridi olarak başlar; açılınca sayfanın üstüne biner.
-import { BookOpen, Droplets, Handshake, LayoutDashboard, type LucideIcon, MapPin, Moon, PanelLeftClose, PanelLeftOpen, Satellite, Sun, Users } from 'lucide-react';
+import { BookOpen, Droplets, Handshake, Languages, LayoutDashboard, type LucideIcon, MapPin, Moon, PanelLeftClose, PanelLeftOpen, Satellite, Sun, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { DISTRICTS } from '../data/members';
+import { L } from '../i18n';
 import { useStore, type Tab } from '../state';
 import { Select } from './kit';
 
 const NAV: { id: Tab; label: string; icon: LucideIcon }[] = [
-  { id: 'genel', label: 'Pano', icon: LayoutDashboard },
-  { id: 'uye', label: 'Üyeler', icon: Users },
-  { id: 'taahhut', label: 'Taahhüt', icon: Handshake },
+  { id: 'genel', get label() { return L('Pano', 'Dashboard'); }, icon: LayoutDashboard },
+  { id: 'uye', get label() { return L('Üyeler', 'Members'); }, icon: Users },
+  { id: 'taahhut', get label() { return L('Taahhüt', 'Commitment'); }, icon: Handshake },
 ];
-const METHOD = { id: 'yontem' as Tab, label: 'Yöntem ve kaynaklar', icon: BookOpen };
+const METHOD = { id: 'yontem' as Tab, get label() { return L('Yöntem ve kaynaklar', 'Method and sources'); }, icon: BookOpen };
 const NARROW = '(max-width: 860px)';
 const KEY = 'nobet-menu-dar';
 
@@ -112,14 +113,14 @@ export function Sidebar() {
     );
   };
 
-  const status = s.weatherStatus === 'loading' ? 'Yükleniyor…' : s.weatherStatus === 'error' ? 'Hata' : 'Hazır';
+  const status = s.weatherStatus === 'loading' ? L('Yükleniyor…', 'Loading…') : s.weatherStatus === 'error' ? L('Hata', 'Error') : L('Hazır', 'Ready');
   const dot = s.weatherStatus === 'loading' ? '#f5b93a' : s.weatherStatus === 'error' ? '#e5534b' : '#36b37e';
   return (
     <>
       {narrow && <div aria-hidden className="shrink-0" style={{ width: rail }} />}
-      {overlay && <button type="button" aria-label="Menüyü kapat" onClick={() => setCollapsed(true)} className="fixed inset-0 z-40 cursor-default border-0 bg-black/40" />}
+      {overlay && <button type="button" aria-label={L('Menüyü kapat', 'Close menu')} onClick={() => setCollapsed(true)} className="fixed inset-0 z-40 cursor-default border-0 bg-black/40" />}
       <aside
-        aria-label="Ana menü"
+        aria-label={L('Ana menü', 'Main menu')}
         style={{ width: collapsed ? rail : 228, transition: 'width .25s cubic-bezier(.16,1,.3,1)' }}
         className={`no-print top-0 flex shrink-0 flex-col overflow-hidden border-r border-white/[0.06] bg-sidebar text-[#ededed] ${
           narrow ? 'fixed left-0 z-50 h-dvh' : 'sticky h-screen'
@@ -135,7 +136,7 @@ export function Sidebar() {
           <button
             type="button"
             onClick={() => setCollapsed((v) => !v)}
-            aria-label={collapsed ? 'Menüyü aç' : 'Menüyü kapat'}
+            aria-label={collapsed ? L('Menüyü aç', 'Open menu') : L('Menüyü kapat', 'Close menu')}
             aria-expanded={!collapsed}
             className={`flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.03] text-white/45 transition-colors hover:border-white/15 hover:text-white/80 ${collapsed ? 'mx-auto' : ''}`}
           >
@@ -148,7 +149,7 @@ export function Sidebar() {
           {collapsed ? (
             <div aria-hidden className="mx-auto my-3 h-px w-6 bg-white/[0.08]" />
           ) : (
-            <div className="mb-1 mt-5 whitespace-nowrap px-2.5 text-[11px] font-semibold uppercase tracking-wide text-white/35">Veri kaynağı · 5 ilçe</div>
+            <div className="mb-1 mt-5 whitespace-nowrap px-2.5 text-[11px] font-semibold uppercase tracking-wide text-white/35">{L('Veri kaynağı · 5 ilçe', 'Data source · 5 districts')}</div>
           )}
           <div
             className={`flex h-9 items-center text-[13px] font-medium text-white/75 ${collapsed ? 'justify-center' : 'gap-2.5 px-2.5'}`}
@@ -166,14 +167,14 @@ export function Sidebar() {
             )}
           </div>
           {collapsed ? (
-            <button type="button" className="side-item is-collapsed" title={`İlçe: ${s.weather?.name ?? ''}`} aria-label="Seçili ilçeyi değiştir" onClick={() => setCollapsed(false)}>
+            <button type="button" className="side-item is-collapsed" title={`${L('İlçe', 'District')}: ${s.weather?.name ?? ''}`} aria-label={L('Seçili ilçeyi değiştir', 'Change selected district')} onClick={() => setCollapsed(false)}>
               <MapPin size={16} aria-hidden />
             </button>
           ) : (
             <Select
               variant="dark"
               className="mt-1"
-              label="Seçili ilçe"
+              label={L('Seçili ilçe', 'Selected district')}
               icon={<MapPin size={15} className="shrink-0 text-white/55" aria-hidden />}
               value={s.districtId}
               onChange={(v) => s.setDistrictId(v)}
@@ -182,16 +183,27 @@ export function Sidebar() {
           )}
           {!collapsed && s.weather && (
             <div className="tnum mt-1.5 whitespace-nowrap px-2.5 text-[11px] text-white/35">
-              {s.weather.lat.toFixed(2)}°K {s.weather.lon.toFixed(2)}°D · {Math.round(s.weather.elevation)} m · ~55 km
+              {s.weather.lat.toFixed(2)}°{L('K', 'N')} {s.weather.lon.toFixed(2)}°{L('D', 'E')} · {Math.round(s.weather.elevation)} m · ~55 km
             </div>
           )}
         </nav>
 
         <div className="space-y-0.5 border-t border-white/[0.06] px-2 py-3">
           {item(METHOD)}
-          <button type="button" onClick={toggleTheme} className={`side-item ${collapsed ? 'is-collapsed' : ''}`} aria-label="Açık ve koyu tema arasında geç" title={collapsed ? 'Tema' : undefined}>
+          <button type="button" onClick={toggleTheme} className={`side-item ${collapsed ? 'is-collapsed' : ''}`} aria-label={L('Açık ve koyu tema arasında geç', 'Switch between light and dark theme')} title={collapsed ? L('Tema', 'Theme') : undefined}>
             {theme === 'dark' ? <Sun size={16} className="shrink-0" aria-hidden /> : <Moon size={16} className="shrink-0" aria-hidden />}
-            {!collapsed && <span className="flex-1 text-left">{theme === 'dark' ? 'Açık tema' : 'Koyu tema'}</span>}
+            {!collapsed && <span className="flex-1 text-left">{theme === 'dark' ? L('Açık tema', 'Light theme') : L('Koyu tema', 'Dark theme')}</span>}
+          </button>
+          <button
+            type="button"
+            onClick={() => s.setLang(s.lang === 'en' ? 'tr' : 'en')}
+            className={`side-item ${collapsed ? 'is-collapsed' : ''}`}
+            aria-label={s.lang === 'en' ? 'Türkçeye geç' : 'Switch to English'}
+            title={collapsed ? (s.lang === 'en' ? 'Türkçe' : 'English') : undefined}
+            lang={s.lang === 'en' ? 'tr' : 'en'}
+          >
+            <Languages size={16} className="shrink-0" aria-hidden />
+            {!collapsed && <span className="flex-1 text-left">{s.lang === 'en' ? 'Türkçe' : 'English'}</span>}
           </button>
         </div>
       </aside>

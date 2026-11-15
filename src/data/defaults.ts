@@ -1,3 +1,4 @@
+import { methodLabel } from '../i18n';
 import type { PlanSettings } from '../engine/plan';
 import type { Efficiencies, Member, Soil } from '../engine/types';
 
@@ -46,7 +47,18 @@ export const DEFAULT_MEMBERS: Member[] = [
 
 export const DEFAULT_SOIL: Soil = { taw: 130, p: 0.5 };
 export const DEFAULT_EFF: Efficiencies = { salma: 0.5, yagmurlama: 0.75, damla: 0.9 };
-export const METHOD_LABEL = { salma: 'Salma', yagmurlama: 'Yağmurlama', damla: 'Damla' } as const;
+/** Sulama yöntemi adı; seçili dile göre (src/i18n.ts). */
+export const METHOD_LABEL: Readonly<Record<'salma' | 'yagmurlama' | 'damla', string>> = {
+  get salma() {
+    return methodLabel('salma');
+  },
+  get yagmurlama() {
+    return methodLabel('yagmurlama');
+  },
+  get damla() {
+    return methodLabel('damla');
+  },
+};
 
 /** "Güvenle söz" eşiği: sözün 20 yılın en az kaçında tutması istenir. */
 export const DEFAULT_SAFE_YEARS = 16;

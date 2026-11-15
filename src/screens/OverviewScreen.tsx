@@ -7,7 +7,7 @@ import { ClimateCard } from '../components/ClimateCard';
 import { Confirm, Select } from '../components/kit';
 import { MemberEditor } from '../components/MemberEditor';
 import { Card, Change, H2, Note, NumInput, PageHeader, Segmented, Swatch, Tag, type TagKind } from '../components/ui';
-import { COOP_NAME, DEFAULT_SAFE_YEARS } from '../data/defaults';
+import { DEFAULT_SAFE_YEARS } from '../data/defaults';
 import { DISTRICTS } from '../data/members';
 import { levelLabel } from '../engine/curves';
 import { reachedInAtLeast } from '../engine/promise';
@@ -15,10 +15,21 @@ import { da, inSuffix, int, m3, pct, tlShort, ton } from '../lib/format';
 import { CALC_LIMIT_MS, useCalc, type CalcState } from '../lib/useCalc';
 import type { MemberView, Mode, ScenarioSummary } from '../model';
 import { useStore } from '../state';
+import { buyerLabel, coopLabel, cropLabel, L, lower, memberLabel } from '../i18n';
 
 const CoopMap = lazy(() => import('../components/CoopMap'));
 
-const MODE_LABEL: Record<Mode, string> = { today: 'Bugün', scatter: 'Gelişigüzel dağıtım', planned: 'Planlı dağıtım' };
+const MODE_LABEL: Record<Mode, string> = {
+  get today() {
+    return L('Bugün', 'Today');
+  },
+  get scatter() {
+    return L('Gelişigüzel dağıtım', 'Ad-hoc distribution');
+  },
+  get planned() {
+    return L('Planlı dağıtım', 'Planned distribution');
+  },
+};
 /** Dağıtım tablosunda varsayılan olarak gösterilen üye sayısı. */
 const TABLE_PREVIEW = 5;
 /** Worker'dan gelen senaryo özeti (engine/promise PromiseScenario'nun gerekli alanları). */
@@ -30,9 +41,9 @@ interface ScenarioLite {
 }
 /** Hesap sürerken ya da süre sınırı aşılınca gösterilecek kısa metin; sonuç varsa null. */
 function calcNote(c: CalcState<unknown>): string | null {
-  if (c.status === 'loading') return 'hesaplanıyor…';
-  if (c.status === 'timeout') return `hesap tamamlanamadı (${CALC_LIMIT_MS / 1000} sn içinde bitmedi)`;
-  if (c.status === 'error') return `hesap tamamlanamadı: ${c.message}`;
+  if (c.status === 'loading') return L('hesaplanıyor…', 'calculating…');
+  if (c.status === 'timeout') return L(`hesap tamamlanamadı (${CALC_LIMIT_MS / 1000} sn içinde bitmedi)`, `calculation could not be completed (did not finish within ${CALC_LIMIT_MS / 1000} s)`);
+  if (c.status === 'error') return L(`hesap tamamlanamadı: ${c.message}`, `calculation could not be completed: ${c.message}`);
   return null;
 }
 const districtName = (id?: string) => DISTRICTS.find((d) => d.id === id)?.name ?? '–';
@@ -46,7 +57,7 @@ function Big({ label, tag, from, to, tone, hint, extra }: { label: string; tag: 
       </h2>
       <div className="tnum mt-0.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
         <span className="text-[14px] text-ink2">{from}</span>
-        <ArrowRight size={14} className="shrink-0 translate-y-[1px] text-muted" aria-label="planlı dağıtımla" />
+        <ArrowRight size={14} className="shrink-0 translate-y-[1px] text-muted" aria-label={L('planlı dağıtımla', 'with planned distribution')} />
         <span className={`text-[30px] font-bold leading-[1.1] tracking-tight ${tone === 'good' ? 'text-good-ink' : tone === 'crit' ? 'text-crit-ink' : 'text-ink'}`}>{to}</span>
         {extra}
       </div>
@@ -123,7 +134,7 @@ export function OverviewScreen() {
   const singleFailed = single?.status === 'error';
   const safeSingle = Math.floor(reachedInAtLeast(singleYears, K));
   const draftHeld = draft?.held ?? 0;
-  const draftError = draft?.status === 'error' ? (draft.message ?? 'Plan kurulamadı.') : null;
+  const draftError = draft?.status === 'error' ? (draft.message ?? L('Plan kurulamadı.', 'No plan could be built.')) : null;
   const draftOk = tons <= 0 || (draft !== null && !draftError && draftHeld >= K);
   const safeTons = Math.floor(safeDraft ?? 0);
   const goMethod = () => {
@@ -133,12 +144,12 @@ export function OverviewScreen() {
   const mixedRows = model.crops
     .map((c) => ({ c, safe: Math.floor(reachedInAtLeast(mixed?.yearly[c.id] ?? [], K)) }))
     .filter((r) => r.safe >= 1);
-  const draftCropName = (model.cropById.get(crop)?.name ?? crop).toLocaleLowerCase('tr');
+  const draftCropName = lower(cropLabel(crop, model.cropById.get(crop)?.name ?? crop));
   const names = new Map(model.crops.map((c) => [c.id, c.name]));
   const sc = model.scenarios;
   const committed = Object.entries(s.settings.commitments).filter(([id, t]) => t > 0 && model.cropById.has(id));
   const [cId, cTons] = committed[0] ?? [null, 0];
-  const cName = cId ? cropName(cId, names).toLocaleLowerCase('tr') : '';
+  const cName = cId ? lower(cropName(cId, names)) : '';
   const dirty = crop !== (first?.[0] ?? 'misir') || tons !== (first?.[1] ?? 0) || buyer !== s.buyer;
   const apply = () => {
     s.update({ buyer });
@@ -166,7 +177,7 @@ export function OverviewScreen() {
           if (tableMode === 'scatter') {
             if (mv.scatterCrop !== cId) return null;
             const st = mv.scatterWater.parcels[0];
-            return { mv, da: mv.member.areaDa, water: mv.scatter.meanUsedM3, level: 'su hakkı bitene kadar', rel: st?.relYield ?? 0 };
+            return { mv, da: mv.member.areaDa, water: mv.scatter.meanUsedM3, level: L('su hakkı bitene kadar', 'until the water allowance runs out'), rel: st?.relYield ?? 0 };
           }
           const mine = mv.plannedAllocs.filter((a) => a.cropId === cId && a.option && a.da >= 0.05);
           if (mine.length === 0) return null;
@@ -188,54 +199,60 @@ export function OverviewScreen() {
     <>
       <PageHeader
         icon={LayoutDashboard}
-        title="Kooperatif panosu"
+        title={L('Kooperatif panosu', 'Cooperative dashboard')}
         meta={
           <>
-            {COOP_NAME} <Tag kind="kurgusal" /> · {int(model.members.length)} üye · {int(model.totalAreaDa)} da · su hakkı {m3(model.totalQuotaM3)}
+            {coopLabel()} <Tag kind="kurgusal" /> · {int(model.members.length)} {L('üye', 'members')} · {int(model.totalAreaDa)} da · {L('su hakkı', 'water allowance')} {m3(model.totalQuotaM3)}
           </>
         }
       >
         <Confirm
           trigger={
             <button type="button" className="btn">
-              <RotateCcw /> Kurgusal örneğe dön
+              <RotateCcw /> {L('Kurgusal örneğe dön', 'Back to the fictional example')}
             </button>
           }
-          title="Kurgusal örneğe dönülsün mü?"
-          description="Üyeler, taahhüt, plan kuralları ve bütün varsayımlar başlangıç değerlerine döner. Yaptığınız değişiklikler silinir."
-          action="Başlangıca dön"
+          title={L('Kurgusal örneğe dönülsün mü?', 'Go back to the fictional example?')}
+          description={L(
+            'Üyeler, taahhüt, plan kuralları ve bütün varsayımlar başlangıç değerlerine döner. Yaptığınız değişiklikler silinir.',
+            'Members, commitment, planning rules and all assumptions return to their starting values. Your changes will be deleted.',
+          )}
+          action={L('Başlangıca dön', 'Reset')}
           danger
           onConfirm={s.reset}
         />
         <button type="button" className="btn btn-primary" onClick={() => setEditing(s.addMember())}>
-          <Plus /> Üye ekle
+          <Plus /> {L('Üye ekle', 'Add member')}
         </button>
       </PageHeader>
 
       {/* üç büyük sayı: bugün → planlı */}
       <div className="grid gap-3 md:grid-cols-3">
         <Big
-          label="Kooperatif brüt geliri"
+          label={L('Kooperatif brüt geliri', 'Cooperative gross revenue')}
           tag="hesap"
           from={tlShort(sc.today.revenue)}
           to={tlShort(sc.planned.revenue)}
           extra={<Change from={sc.today.revenue} to={sc.planned.revenue} />}
-          hint="Yıllık, 20 yılın ortalaması · girdiler düşülmedi"
+          hint={L('Yıllık, 20 yılın ortalaması · girdiler düşülmedi', 'Per year, 20-year average · input costs not deducted')}
         />
         <Big
-          label="Suyu sezon ortasında biten üye"
+          label={L('Suyu sezon ortasında biten üye', 'Members whose water runs out mid-season')}
           tag="hesap"
-          from={`${int(model.members.length)} üyeden ${int(sc.today.exceeded)}`}
+          from={L(`${int(model.members.length)} üyeden ${int(sc.today.exceeded)}`, `${int(sc.today.exceeded)} of ${int(model.members.length)}`)}
           to={int(sc.planned.exceeded)}
           tone={sc.planned.exceeded === 0 ? 'good' : 'crit'}
-          hint="Bugünkü ekim → planlı dağıtım"
+          hint={L('Bugünkü ekim → planlı dağıtım', "Today's planting → planned distribution")}
         />
         <Big
-          label={`Güvenle verilebilecek ${(model.cropById.get(headCrop)?.name ?? headCrop).toLocaleLowerCase('tr')} sözü`}
+          label={L(
+            `Güvenle verilebilecek ${lower(cropLabel(headCrop, model.cropById.get(headCrop)?.name ?? headCrop))} sözü`,
+            `Safe ${lower(cropLabel(headCrop, model.cropById.get(headCrop)?.name ?? headCrop))} commitment`,
+          )}
           tag="hesap"
           from={`${int(Math.floor(reachedInAtLeast(sc.today.backtest.map((y) => y.productionT[headCrop] ?? 0), K)))} t`}
           to={safePlanned === null ? <span className="text-[14px] font-medium text-ink2">{calcNote(safePlannedCalc)}</span> : `${int(Math.floor(safePlanned))} t`}
-          hint={`20 yılın en az ${K}${inSuffix(K)} ulaşılan toplam üretim`}
+          hint={L(`20 yılın en az ${K}${inSuffix(K)} ulaşılan toplam üretim`, `Total production reached in at least ${K} of 20 years`)}
         />
       </div>
 
@@ -244,15 +261,18 @@ export function OverviewScreen() {
         <div className="flex min-w-0 flex-col gap-3">
         <Card className="flex min-w-0 flex-col gap-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <Segmented label="Dağıtım" value={mode} options={(['today', 'scatter', 'planned'] as Mode[]).map((id) => ({ id, label: MODE_LABEL[id] }))} onChange={setMode} />
+            <Segmented label={L('Dağıtım', 'Distribution')} value={mode} options={(['today', 'scatter', 'planned'] as Mode[]).map((id) => ({ id, label: MODE_LABEL[id] }))} onChange={setMode} />
             <span className="text-[12px] text-ink2">
-              {mode === 'today' && 'Üyelerin bugün ektiği'}
-              {mode === 'scatter' && (cId ? `Söz ${sc.scatter.growers} üyeye verildi; hepsi bütün tarlasına ${cName} ekiyor` : 'Taahhüt girilmedi')}
-              {mode === 'planned' && 'Su hakkı ve nöbet kurallarıyla hesaplanan dağıtım'}
+              {mode === 'today' && L('Üyelerin bugün ektiği', 'What members plant today')}
+              {mode === 'scatter' &&
+                (cId
+                  ? L(`Söz ${sc.scatter.growers} üyeye verildi; hepsi bütün tarlasına ${cName} ekiyor`, `Commitment given to ${sc.scatter.growers} members; each plants ${cName} on the whole field`)
+                  : L('Taahhüt girilmedi', 'No commitment entered'))}
+              {mode === 'planned' && L('Su hakkı ve nöbet kurallarıyla hesaplanan dağıtım', 'Distribution calculated with water allowances and rotation rules')}
             </span>
           </div>
           <div className="h-[470px]">
-            <Suspense fallback={<div className="grid h-full place-items-center rounded-lg bg-sunken text-ink2">Harita yükleniyor…</div>}>
+            <Suspense fallback={<div className="grid h-full place-items-center rounded-lg bg-sunken text-ink2">{L('Harita yükleniyor…', 'Loading map…')}</div>}>
               <CoopMap
                 members={model.members}
                 mode={mode}
@@ -267,50 +287,58 @@ export function OverviewScreen() {
             </Suspense>
           </div>
           <p className="m-0 text-[11.5px] text-ink2">
-            Üyelerin konumu, tarlası ve ekimi <Tag kind="kurgusal" />. Mavi dikdörtgenler NASA POWER hücreleridir (yaklaşık 0,5° × 0,625°): aynı hücredeki üyeler aynı sıcaklığı, yağışı, rüzgârı ve nemi görür (güneş radyasyonu ayrı bir ızgaradan gelir). Beş ilçe yalnızca üç hücreye
-            düşüyor. NASA verisi havayı söyler; tarlada ne ekildiğini söylemez.
+            {L(
+              <>
+                Üyelerin konumu, tarlası ve ekimi <Tag kind="kurgusal" />. Mavi dikdörtgenler NASA POWER hücreleridir (yaklaşık 0,5° × 0,625°): aynı hücredeki üyeler aynı sıcaklığı, yağışı, rüzgârı ve nemi görür (güneş radyasyonu ayrı bir ızgaradan gelir). Beş ilçe yalnızca üç hücreye
+                düşüyor. NASA verisi havayı söyler; tarlada ne ekildiğini söylemez.
+              </>,
+              <>
+                Members' locations, fields and crops <Tag kind="kurgusal" />. Blue rectangles are NASA POWER grid cells (about 0.5° × 0.625°): members in the same cell see the same temperature, rainfall, wind and humidity (solar radiation comes from a separate grid). The five districts fall into
+                only three cells. NASA data tells you the weather; it does not tell you what is planted in a field.
+              </>,
+            )}
           </p>
         </Card>
 
           <Card className="flex min-w-0 flex-col gap-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <Segmented
-                label="Alt panel"
+                label={L('Alt panel', 'Lower panel')}
                 value={panel}
                 options={[
-                  { id: 'dagitim', label: 'Dağıtım tablosu' },
-                  { id: 'iklim', label: `NASA verisi: ${districtName(s.districtId)}` },
+                  { id: 'dagitim', label: L('Dağıtım tablosu', 'Distribution table') },
+                  { id: 'iklim', label: `${L('NASA verisi', 'NASA data')}: ${districtName(s.districtId)}` },
                 ]}
                 onChange={setPanel}
               />
               {panel === 'dagitim' && cId && (
                 <span className="text-[12px] text-ink2">
-                  {MODE_LABEL[tableMode]} · {rows.length} üye
+                  {MODE_LABEL[tableMode]} · {rows.length} {L('üye', 'members')}
                 </span>
               )}
             </div>
 
             {panel === 'dagitim' ? (
               !cId ? (
-                <div className="text-ink2">Taahhüt girilince hangi üyenin ne kadar ekeceği burada görünür.</div>
+                <div className="text-ink2">{L('Taahhüt girilince hangi üyenin ne kadar ekeceği burada görünür.', 'Once a commitment is entered, this shows which member plants how much.')}</div>
               ) : (
                 <>
                   <div className={showAll ? 'max-h-[400px] overflow-auto' : ''}>
                     <table className="data">
                       <thead className="sticky top-0 z-10">
                         <tr>
-                          <th>Üye</th>
+                          <th>{L('Üye', 'Member')}</th>
                           <th className="num">{cropName(cId, names)} (da)</th>
                           <th className="num">
-                            Su (m³)
+                            {L('Su (m³)', 'Water (m³)')}
                             <Tag kind="hesap" compact />
                           </th>
                           <th className="num">
-                            Verim
+                            {L('Verim', 'Yield')}
                             <Tag kind="hesap" compact />
                           </th>
                           <th className="num">
-                            Teslim (t)
+                            {L('Teslim (t)', 'Delivered (t)')}
                             <Tag kind="hesap" compact />
                           </th>
                         </tr>
@@ -320,7 +348,7 @@ export function OverviewScreen() {
                           <tr key={r.mv.member.id} className="cursor-pointer" onClick={() => openMember(r.mv.member.id)}>
                             <td>
                               <button type="button" className="cursor-pointer border-0 bg-transparent p-0 text-left font-semibold text-ink" onClick={() => openMember(r.mv.member.id)}>
-                                {r.mv.member.name}
+                                {memberLabel(r.mv.member.name)}
                               </button>
                               <div className="text-[11px] text-ink2">
                                 {districtName(r.mv.member.pointId)} · {da(r.mv.member.areaDa)} da
@@ -341,7 +369,7 @@ export function OverviewScreen() {
                         {rows.length === 0 && (
                           <tr>
                             <td colSpan={5} className="text-ink2">
-                              Bu dağıtımda {cName} eken üye yok.
+                              {L(`Bu dağıtımda ${cName} eken üye yok.`, `No member plants ${cName} in this distribution.`)}
                             </td>
                           </tr>
                         )}
@@ -351,7 +379,9 @@ export function OverviewScreen() {
                   {rows.length > TABLE_PREVIEW && (
                     <div>
                       <button type="button" className="btn" aria-expanded={showAll} onClick={() => setShowAll((v) => !v)}>
-                        {showAll ? `Yalnız ilk ${TABLE_PREVIEW} üyeyi göster` : `${rows.length} üyenin tümünü göster`}
+                        {showAll
+                          ? L(`Yalnız ilk ${TABLE_PREVIEW} üyeyi göster`, `Show only the first ${TABLE_PREVIEW} members`)
+                          : L(`${rows.length} üyenin tümünü göster`, `Show all ${rows.length} members`)}
                       </button>
                     </div>
                   )}
@@ -369,23 +399,23 @@ export function OverviewScreen() {
         {/* sağ: taahhüt paneli */}
         <div className="flex min-w-0 flex-col gap-3">
           <Card>
-            <H2 right={<Tag kind="kurgusal" />}>Taahhüt</H2>
+            <H2 right={<Tag kind="kurgusal" />}>{L('Taahhüt', 'Commitment')}</H2>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-[1fr_120px]">
               <div className="text-[12px] font-medium text-ink2">
-                Ürün
-                <Select className="mt-1" label="Sözleşme ürünü" value={crop} onChange={setCrop} options={model.crops.map((c) => ({ value: c.id, label: c.name }))} />
+                {L('Ürün', 'Crop')}
+                <Select className="mt-1" label={L('Sözleşme ürünü', 'Contract crop')} value={crop} onChange={setCrop} options={model.crops.map((c) => ({ value: c.id, label: cropLabel(c.id, c.name) }))} />
               </div>
               <label className="block text-[12px] font-medium text-ink2">
-                Miktar
-                <NumInput className="mt-1 w-full" label="Taahhüt (ton)" value={tons} max={1e6} decimals={0} suffix="t" onChange={setTons} />
+                {L('Miktar', 'Amount')}
+                <NumInput className="mt-1 w-full" label={L('Taahhüt (ton)', 'Commitment (tonnes)')} value={tons} max={1e6} decimals={0} suffix="t" onChange={setTons} />
               </label>
               <label className="col-span-2 block text-[12px] font-medium text-ink2 sm:col-span-1">
-                Alıcı
-                <input className="field mt-1" value={buyer} onChange={(e) => setBuyer(e.target.value)} placeholder="Alıcının adı" />
+                {L('Alıcı', 'Buyer')}
+                <input className="field mt-1" value={buyerLabel(buyer)} onChange={(e) => setBuyer(e.target.value)} placeholder={L('Alıcının adı', "Buyer's name")} />
               </label>
               <div className="col-span-2 flex items-end sm:col-span-1">
                 <button type="button" className="btn btn-primary w-full" onClick={apply}>
-                  <Send /> Dağıt
+                  <Send /> {L('Dağıt', 'Distribute')}
                 </button>
               </div>
             </div>
@@ -397,21 +427,35 @@ export function OverviewScreen() {
             {tons > 0 && draft !== null && !draftError && (
               <div className={`mt-2 rounded-lg px-3 py-2 text-[13px] ${draftOk ? 'bg-[var(--good-bg)] text-good-ink' : 'bg-[var(--crit-bg)] text-crit-ink'}`} role="status">
                 <b className="font-semibold">
-                  {int(tons)} ton {draftCropName}: 20 yılın {draftHeld}
-                  {inSuffix(draftHeld)} tutar.
+                  {L(
+                    <>
+                      {int(tons)} ton {draftCropName}: 20 yılın {draftHeld}
+                      {inSuffix(draftHeld)} tutar.
+                    </>,
+                    <>
+                      {int(tons)} t {draftCropName}: met in {draftHeld} of 20 years.
+                    </>,
+                  )}
                 </b>{' '}
                 {draftOk ? (
-                  <>Planlı dağıtımla; eşiğinizi (20'de {K}) karşılıyor.</>
+                  L(<>Planlı dağıtımla; eşiğinizi (20'de {K}) karşılıyor.</>, <>With planned distribution; meets your threshold ({K} of 20).</>)
                 ) : (
                   <>
-                    Planlı dağıtımla; eşiğin (20'de {K}) altında:{' '}
+                    {L(<>Planlı dağıtımla; eşiğin (20'de {K}) altında:</>, <>With planned distribution; below the threshold ({K} of 20):</>)}{' '}
                     {safeDraft === null ? (
                       calcNote(safeDraftState)
                     ) : (
                       <>
-                        en çok <b className="font-semibold">{int(safeTons)} ton</b> söz verilebilir.{' '}
+                        {L(
+                          <>
+                            en çok <b className="font-semibold">{int(safeTons)} ton</b> söz verilebilir.
+                          </>,
+                          <>
+                            at most <b className="font-semibold">{int(safeTons)} t</b> can be committed.
+                          </>,
+                        )}{' '}
                         <button type="button" className="link-button !text-inherit" onClick={() => setTons(safeTons)}>
-                          {int(safeTons)} ton yap
+                          {L(`${int(safeTons)} ton yap`, `Set to ${int(safeTons)} t`)}
                         </button>
                       </>
                     )}
@@ -419,22 +463,22 @@ export function OverviewScreen() {
                 )}
               </div>
             )}
-            {dirty && <div className="mt-2 text-[12px] font-medium text-warn-ink">Değişiklik henüz uygulanmadı: "Dağıt"a basın.</div>}
+            {dirty && <div className="mt-2 text-[12px] font-medium text-warn-ink">{L('Değişiklik henüz uygulanmadı: "Dağıt"a basın.', 'Change not applied yet: press "Distribute".')}</div>}
 
             <div className="mt-4 border-t border-line pt-3">
               <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                 <h3 className="m-0 flex items-center gap-1.5 text-[13px] font-[650] text-ink">
-                  Söz vermeden önce <Tag kind="hesap" />
+                  {L('Söz vermeden önce', 'Before you commit')} <Tag kind="hesap" />
                 </h3>
                 <label className="flex items-center gap-2 text-[12px] text-ink2">
-                  20 yılın en az
+                  {L('20 yılın en az', 'Met in at least')}
                   <Segmented
-                    label="Sözün tutması gereken yıl sayısı"
+                    label={L('Sözün tutması gereken yıl sayısı', 'Number of years the commitment must be met')}
                     value={need}
                     options={[
-                      { id: '14', label: "14'ünde" },
-                      { id: '16', label: "16'sında" },
-                      { id: '18', label: "18'inde" },
+                      { id: '14', label: L("14'ünde", '14 of 20') },
+                      { id: '16', label: L("16'sında", '16 of 20') },
+                      { id: '18', label: L("18'inde", '18 of 20') },
                     ]}
                     onChange={setNeed}
                   />
@@ -444,51 +488,56 @@ export function OverviewScreen() {
               {mixed && (
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="rounded-lg bg-sunken p-3">
-                  <div className="text-[12px] font-medium text-ink2">Yalnız {draftCropName}</div>
+                  <div className="text-[12px] font-medium text-ink2">{L(<>Yalnız {draftCropName}</>, <>{cropLabel(crop, model.cropById.get(crop)?.name ?? crop)} only</>)}</div>
                   <div className="tnum mt-0.5 text-[22px] font-bold leading-tight text-ink">
                     {!single ? (
                       <span className="text-[13px] font-medium text-ink2">{calcNote(singleCalc)}</span>
                     ) : singleFailed ? (
-                      <span className="text-[13px] font-medium text-ink2">hesaplanamadı</span>
+                      <span className="text-[13px] font-medium text-ink2">{L('hesaplanamadı', 'could not be calculated')}</span>
                     ) : (
                       <>
-                        {int(safeSingle)} <span className="text-[13px] font-semibold text-ink2">ton</span>
+                        {int(safeSingle)} <span className="text-[13px] font-semibold text-ink2">{L('ton', 't')}</span>
                       </>
                     )}
                   </div>
-                  <div className="mt-0.5 text-[11.5px] text-ink2">{singleFailed ? (single?.message ?? 'Çözücü bu ürün için plan kuramadı.') : 'Kooperatif bu ürüne öncelik verirse.'}</div>
+                  <div className="mt-0.5 text-[11.5px] text-ink2">{singleFailed ? (single?.message ?? L('Çözücü bu ürün için plan kuramadı.', 'The solver could not build a plan for this crop.')) : L('Kooperatif bu ürüne öncelik verirse.', 'If the cooperative prioritises this crop.')}</div>
                   {single && !singleFailed && (
                     <div className="tnum mt-2 border-t border-line pt-2 text-[12px] text-ink2">
-                      Kooperatif brüt geliri <b className="font-semibold text-ink">{tlShort(single.revenue)}</b>
+                      {L('Kooperatif brüt geliri', 'Cooperative gross revenue')} <b className="font-semibold text-ink">{tlShort(single.revenue)}</b>
                     </div>
                   )}
                 </div>
                 <div className="rounded-lg bg-sunken p-3">
-                  <div className="text-[12px] font-medium text-ink2">Karma (gelir en yüksek)</div>
+                  <div className="text-[12px] font-medium text-ink2">{L('Karma (gelir en yüksek)', 'Mixed (highest revenue)')}</div>
                   <ul className="tnum m-0 mt-1 flex list-none flex-col gap-1 p-0">
                     {mixedRows.map(({ c, safe }) => (
                       <li key={c.id} className="flex items-baseline justify-between gap-2">
                         <span className="min-w-0">
                           <Swatch id={c.id} />
-                          {c.name}
-                          {(c.id === 'nohut' || c.id === 'aycicegi') && <span className="block pl-4 text-[11px] text-ink2">Türkiye'nin ithal ettiği ürün</span>}
+                          {cropLabel(c.id, c.name)}
+                          {(c.id === 'nohut' || c.id === 'aycicegi') && <span className="block pl-4 text-[11px] text-ink2">{L("Türkiye'nin ithal ettiği ürün", 'Crop Türkiye imports')}</span>}
                         </span>
                         <b className="shrink-0 font-semibold text-ink">{int(safe)} t</b>
                       </li>
                     ))}
-                    {mixedRows.length === 0 && <li className="text-ink2">Güvenle söz verilebilecek ürün yok.</li>}
+                    {mixedRows.length === 0 && <li className="text-ink2">{L('Güvenle söz verilebilecek ürün yok.', 'No crop can be safely committed.')}</li>}
                   </ul>
                   <div className="tnum mt-2 border-t border-line pt-2 text-[12px] text-ink2">
-                    Kooperatif brüt geliri <b className="font-semibold text-ink">{tlShort(mixed.revenue)}</b>
+                    {L('Kooperatif brüt geliri', 'Cooperative gross revenue')} <b className="font-semibold text-ink">{tlShort(mixed.revenue)}</b>
                   </div>
                 </div>
               </div>
               )}
               <p className="mb-0 mt-2 text-[11.5px] text-ink2">
-                Yılların en az {K}
-                {inSuffix(K)} ulaşılan üretim; fiyat ve verimler varsayımdır.{' '}
+                {L(
+                  <>
+                    Yılların en az {K}
+                    {inSuffix(K)} ulaşılan üretim; fiyat ve verimler varsayımdır.
+                  </>,
+                  <>Production reached in at least {K} of 20 years; prices and yields are assumptions.</>,
+                )}{' '}
                 <button type="button" className="link-button" onClick={goMethod}>
-                  Nasıl hesaplandı?
+                  {L('Nasıl hesaplandı?', 'How is this calculated?')}
                 </button>
               </p>
             </div>
@@ -497,15 +546,23 @@ export function OverviewScreen() {
           {cId ? (
             <Card>
               <H2 right={<Tag kind="hesap" />}>
-                {s.buyer ? `${s.buyer}: ` : ''}
-                {int(cTons)} ton {cName}
+                {s.buyer ? `${buyerLabel(s.buyer)}: ` : ''}
+                {int(cTons)} {L('ton', 't')} {cName}
               </H2>
               <p className="m-0 mb-3 text-[14px] leading-relaxed text-ink">
-                Aynı söz, aynı su. Gelişigüzel dağıtınca ortalama <b className={delivered(sc.scatter) < cTons ? 'font-semibold text-crit-ink' : 'font-semibold'}>{ton(delivered(sc.scatter))}</b> çıkıyor ve söz 20 yılın{' '}
-                {sc.scatter.held}
-                {inSuffix(sc.scatter.held)} tutuyor; planlı dağıtınca <b className={delivered(sc.planned) >= cTons ? 'font-semibold text-good-ink' : 'font-semibold text-crit-ink'}>{ton(delivered(sc.planned))}</b>, 20 yılın{' '}
-                {sc.planned.held}
-                {inSuffix(sc.planned.held)}.
+                {L(
+                  <>
+                    Aynı söz, aynı su. Gelişigüzel dağıtınca ortalama <b className={delivered(sc.scatter) < cTons ? 'font-semibold text-crit-ink' : 'font-semibold'}>{ton(delivered(sc.scatter))}</b> çıkıyor ve söz 20 yılın{' '}
+                    {sc.scatter.held}
+                    {inSuffix(sc.scatter.held)} tutuyor; planlı dağıtınca <b className={delivered(sc.planned) >= cTons ? 'font-semibold text-good-ink' : 'font-semibold text-crit-ink'}>{ton(delivered(sc.planned))}</b>, 20 yılın{' '}
+                    {sc.planned.held}
+                    {inSuffix(sc.planned.held)}.
+                  </>,
+                  <>
+                    Same commitment, same water. Ad-hoc distribution yields <b className={delivered(sc.scatter) < cTons ? 'font-semibold text-crit-ink' : 'font-semibold'}>{ton(delivered(sc.scatter))}</b> on average and the commitment is met in {sc.scatter.held} of 20 years; planned distribution yields{' '}
+                    <b className={delivered(sc.planned) >= cTons ? 'font-semibold text-good-ink' : 'font-semibold text-crit-ink'}>{ton(delivered(sc.planned))}</b>, met in {sc.planned.held} of 20 years.
+                  </>,
+                )}
               </p>
               <div className="overflow-x-auto">
                 <table className="data">
@@ -514,35 +571,35 @@ export function OverviewScreen() {
                       <th></th>
                       <th className="num">
                         <button type="button" className="cursor-pointer border-0 bg-transparent p-0 font-semibold text-inherit underline decoration-dotted underline-offset-2" onClick={() => setMode('scatter')}>
-                          Gelişigüzel
+                          {L('Gelişigüzel', 'Ad-hoc')}
                         </button>
                       </th>
                       <th className="num">
                         <button type="button" className="cursor-pointer border-0 bg-transparent p-0 font-semibold text-inherit underline decoration-dotted underline-offset-2" onClick={() => setMode('planned')}>
-                          Planlı
+                          {L('Planlı', 'Planned')}
                         </button>
                       </th>
                     </tr>
                   </thead>
                   <tbody>
                     <Row
-                      label="Ortalama verim (tam sulanana göre)"
+                      label={L('Ortalama verim (tam sulanana göre)', 'Average yield (relative to full irrigation)')}
                       a={pct(sc.scatter.yieldLevel)}
                       b={pct(sc.planned.yieldLevel)}
                       active={mode}
                       better={sc.planned.yieldLevel > sc.scatter.yieldLevel + 0.005 ? 'b' : sc.scatter.yieldLevel > sc.planned.yieldLevel + 0.005 ? 'a' : null}
                     />
-                    <Row label="Söz 20 yılın kaçında tutuyor" a={held(sc.scatter)} b={held(sc.planned)} active={mode} better={sc.planned.held > sc.scatter.held ? 'b' : sc.scatter.held > sc.planned.held ? 'a' : null} />
-                    <Row label="Kullanılan toplam su" a={m3(sc.scatter.usedM3)} b={m3(sc.planned.usedM3)} active={mode} />
+                    <Row label={L('Söz 20 yılın kaçında tutuyor', 'Years (of 20) the commitment is met')} a={held(sc.scatter)} b={held(sc.planned)} active={mode} better={sc.planned.held > sc.scatter.held ? 'b' : sc.scatter.held > sc.planned.held ? 'a' : null} />
+                    <Row label={L('Kullanılan toplam su', 'Total water used')} a={m3(sc.scatter.usedM3)} b={m3(sc.planned.usedM3)} active={mode} />
                     <Row
-                      label="Kooperatif brüt geliri"
+                      label={L('Kooperatif brüt geliri', 'Cooperative gross revenue')}
                       a={tlShort(sc.scatter.revenue)}
                       b={tlShort(sc.planned.revenue)}
                       active={mode}
                       better={sc.planned.revenue > sc.scatter.revenue * 1.005 ? 'b' : sc.scatter.revenue > sc.planned.revenue * 1.005 ? 'a' : null}
                     />
                     <Row
-                      label="Suyu sezon ortasında biten üye"
+                      label={L('Suyu sezon ortasında biten üye', 'Members whose water runs out mid-season')}
                       a={sc.scatter.exceeded}
                       b={sc.planned.exceeded}
                       active={mode}
@@ -552,31 +609,34 @@ export function OverviewScreen() {
                 </table>
               </div>
               <p className="mb-0 mt-2 text-[11.5px] text-ink2">
-                20 yılın ortalaması; söz kooperatifin toplam üretimiyle ölçülür, gelir brüttür.{' '}
+                {L('20 yılın ortalaması; söz kooperatifin toplam üretimiyle ölçülür, gelir brüttür.', "20-year average; the commitment is measured against the cooperative's total production, revenue is gross.")}{' '}
                 <button type="button" className="link-button" onClick={goMethod}>
-                  Nasıl hesaplandı?
+                  {L('Nasıl hesaplandı?', 'How is this calculated?')}
                 </button>
               </p>
               {model.plan.status === 'error' && (
                 <div className="mt-3">
-                  <Note tone="crit">{model.plan.message ?? 'Plan kurulamadı.'}</Note>
+                  <Note tone="crit">{model.plan.message ?? L('Plan kurulamadı.', 'No plan could be built.')}</Note>
                 </div>
               )}
               {model.plan.status === 'partial' && (
                 <div className="mt-3">
                   <Note tone="warn">
-                    Bu söz planlı dağıtımla da tam karşılanamıyor: en çok {pct(model.plan.commitmentFraction)} kadarı üretilebiliyor. Seçenekler için{' '}
+                    {L(
+                      <>Bu söz planlı dağıtımla da tam karşılanamıyor: en çok {pct(model.plan.commitmentFraction)} kadarı üretilebiliyor. Seçenekler için</>,
+                      <>Even planned distribution cannot fully meet this commitment: at most {pct(model.plan.commitmentFraction)} of it can be produced. For options see the</>,
+                    )}{' '}
                     <button type="button" className="link-button !text-inherit" onClick={() => s.setTab('taahhut')}>
-                      Taahhüt
+                      {L('Taahhüt', 'Commitment')}
                     </button>{' '}
-                    ekranına bakın.
+                    {L('ekranına bakın.', 'screen.')}
                   </Note>
                 </div>
               )}
             </Card>
           ) : (
             <Card>
-              <div className="text-ink2">Taahhüt girilmedi. Ürün ve miktarı yazıp "Dağıt"a basın.</div>
+              <div className="text-ink2">{L('Taahhüt girilmedi. Ürün ve miktarı yazıp "Dağıt"a basın.', 'No commitment entered. Enter a crop and amount and press "Distribute".')}</div>
             </Card>
           )}
         </div>

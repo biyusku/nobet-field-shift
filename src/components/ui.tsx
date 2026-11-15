@@ -2,14 +2,23 @@ import { AlertTriangle, ArrowDownRight, ArrowRight, ArrowUpRight, CheckCircle2, 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Tip } from './kit';
 import { FALLOW } from '../engine/types';
+import { L } from '../i18n';
 
 // ---------- Dürüstlük etiketleri ----------
 export type TagKind = 'nasa' | 'hesap' | 'varsayim' | 'kurgusal';
 const TAGS: Record<TagKind, { text: string; cls: string; title: string }> = {
-  nasa: { text: 'NASA verisi', cls: 'tag-info', title: 'NASA POWER günlük verisinden doğrudan gelen değer' },
-  hesap: { text: 'hesap', cls: '', title: 'NASA verisi ve varsayımlardan modelle hesaplanan değer' },
-  varsayim: { text: 'varsayım', cls: 'tag-warning', title: 'Doğrulanmamış varsayım; Yöntem sayfasından değiştirilebilir' },
-  kurgusal: { text: 'kurgusal', cls: 'tag-critical', title: 'Gerçek kişi ya da kurum değildir; örnek olsun diye uydurulmuştur' },
+  get nasa() {
+    return { text: L('NASA verisi', 'NASA data'), cls: 'tag-info', title: L('NASA POWER günlük verisinden doğrudan gelen değer', 'Value taken directly from NASA POWER daily data') };
+  },
+  get hesap() {
+    return { text: L('hesap', 'calculated'), cls: '', title: L('NASA verisi ve varsayımlardan modelle hesaplanan değer', 'Value calculated by the model from NASA data and assumptions') };
+  },
+  get varsayim() {
+    return { text: L('varsayım', 'assumption'), cls: 'tag-warning', title: L('Doğrulanmamış varsayım; Yöntem sayfasından değiştirilebilir', 'Unverified assumption; can be changed on the Method page') };
+  },
+  get kurgusal() {
+    return { text: L('kurgusal', 'fictional'), cls: 'tag-critical', title: L('Gerçek kişi ya da kurum değildir; örnek olsun diye uydurulmuştur', 'Not a real person or organisation; made up as an example') };
+  },
 };
 const TAG_INK: Record<TagKind, string> = { nasa: 'var(--info-ink)', hesap: 'var(--ink2)', varsayim: 'var(--warn-ink)', kurgusal: 'var(--crit-ink)' };
 /** compact: tablo başlıklarında kullanılan, zeminsiz küçük yazı. */
@@ -111,8 +120,9 @@ export function Change({ from, to, lowerIsBetter = false }: { from: number; to: 
   const good = lowerIsBetter ? !up : up;
   const Arrow = up ? ArrowUpRight : ArrowDownRight;
   return (
-    <span className={`change ${good ? 'is-good' : 'is-bad'}`} title="Bugünkü ekime göre">
-      <Arrow size={12} aria-hidden />%{Math.round(Math.abs(ch) * 100)}
+    <span className={`change ${good ? 'is-good' : 'is-bad'}`} title={L('Bugünkü ekime göre', 'Compared with current planting')}>
+      <Arrow size={12} aria-hidden />
+      {L(`%${Math.round(Math.abs(ch) * 100)}`, `${Math.round(Math.abs(ch) * 100)}%`)}
     </span>
   );
 }
@@ -265,7 +275,7 @@ export function Shift({ label, tag, from, to, tone, hint }: { label: string; tag
       </h2>
       <div className="tnum flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
         <span className="text-[13px] text-ink2">{from}</span>
-        <ArrowRight size={13} className="shrink-0 translate-y-[1px] text-muted" aria-label="önerilen planla" />
+        <ArrowRight size={13} className="shrink-0 translate-y-[1px] text-muted" aria-label={L('önerilen planla', 'with the proposed plan')} />
         <span className={`text-[18px] font-bold leading-tight ${tone === 'good' ? 'text-good-ink' : tone === 'crit' ? 'text-crit-ink' : 'text-ink'}`}>{to}</span>
       </div>
       {hint && <span className="text-[11px] text-ink2">{hint}</span>}
@@ -300,7 +310,7 @@ export function Bars({ rows, unit }: { rows: { label: string; value: number; col
 export function Brief({ children }: { children: ReactNode }) {
   return (
     <section className="card !px-5 !py-4">
-      <h2 className="m-0 mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink2">Kısaca</h2>
+      <h2 className="m-0 mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink2">{L('Kısaca', 'In short')}</h2>
       <div className="flex max-w-[980px] flex-col gap-1.5 text-[14.5px] leading-relaxed text-ink [&_b]:font-semibold">{children}</div>
     </section>
   );

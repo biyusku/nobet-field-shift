@@ -4,6 +4,7 @@
 import { plannedOutcome } from '../engine/plan';
 import { maxCropScenario, maxSafeCommitment, mixedScenario } from '../engine/promise';
 import type { Weather } from '../engine/types';
+import { setLang, type Lang } from '../i18n';
 import { computeModel, type Inputs, type Model } from '../model';
 
 export type CalcTask =
@@ -15,6 +16,8 @@ export type CalcTask =
 export interface CalcRequest {
   id: number;
   modelKey: number;
+  /** motor mesajlarının dili */
+  lang: Lang;
   /** yalnız worker'daki model eskiyse gönderilir */
   setup?: { weathers: Record<string, Weather>; fallbackId: string; inputs: Inputs };
   task: CalcTask;
@@ -34,7 +37,8 @@ function run(task: CalcTask): unknown {
 }
 
 self.onmessage = (e: MessageEvent<CalcRequest>) => {
-  const { id, modelKey, setup, task } = e.data;
+  const { id, modelKey, setup, task, lang } = e.data;
+  setLang(lang);
   try {
     if (setup) {
       model = computeModel(setup.weathers, setup.fallbackId, setup.inputs);
