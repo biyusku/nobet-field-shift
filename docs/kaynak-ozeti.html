@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nöbet · Kaynak özeti</title>
+<style>
+  :root { --bg:#f4f5f7; --card:#fff; --ink:#15171a; --ink2:#5b616b; --line:#e2e4e8; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; height:100%; background:#1a1b1e; font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; color:var(--ink); }
+  body { display:grid; place-items:center; }
+  /* 16:9 sahne: pencereye sığan en büyük 16:9 dikdörtgen; yazı boyu sahneye göre ölçeklenir */
+  .slide { width:min(100vw, 177.78vh); height:min(56.25vw, 100vh); background:var(--bg); font-size:min(1vw, 1.778vh); padding:2.6em 3.2em 2em; display:flex; flex-direction:column; gap:1.4em; }
+  h1 { margin:0; font-size:3.3em; line-height:1.05; font-weight:700; letter-spacing:-.02em; }
+  .lead { margin:.35em 0 0; font-size:1.75em; color:var(--ink2); }
+  .grid { flex:1; display:grid; grid-template-columns:repeat(4, 1fr); gap:1.4em; min-height:0; }
+  .card { background:var(--card); border-radius:1.1em; box-shadow:0 0 0 1px var(--line); padding:1.3em 1.4em 1.2em; display:flex; flex-direction:column; border-top:.55em solid var(--c); }
+  .n { font-size:4.6em; line-height:1; font-weight:700; letter-spacing:-.03em; font-variant-numeric:tabular-nums; color:var(--c); }
+  .n small { font-size:.22em; font-weight:600; letter-spacing:0; color:var(--ink2); margin-left:.4em; }
+  .k { font-size:2em; font-weight:700; margin-top:.25em; }
+  .s { font-size:1.45em; color:var(--ink2); margin-top:.15em; }
+  ul { list-style:none; margin:.8em 0 0; padding:.8em 0 0; border-top:1px solid var(--line); display:flex; flex-direction:column; gap:.6em; }
+  li { font-size:1.58em; line-height:1.25; padding-left:.9em; position:relative; }
+  li::before { content:""; position:absolute; left:0; top:.5em; width:.35em; height:.35em; border-radius:50%; background:var(--c); }
+  footer { display:flex; justify-content:space-between; align-items:baseline; gap:2em; font-size:1.3em; color:var(--ink2); }
+  footer b { color:var(--ink); font-weight:600; }
+  a { color:#0b5cad; }
+</style>
+</head>
+<body>
+<main class="slide">
+  <header>
+    <h1>Hangi sayı nereden geliyor?</h1>
+    <p class="lead">Modele giren 84 girdi kalemi, dört sınıfta. Üç ana sayının üçü de dört sınıfın hepsine dayanır.</p>
+  </header>
+  <section class="grid">
+    <article class="card" style="--c:#0b5cad">
+      <div class="n">7<small>girdi</small></div>
+      <div class="k">NASA verisi</div>
+      <div class="s">İndirildi, dosyada duruyor</div>
+      <ul>
+        <li>Sıcaklık, yağış, güneş, rüzgâr, nem: 6 günlük seri</li>
+        <li>5 ilçe · 01.10.2004 – 31.12.2025 · 7.762 gün</li>
+        <li>Eksik değer: 0</li>
+        <li>NASA POWER, ≈ 55 km ızgara</li>
+      </ul>
+    </article>
+    <article class="card" style="--c:#1a7f4b">
+      <div class="n">17<small>girdi</small></div>
+      <div class="k">Kaynaklı</div>
+      <div class="s">Sayfası açıldı, değer içinde görüldü</div>
+      <ul>
+        <li>Kc: 7 ürünün 7’si (FAO-56 Tablo 12)</li>
+        <li>Ky: mısır, buğday, ayçiçeği, pancar (FAO-56 Tablo 24)</li>
+        <li>Evre süreleri: 4 ürün (FAO-56 Tablo 11)</li>
+        <li>Fiyat: buğday, arpa (TMO 2026, haber sayfasından)</li>
+      </ul>
+    </article>
+    <article class="card" style="--c:#a15c00">
+      <div class="n">48<small>girdi</small></div>
+      <div class="k">Varsayım</div>
+      <div class="s">Kaynak bulunamadı; biz seçtik</div>
+      <ul>
+        <li>Tam sulu verimler: 7 ürünün 7’si</li>
+        <li>Fiyat: mısır, pancar, ayçiçeği, nohut, mercimek</li>
+        <li>Toprak su kapasitesi 130 mm, sulama randımanları</li>
+        <li>Ekim tarihleri ve plan kuralları</li>
+      </ul>
+    </article>
+    <article class="card" style="--c:#6b4fbb">
+      <div class="n">12<small>girdi</small></div>
+      <div class="k">Kurgusal</div>
+      <div class="s">Gerçek değil; demo için üretildi</div>
+      <ul>
+        <li>Kooperatif ve 50 üyesi</li>
+        <li>Tarla büyüklükleri ve bugünkü ekim</li>
+        <li>Su hakları</li>
+        <li>Alıcı ve satış sözleşmesi</li>
+      </ul>
+    </article>
+  </section>
+  <footer>
+    <span><b>Yeniden üretim:</b> npm run kanit · 5 ilçe dosyası yeniden indirildi, 5 tanesi kayıtlı dosyayla gün gün aynı · 15.11.2026</span>
+    <span>Tam döküm: <a href="http://localhost:5173/#yontem">Yöntem ve kaynaklar sayfası</a> · docs/veri-kaniti.md</span>
+  </footer>
+</main>
+</body>
+</html>

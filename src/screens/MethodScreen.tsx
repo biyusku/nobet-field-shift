@@ -1,6 +1,7 @@
 import { BookOpen, RotateCcw } from 'lucide-react';
 import { useState } from 'react';
 import { UnreliableMark } from '../components/bits';
+import { EvidenceCard } from '../components/EvidenceCard';
 import { Confirm, Select, SourcePop } from '../components/kit';
 import { DEFAULT_CROPS, type Assumed } from '../data/crops';
 import SOURCES from '../data/sources.json';
@@ -475,6 +476,8 @@ Amaç:       en yüksek toplam brüt gelir   ya da   taahhüdü karşılayan en 
           nokta olduğu için uygulanmadı, ama varsayımın iyimser olabileceğini gösteriyor.
         </p>
       </Card>
+
+      <EvidenceCard />
 
       <Card>
         <H2>Modelin sınırları</H2>

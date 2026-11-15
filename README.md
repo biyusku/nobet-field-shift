@@ -205,3 +205,11 @@ Kurgusal kooperatifte taahhüt 40 ton mısırdır: önerilen plan bunu 20 yılı
 - Nöbet tablosu şematiktir; ön bitki etkisi ve ekim-hasat çakışmaları hesaba katılmaz (ör. 17 Ekim'de sökülen pancarın ardından 20 Ekim'de buğday).
 - Yeraltı suyu düzeyi ve kotanın kendisinin sürdürülebilirliği bu aracın kapsamı dışındadır.
 - Arayüz yalnız Türkçedir. Tarayıcıdan NASA POWER çağrısı ağa ve servisin erişilebilirliğine bağlıdır; başarısız olursa araç bunu söyler ve hazır noktalarla devam eder.
+
+## Veri kaynakları ve kanıt
+
+```bash
+npm run kanit
+```
+
+Veriyi NASA POWER'dan yeniden indirir, kayıtlı dosyalarla gün gün karşılaştırır, ET0'ı ve üç ana sayıyı baştan hesaplar, `docs/kanit-kayit.json` ile karşılaştırır. Ağ yoksa bunu yazar (çıkış kodu 2). Çıktıları: `docs/veri-kaniti.md` (tam döküm ve kanıt), `docs/kaynak-ozeti.html` (tek slayt), `src/data/kanit.json` (Yöntem sayfasındaki bölüm). Uygulamada: Yöntem ve kaynaklar → Veri kaynakları ve kanıt (adres sonuna `#yontem` yazınca doğrudan açılır).

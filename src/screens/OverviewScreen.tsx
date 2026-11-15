@@ -240,7 +240,7 @@ export function OverviewScreen() {
             </Suspense>
           </div>
           <p className="m-0 text-[11.5px] text-ink2">
-            Üyelerin konumu, tarlası ve ekimi <Tag kind="kurgusal" />. Mavi dikdörtgenler NASA POWER hücreleridir (yaklaşık 0,5° × 0,625°): aynı hücredeki üyeler aynı havayı görür. Beş ilçe yalnızca üç hücreye
+            Üyelerin konumu, tarlası ve ekimi <Tag kind="kurgusal" />. Mavi dikdörtgenler NASA POWER hücreleridir (yaklaşık 0,5° × 0,625°): aynı hücredeki üyeler aynı sıcaklığı, yağışı, rüzgârı ve nemi görür (güneş radyasyonu ayrı bir ızgaradan gelir). Beş ilçe yalnızca üç hücreye
             düşüyor. NASA verisi havayı söyler; tarlada ne ekildiğini söylemez.
           </p>
         </Card>

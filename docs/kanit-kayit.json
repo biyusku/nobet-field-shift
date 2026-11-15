@@ -1,0 +1,33 @@
+{
+  "recordedAt": "2026-11-15T09:03:56.290Z",
+  "note": "Kayıtlı public/data dosyalarından, depodaki hesap motoruyla üretildi (npm run kanit -- --kaydet).",
+  "values": {
+    "et0MmYil": {
+      "karapinar": 1241.108962630151,
+      "cumra": 1195.3123164160036,
+      "eregli": 1215.3145712123105,
+      "cihanbeyli": 1251.6689663882166,
+      "altinekin": 1253.9017487619744
+    },
+    "hargreavesGun": {
+      "karapinar": 0,
+      "cumra": 0,
+      "eregli": 0,
+      "cihanbeyli": 0,
+      "altinekin": 0
+    },
+    "gelirBugunTl": 62676554.640263356,
+    "gelirPlanliTl": 80165398.01750454,
+    "uye": 50,
+    "suyuBitenBugun": 50,
+    "suyuBitenPlanli": 0,
+    "guvenliSozBugunT": 1505,
+    "guvenliSozPlanliT": 2639,
+    "sozTutanYil": {
+      "bugun": 2,
+      "gelisiguzel": 8,
+      "planli": 17,
+      "toplam": 20
+    }
+  }
+}

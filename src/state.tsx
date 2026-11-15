@@ -80,8 +80,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [weatherStatus, setStatus] = useState<Store['weatherStatus']>('loading');
   const [weatherError, setWeatherError] = useState<string | null>(null);
   const [districtId, setDistrictId] = useState<string>(DISTRICTS[0].id);
-  const [tab, setTab] = useState<Tab>('genel');
+  // adres '#yontem' ile bitiyorsa Yöntem sayfası açılır (slayttaki bağlantı için)
+  const [tab, setTab] = useState<Tab>(() => (typeof location !== 'undefined' && location.hash === '#yontem' ? 'yontem' : 'genel'));
   const [memberId, setMemberId] = useState<string>(() => p.members[0]?.id ?? '');
+  useEffect(() => {
+    const onHash = () => location.hash === '#yontem' && setTab('yontem');
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
 
   useEffect(() => {
     try {

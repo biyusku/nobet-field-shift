@@ -9,7 +9,8 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "fetch-data": "node scripts/fetch-power.mjs"
+    "fetch-data": "node scripts/fetch-power.mjs",
+    "kanit": "node scripts/kanit.mjs"
   },
   "dependencies": {
     "clsx": "^2.1.1",

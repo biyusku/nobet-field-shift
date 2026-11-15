@@ -1,0 +1,534 @@
+{
+  "generatedAt": "2026-11-15T09:26:34.435Z",
+  "command": "npm run kanit",
+  "files": [
+    {
+      "id": "karapinar",
+      "file": "public/data/karapinar.json",
+      "name": "Karapınar, Konya",
+      "lat": 37.72,
+      "lon": 33.55,
+      "elevation": 1236.03,
+      "start": "20041001",
+      "end": "20251231",
+      "days": 7762,
+      "params": [
+        "T2M_MAX",
+        "T2M_MIN",
+        "PRECTOTCORR",
+        "ALLSKY_SFC_SW_DWN",
+        "WS2M",
+        "RH2M"
+      ],
+      "missing": {
+        "T2M_MAX": 0,
+        "T2M_MIN": 0,
+        "PRECTOTCORR": 0,
+        "ALLSKY_SFC_SW_DWN": 0,
+        "WS2M": 0,
+        "RH2M": 0
+      },
+      "missingTotal": 0,
+      "url": "https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M_MAX,T2M_MIN,PRECTOTCORR,ALLSKY_SFC_SW_DWN,WS2M,RH2M&community=AG&longitude=33.55&latitude=37.72&start=20041001&end=20251231&format=JSON",
+      "fetchedAt": "2026-11-14T09:02:30.206Z",
+      "sha256": "68837bdd977cf000d5a8964aa30cdb2d28eaa388b17e29de123fc209bf780dbf",
+      "bytes": 241539,
+      "used": true
+    },
+    {
+      "id": "cumra",
+      "file": "public/data/cumra.json",
+      "name": "Çumra, Konya",
+      "lat": 37.57,
+      "lon": 32.77,
+      "elevation": 1197.55,
+      "start": "20041001",
+      "end": "20251231",
+      "days": 7762,
+      "params": [
+        "T2M_MAX",
+        "T2M_MIN",
+        "PRECTOTCORR",
+        "ALLSKY_SFC_SW_DWN",
+        "WS2M",
+        "RH2M"
+      ],
+      "missing": {
+        "T2M_MAX": 0,
+        "T2M_MIN": 0,
+        "PRECTOTCORR": 0,
+        "ALLSKY_SFC_SW_DWN": 0,
+        "WS2M": 0,
+        "RH2M": 0
+      },
+      "missingTotal": 0,
+      "url": "https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M_MAX,T2M_MIN,PRECTOTCORR,ALLSKY_SFC_SW_DWN,WS2M,RH2M&community=AG&longitude=32.77&latitude=37.57&start=20041001&end=20251231&format=JSON",
+      "fetchedAt": "2026-11-14T14:04:06.241Z",
+      "sha256": "dd8804afa97263e4124d8d3d4198aa2514f93b496a9400618315a2d7b7c408bd",
+      "bytes": 242139,
+      "used": true
+    },
+    {
+      "id": "eregli",
+      "file": "public/data/eregli.json",
+      "name": "Ereğli, Konya",
+      "lat": 37.51,
+      "lon": 34.05,
+      "elevation": 1236.03,
+      "start": "20041001",
+      "end": "20251231",
+      "days": 7762,
+      "params": [
+        "T2M_MAX",
+        "T2M_MIN",
+        "PRECTOTCORR",
+        "ALLSKY_SFC_SW_DWN",
+        "WS2M",
+        "RH2M"
+      ],
+      "missing": {
+        "T2M_MAX": 0,
+        "T2M_MIN": 0,
+        "PRECTOTCORR": 0,
+        "ALLSKY_SFC_SW_DWN": 0,
+        "WS2M": 0,
+        "RH2M": 0
+      },
+      "missingTotal": 0,
+      "url": "https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M_MAX,T2M_MIN,PRECTOTCORR,ALLSKY_SFC_SW_DWN,WS2M,RH2M&community=AG&longitude=34.05&latitude=37.51&start=20041001&end=20251231&format=JSON",
+      "fetchedAt": "2026-11-14T14:04:11.712Z",
+      "sha256": "890734c5f5922af98ce2f4e0a095f4aab0af10e23f57022b4d144e7ed3088806",
+      "bytes": 241288,
+      "used": true
+    },
+    {
+      "id": "cihanbeyli",
+      "file": "public/data/cihanbeyli.json",
+      "name": "Cihanbeyli, Konya",
+      "lat": 38.66,
+      "lon": 32.93,
+      "elevation": 973.44,
+      "start": "20041001",
+      "end": "20251231",
+      "days": 7762,
+      "params": [
+        "T2M_MAX",
+        "T2M_MIN",
+        "PRECTOTCORR",
+        "ALLSKY_SFC_SW_DWN",
+        "WS2M",
+        "RH2M"
+      ],
+      "missing": {
+        "T2M_MAX": 0,
+        "T2M_MIN": 0,
+        "PRECTOTCORR": 0,
+        "ALLSKY_SFC_SW_DWN": 0,
+        "WS2M": 0,
+        "RH2M": 0
+      },
+      "missingTotal": 0,
+      "url": "https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M_MAX,T2M_MIN,PRECTOTCORR,ALLSKY_SFC_SW_DWN,WS2M,RH2M&community=AG&longitude=32.93&latitude=38.66&start=20041001&end=20251231&format=JSON",
+      "fetchedAt": "2026-11-14T14:04:19.759Z",
+      "sha256": "a076a1c20e4bdc31771549fb3749c152963f0fb590198107bc8ac26c8a0ec41b",
+      "bytes": 242055,
+      "used": true
+    },
+    {
+      "id": "altinekin",
+      "file": "public/data/altinekin.json",
+      "name": "Altınekin, Konya",
+      "lat": 38.31,
+      "lon": 32.87,
+      "elevation": 973.44,
+      "start": "20041001",
+      "end": "20251231",
+      "days": 7762,
+      "params": [
+        "T2M_MAX",
+        "T2M_MIN",
+        "PRECTOTCORR",
+        "ALLSKY_SFC_SW_DWN",
+        "WS2M",
+        "RH2M"
+      ],
+      "missing": {
+        "T2M_MAX": 0,
+        "T2M_MIN": 0,
+        "PRECTOTCORR": 0,
+        "ALLSKY_SFC_SW_DWN": 0,
+        "WS2M": 0,
+        "RH2M": 0
+      },
+      "missingTotal": 0,
+      "url": "https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M_MAX,T2M_MIN,PRECTOTCORR,ALLSKY_SFC_SW_DWN,WS2M,RH2M&community=AG&longitude=32.87&latitude=38.31&start=20041001&end=20251231&format=JSON",
+      "fetchedAt": "2026-11-14T14:04:26.818Z",
+      "sha256": "e8579921cec9832638d4ba98cf5c04a89634b5f8d1433a241944dca1664385c9",
+      "bytes": 242054,
+      "used": true
+    },
+    {
+      "id": "civril",
+      "file": "public/data/civril.json",
+      "name": "Çivril, Denizli",
+      "lat": 38.3,
+      "lon": 29.74,
+      "elevation": 1200.8,
+      "start": "20041001",
+      "end": "20251231",
+      "days": 7762,
+      "params": [
+        "T2M_MAX",
+        "T2M_MIN",
+        "PRECTOTCORR",
+        "ALLSKY_SFC_SW_DWN",
+        "WS2M",
+        "RH2M"
+      ],
+      "missing": {
+        "T2M_MAX": 0,
+        "T2M_MIN": 0,
+        "PRECTOTCORR": 0,
+        "ALLSKY_SFC_SW_DWN": 0,
+        "WS2M": 0,
+        "RH2M": 0
+      },
+      "missingTotal": 0,
+      "url": "https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M_MAX,T2M_MIN,PRECTOTCORR,ALLSKY_SFC_SW_DWN,WS2M,RH2M&community=AG&longitude=29.74&latitude=38.3&start=20041001&end=20251231&format=JSON",
+      "fetchedAt": "2026-11-14T09:02:33.231Z",
+      "sha256": "2040d98959f5d9ccdc0b03d1005656ed7de3ecd576f6d1d9a4d0d0d6c4b68ac3",
+      "bytes": 242168,
+      "used": false
+    }
+  ],
+  "pairs": [
+    {
+      "a": "karapinar",
+      "b": "eregli",
+      "sameParams": [
+        "T2M_MAX",
+        "T2M_MIN",
+        "PRECTOTCORR",
+        "WS2M",
+        "RH2M"
+      ],
+      "diff": {
+        "T2M_MAX": 0,
+        "T2M_MIN": 0,
+        "PRECTOTCORR": 0,
+        "ALLSKY_SFC_SW_DWN": 7721,
+        "WS2M": 0,
+        "RH2M": 0
+      }
+    },
+    {
+      "a": "cihanbeyli",
+      "b": "altinekin",
+      "sameParams": [
+        "T2M_MAX",
+        "T2M_MIN",
+        "PRECTOTCORR",
+        "ALLSKY_SFC_SW_DWN",
+        "WS2M",
+        "RH2M"
+      ],
+      "diff": {
+        "T2M_MAX": 0,
+        "T2M_MIN": 0,
+        "PRECTOTCORR": 0,
+        "ALLSKY_SFC_SW_DWN": 0,
+        "WS2M": 0,
+        "RH2M": 0
+      }
+    }
+  ],
+  "redownload": [
+    {
+      "id": "karapinar",
+      "ok": true,
+      "at": "2026-11-15T09:26:37.944Z",
+      "days": 7762,
+      "same": 7762,
+      "different": 0,
+      "firstDiff": null,
+      "lastDiff": null,
+      "perParam": {
+        "T2M_MAX": {
+          "days": 0,
+          "maxAbs": 0
+        },
+        "T2M_MIN": {
+          "days": 0,
+          "maxAbs": 0
+        },
+        "PRECTOTCORR": {
+          "days": 0,
+          "maxAbs": 0
+        },
+        "ALLSKY_SFC_SW_DWN": {
+          "days": 0,
+          "maxAbs": 0
+        },
+        "WS2M": {
+          "days": 0,
+          "maxAbs": 0
+        },
+        "RH2M": {
+          "days": 0,
+          "maxAbs": 0
+        }
+      },
+      "elevationSame": true
+    },
+    {
+      "id": "cumra",
+      "ok": true,
+      "at": "2026-11-15T09:26:47.359Z",
+      "days": 7762,
+      "same": 7762,
+      "different": 0,
+      "firstDiff": null,
+      "lastDiff": null,
+      "perParam": {
+        "T2M_MAX": {
+          "days": 0,
+          "maxAbs": 0
+        },
+        "T2M_MIN": {
+          "days": 0,
+          "maxAbs": 0
+        },
+        "PRECTOTCORR": {
+          "days": 0,
+          "maxAbs": 0
+        },
+        "ALLSKY_SFC_SW_DWN": {
+          "days": 0,
+          "maxAbs": 0
+        },
+        "WS2M": {
+          "days": 0,
+          "maxAbs": 0
+        },
+        "RH2M": {
+          "days": 0,
+          "maxAbs": 0
+        }
+      },
+      "elevationSame": true
+    },
+    {
+      "id": "eregli",
+      "ok": true,
+      "at": "2026-11-15T09:26:50.379Z",
+      "days": 7762,
+      "same": 7762,
+      "different": 0,
+      "firstDiff": null,
+      "lastDiff": null,
+      "perParam": {
+        "T2M_MAX": {
+          "days": 0,
+          "maxAbs": 0
+        },
+        "T2M_MIN": {
+          "days": 0,
+          "maxAbs": 0
+        },
+        "PRECTOTCORR": {
+          "days": 0,
+          "maxAbs": 0
+        },
+        "ALLSKY_SFC_SW_DWN": {
+          "days": 0,
+          "maxAbs": 0
+        },
+        "WS2M": {
+          "days": 0,
+          "maxAbs": 0
+        },
+        "RH2M": {
+          "days": 0,
+          "maxAbs": 0
+        }
+      },
+      "elevationSame": true
+    },
+    {
+      "id": "cihanbeyli",
+      "ok": true,
+      "at": "2026-11-15T09:26:55.397Z",
+      "days": 7762,
+      "same": 7762,
+      "different": 0,
+      "firstDiff": null,
+      "lastDiff": null,
+      "perParam": {
+        "T2M_MAX": {
+          "days": 0,
+          "maxAbs": 0
+        },
+        "T2M_MIN": {
+          "days": 0,
+          "maxAbs": 0
+        },
+        "PRECTOTCORR": {
+          "days": 0,
+          "maxAbs": 0
+        },
+        "ALLSKY_SFC_SW_DWN": {
+          "days": 0,
+          "maxAbs": 0
+        },
+        "WS2M": {
+          "days": 0,
+          "maxAbs": 0
+        },
+        "RH2M": {
+          "days": 0,
+          "maxAbs": 0
+        }
+      },
+      "elevationSame": true
+    },
+    {
+      "id": "altinekin",
+      "ok": true,
+      "at": "2026-11-15T09:26:58.329Z",
+      "days": 7762,
+      "same": 7762,
+      "different": 0,
+      "firstDiff": null,
+      "lastDiff": null,
+      "perParam": {
+        "T2M_MAX": {
+          "days": 0,
+          "maxAbs": 0
+        },
+        "T2M_MIN": {
+          "days": 0,
+          "maxAbs": 0
+        },
+        "PRECTOTCORR": {
+          "days": 0,
+          "maxAbs": 0
+        },
+        "ALLSKY_SFC_SW_DWN": {
+          "days": 0,
+          "maxAbs": 0
+        },
+        "WS2M": {
+          "days": 0,
+          "maxAbs": 0
+        },
+        "RH2M": {
+          "days": 0,
+          "maxAbs": 0
+        }
+      },
+      "elevationSame": true
+    }
+  ],
+  "record": {
+    "recordedAt": "2026-11-15T09:03:56.290Z"
+  },
+  "rows": [
+    {
+      "name": "ET0 karapinar (mm/yıl)",
+      "recorded": 1241.108962630151,
+      "stored": 1241.108962630151,
+      "fresh": 1241.108962630151,
+      "okStored": true,
+      "okFresh": true
+    },
+    {
+      "name": "ET0 cumra (mm/yıl)",
+      "recorded": 1195.3123164160036,
+      "stored": 1195.3123164160036,
+      "fresh": 1195.3123164160036,
+      "okStored": true,
+      "okFresh": true
+    },
+    {
+      "name": "ET0 eregli (mm/yıl)",
+      "recorded": 1215.3145712123105,
+      "stored": 1215.3145712123105,
+      "fresh": 1215.3145712123105,
+      "okStored": true,
+      "okFresh": true
+    },
+    {
+      "name": "ET0 cihanbeyli (mm/yıl)",
+      "recorded": 1251.6689663882166,
+      "stored": 1251.6689663882166,
+      "fresh": 1251.6689663882166,
+      "okStored": true,
+      "okFresh": true
+    },
+    {
+      "name": "ET0 altinekin (mm/yıl)",
+      "recorded": 1253.9017487619744,
+      "stored": 1253.9017487619744,
+      "fresh": 1253.9017487619744,
+      "okStored": true,
+      "okFresh": true
+    },
+    {
+      "name": "Brüt gelir, bugün (TL)",
+      "recorded": 62676554.640263356,
+      "stored": 62676554.640263356,
+      "fresh": 62676554.640263356,
+      "okStored": true,
+      "okFresh": true
+    },
+    {
+      "name": "Brüt gelir, planlı (TL)",
+      "recorded": 80165398.01750454,
+      "stored": 80165398.01750454,
+      "fresh": 80165398.01750454,
+      "okStored": true,
+      "okFresh": true
+    },
+    {
+      "name": "Suyu biten üye, bugün",
+      "recorded": 50,
+      "stored": 50,
+      "fresh": 50,
+      "okStored": true,
+      "okFresh": true
+    },
+    {
+      "name": "Suyu biten üye, planlı",
+      "recorded": 0,
+      "stored": 0,
+      "fresh": 0,
+      "okStored": true,
+      "okFresh": true
+    },
+    {
+      "name": "Güvenli mısır sözü, bugün (t)",
+      "recorded": 1505,
+      "stored": 1505,
+      "fresh": 1505,
+      "okStored": true,
+      "okFresh": true
+    },
+    {
+      "name": "Güvenli mısır sözü, planlı (t)",
+      "recorded": 2639,
+      "stored": 2639,
+      "fresh": 2639,
+      "okStored": true,
+      "okFresh": true
+    }
+  ],
+  "counts": {
+    "nasa": 7,
+    "kaynakli": 17,
+    "varsayim": 48,
+    "kurgusal": 12
+  },
+  "total": 84,
+  "verdict": "SONUÇ: 5 ilçe dosyası yeniden indirildi; 5 tanesi kayıtlı dosyayla gün gün birebir aynı. Baştan hesaplanan ET0 ve üç ana sayı kayıtlı sonuçlarla aynı.",
+  "output": "Nöbet · veri kanıtı · 2026-11-15T09:26:34.435Z\n\n1) Kayıtlı NASA POWER dosyaları (public/data)\n   karapinar   7.762 gün · eksik 0 · indirme 2026-11-14T09:02:30.206Z · sha256 68837bdd977cf000d5a8964aa30cdb2d28eaa388b17e29de123fc209bf780dbf\n   cumra       7.762 gün · eksik 0 · indirme 2026-11-14T14:04:06.241Z · sha256 dd8804afa97263e4124d8d3d4198aa2514f93b496a9400618315a2d7b7c408bd\n   eregli      7.762 gün · eksik 0 · indirme 2026-11-14T14:04:11.712Z · sha256 890734c5f5922af98ce2f4e0a095f4aab0af10e23f57022b4d144e7ed3088806\n   cihanbeyli  7.762 gün · eksik 0 · indirme 2026-11-14T14:04:19.759Z · sha256 a076a1c20e4bdc31771549fb3749c152963f0fb590198107bc8ac26c8a0ec41b\n   altinekin   7.762 gün · eksik 0 · indirme 2026-11-14T14:04:26.818Z · sha256 e8579921cec9832638d4ba98cf5c04a89634b5f8d1433a241944dca1664385c9\n   civril      7.762 gün · eksik 0 · indirme 2026-11-14T09:02:33.231Z · sha256 2040d98959f5d9ccdc0b03d1005656ed7de3ecd576f6d1d9a4d0d0d6c4b68ac3 · kooperatif hesabında kullanılmıyor\n   not: karapinar ile eregli dosyalarında T2M_MAX, T2M_MIN, PRECTOTCORR, WS2M, RH2M gün gün aynı; ALLSKY_SFC_SW_DWN 7.721 günde farklı\n   not: cihanbeyli ile altinekin dosyalarında altı parametrenin altısı da gün gün aynı\n\n2) Yeniden indirme ve gün gün karşılaştırma (NASA POWER API, şimdi)\n   karapinar   7.762 gün: 7.762 gün birebir aynı, 0 gün farklı · rakım aynı\n   cumra       7.762 gün: 7.762 gün birebir aynı, 0 gün farklı · rakım aynı\n   eregli      7.762 gün: 7.762 gün birebir aynı, 0 gün farklı · rakım aynı\n   cihanbeyli  7.762 gün: 7.762 gün birebir aynı, 0 gün farklı · rakım aynı\n   altinekin   7.762 gün: 7.762 gün birebir aynı, 0 gün farklı · rakım aynı\n\n3) ET0 ve üç ana sayı: baştan hesap\n   kayıt tarihi 2026-11-15T09:03:56.290Z\n   sayı                                    kayıtlı   kayıtlı dosyadan  yeni indirilenden  sonuç\n   ET0 karapinar (mm/yıl)                  1.241,1            1.241,1            1.241,1  aynı\n   ET0 cumra (mm/yıl)                      1.195,3            1.195,3            1.195,3  aynı\n   ET0 eregli (mm/yıl)                     1.215,3            1.215,3            1.215,3  aynı\n   ET0 cihanbeyli (mm/yıl)                 1.251,7            1.251,7            1.251,7  aynı\n   ET0 altinekin (mm/yıl)                  1.253,9            1.253,9            1.253,9  aynı\n   Brüt gelir, bugün (TL)               62.676.555         62.676.555         62.676.555  aynı\n   Brüt gelir, planlı (TL)              80.165.398         80.165.398         80.165.398  aynı\n   Suyu biten üye, bugün                        50                 50                 50  aynı\n   Suyu biten üye, planlı                        0                  0                  0  aynı\n   Güvenli mısır sözü, bugün (t)             1.505              1.505              1.505  aynı\n   Güvenli mısır sözü, planlı (t)            2.639              2.639              2.639  aynı\n   hesap süresi 1,6 sn\n\n4) Girdi dökümü (sayım)\n   NASA verisi  7 girdi\n   Kaynaklı     17 girdi\n   Varsayım     48 girdi\n   Kurgusal     12 girdi\n   toplam       84 girdi\n\nSONUÇ: 5 ilçe dosyası yeniden indirildi; 5 tanesi kayıtlı dosyayla gün gün birebir aynı. Baştan hesaplanan ET0 ve üç ana sayı kayıtlı sonuçlarla aynı."
+}
