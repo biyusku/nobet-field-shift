@@ -1,10 +1,22 @@
 import type { Crop } from '../engine/types';
+import SOURCES from './sources.json';
 
 /** Bir varsayım: değer, nereden geldiği ve doğrulanıp doğrulanmadığı. */
 export interface Assumed<T> {
   value: T;
   source: string;
   verified: boolean;
+  /** doğrulandıysa: kaynağın adı, bağlantısı ve değerin geçtiği ifade */
+  ref?: SourceRef;
+}
+
+export interface SourceRef {
+  name: string;
+  url: string;
+  table: string;
+  quote: string;
+  accessed: string;
+  note?: string;
 }
 
 export interface CropDef {
@@ -79,6 +91,19 @@ export const DEFAULT_CROPS: CropDef[] = [
   // Kırmızı mercimek proje tanımındaki tabloda yoktu; sonradan istendi. Bütün değerleri takım varsayımıdır.
   mercimek(),
 ];
+
+// Kaynağı bu oturumda açılıp görülen değerler (src/data/sources.json): alan "doğrulandı" olur ve değeri kaynaktakiyle değiştirilir.
+type SourcedField = 'stages' | 'kc' | 'ky' | 'priceTlTon';
+for (const v of SOURCES.values) {
+  const d = DEFAULT_CROPS.find((c) => c.id === v.crop);
+  const src = (SOURCES.sources as Record<string, { name: string; url: string }>)[v.source];
+  if (!d || !src) continue;
+  const f = d[v.field as SourcedField] as Assumed<unknown>;
+  f.value = v.value;
+  f.verified = true;
+  f.source = `${src.name}, ${v.table}`;
+  f.ref = { name: src.name, url: src.url, table: v.table, quote: v.quote, accessed: SOURCES.accessed, note: (v as { note?: string }).note };
+}
 
 /** Motorun kullandığı düz biçim. */
 export function toEngineCrop(d: CropDef): Crop {

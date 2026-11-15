@@ -1,7 +1,9 @@
 import { BookOpen, RotateCcw } from 'lucide-react';
 import { useState } from 'react';
 import { UnreliableMark } from '../components/bits';
-import { Confirm, Select } from '../components/kit';
+import { Confirm, Select, SourcePop } from '../components/kit';
+import { DEFAULT_CROPS, type Assumed } from '../data/crops';
+import SOURCES from '../data/sources.json';
 import { Card, H2, Note, NumInput, PageHeader, Swatch, Tag } from '../components/ui';
 import type { CropDef } from '../data/crops';
 import { METHOD_LABEL } from '../data/defaults';
@@ -23,7 +25,19 @@ export function MethodScreen() {
   const [method, setMethod] = useState<IrrigationMethod>('yagmurlama');
   if (!model || !weather) return null;
 
-  const setCrop = (id: string, fn: (d: CropDef) => CropDef) => s.update({ cropDefs: s.cropDefs.map((d) => (d.id === id ? fn(d) : d)) });
+  // Bir alan elle değiştirilirse artık kaynaktaki değer değildir: etiketi "varsayım"a döner.
+  const setCrop = (id: string, fn: (d: CropDef) => CropDef) =>
+    s.update({
+      cropDefs: s.cropDefs.map((d) => {
+        if (d.id !== id) return d;
+        const next = fn(d);
+        for (const k of ['plant', 'stages', 'kc', 'ky', 'yieldKgDa', 'priceTlTon'] as const) {
+          if (next[k].verified && JSON.stringify(next[k].value) !== JSON.stringify(d[k].value)) (next as CropDef)[k] = { ...next[k], verified: false, ref: undefined } as never;
+        }
+        return next;
+      }),
+    });
+  const badge = (a: Assumed<unknown>) => <div className="mt-1">{a.verified && a.ref ? <SourcePop {...a.ref} /> : <Tag kind="varsayim" />}</div>;
   const years: number[] = [];
   for (let y = FIRST_YEAR; y <= LAST_YEAR; y++) years.push(y);
   const clim = years.map((y) => ({ y, p: sumCalendar(weather, weather.prec, y), e: sumCalendar(weather, weather.et0, y), pj: sumCalendar(weather, weather.prec, y, 7), ej: sumCalendar(weather, weather.et0, y, 7) }));
@@ -251,8 +265,8 @@ Amaç:       en yüksek toplam brüt gelir   ya da   taahhüdü karşılayan en 
           Varsayımlar: ürün tablosu
         </H2>
         <p className="m-0 mb-3 text-[13px] text-ink2">
-          Aşağıdaki değerlerin <strong className="text-ink">hiçbiri doğrulanmadı</strong> (kodda her alan <code>verified: false</code> taşır). Yörenin gerçek değerlerini biliyorsanız değiştirin; bütün
-          ekranlar anında yeniden hesaplanır.
+          Her hücrenin altındaki etiket değerin nereden geldiğini söyler: <strong className="text-ink">kaynak</strong> (tıklayınca kaynağın adı ve bağlantısı açılır) ya da{' '}
+          <strong className="text-ink">varsayım</strong> (doğrulanmadı). Bir değeri değiştirirseniz etiketi varsayıma döner; bütün ekranlar anında yeniden hesaplanır.
         </p>
         <div className="overflow-x-auto">
           <table className="data min-w-[1080px]">
@@ -281,6 +295,7 @@ Amaç:       en yüksek toplam brüt gelir   ya da   taahhüdü karşılayan en 
                       <NumInput className="w-[52px]" label={`${d.name} ekim günü`} value={d.plant.value.day} min={1} max={31} onChange={(v) => setCrop(d.id, (x) => ({ ...x, plant: { ...x.plant, value: { ...x.plant.value, day: Math.round(v) } } }))} />
                       <NumInput className="w-[52px]" label={`${d.name} ekim ayı`} value={d.plant.value.month} min={1} max={12} onChange={(v) => setCrop(d.id, (x) => ({ ...x, plant: { ...x.plant, value: { ...x.plant.value, month: Math.round(v) } } }))} />
                     </span>
+                    {badge(d.plant)}
                   </td>
                   <td>
                     <span className="flex gap-1" title={d.stages.source}>
@@ -288,6 +303,7 @@ Amaç:       en yüksek toplam brüt gelir   ya da   taahhüdü karşılayan en 
                         <NumInput key={i} className="w-[58px]" label={`${d.name} evre ${i + 1} süresi`} value={st} min={1} max={300} onChange={(v) => setCrop(d.id, (x) => ({ ...x, stages: { ...x.stages, value: x.stages.value.map((o, k) => (k === i ? Math.round(v) : o)) as CropDef['stages']['value'] } }))} />
                       ))}
                     </span>
+                    {badge(d.stages)}
                   </td>
                   <td>
                     <span className="flex gap-1" title={d.kc.source}>
@@ -295,15 +311,19 @@ Amaç:       en yüksek toplam brüt gelir   ya da   taahhüdü karşılayan en 
                         <NumInput key={i} className="w-[62px]" label={`${d.name} Kc ${i + 1}`} value={kc} min={0.05} max={2} decimals={2} onChange={(v) => setCrop(d.id, (x) => ({ ...x, kc: { ...x.kc, value: x.kc.value.map((o, k) => (k === i ? v : o)) as CropDef['kc']['value'] } }))} />
                       ))}
                     </span>
+                    {badge(d.kc)}
                   </td>
                   <td title={d.ky.source}>
                     <NumInput className="w-[62px]" label={`${d.name} Ky`} value={d.ky.value} min={0.1} max={3} decimals={2} onChange={(v) => setCrop(d.id, (x) => ({ ...x, ky: { ...x.ky, value: v } }))} />
+                    {badge(d.ky)}
                   </td>
                   <td title={d.yieldKgDa.source}>
                     <NumInput className="w-[84px]" label={`${d.name} verim`} value={d.yieldKgDa.value} min={1} max={50000} onChange={(v) => setCrop(d.id, (x) => ({ ...x, yieldKgDa: { ...x.yieldKgDa, value: v } }))} />
+                    {badge(d.yieldKgDa)}
                   </td>
                   <td title={d.priceTlTon.source}>
                     <NumInput className="w-[92px]" label={`${d.name} fiyat`} value={d.priceTlTon.value} min={0} max={1e7} onChange={(v) => setCrop(d.id, (x) => ({ ...x, priceTlTon: { ...x.priceTlTon, value: v } }))} />
+                    {badge(d.priceTlTon)}
                   </td>
                 </tr>
               ))}
@@ -399,6 +419,61 @@ Amaç:       en yüksek toplam brüt gelir   ya da   taahhüdü karşılayan en 
           </table>
         </div>
         <p className="mb-0 mt-2 text-[12px] text-muted">20 hasat yılının ({FIRST_YEAR}-{LAST_YEAR}) sonuçları. "Tam" satırındaki ayrılan su, en kurak yılın tam sulama ihtiyacıdır.</p>
+      </Card>
+
+      <Card>
+        <H2 right={<span className="text-[12px] text-ink2">erişim: {SOURCES.accessed.split('-').reverse().join('.')}</span>}>Doğrulama</H2>
+        <p className="m-0 mb-3 text-ink2">
+          Bir değer ancak kaynağının sayfası açılıp içinde görüldüyse "kaynak" sayılır. Aşağıda kaynakla karşılaştırılabilen değerler var; istenen iki karşılaştırma tablosu (rehberdeki bitki su tüketimi ve TÜİK
+          ilçe verimleri) <strong className="text-ink">kurulamadı</strong>, çünkü o veriler alınamadı.
+        </p>
+        <div className="overflow-x-auto">
+          <table className="data min-w-[760px]">
+            <thead>
+              <tr>
+                <th>Ürün</th>
+                <th>Alan</th>
+                <th>Önceki değer</th>
+                <th>Kaynaktaki değer</th>
+                <th>Sonuç</th>
+                <th>Kaynak</th>
+              </tr>
+            </thead>
+            <tbody>
+              {SOURCES.values.map((v, i) => {
+                const src = (SOURCES.sources as Record<string, { name: string; url: string }>)[v.source];
+                const prev = (v as { previous?: unknown }).previous;
+                const show = (x: unknown) => (Array.isArray(x) ? x.join(' / ') : String(x)).replace(/\./g, ',');
+                return (
+                  <tr key={i}>
+                    <td>
+                      <Swatch id={v.crop} />
+                      {DEFAULT_CROPS.find((c) => c.id === v.crop)?.name ?? v.crop}
+                    </td>
+                    <td>{{ stages: 'Evre süreleri (gün)', kc: 'Kc baş / orta / son', ky: 'Ky', priceTlTon: 'Fiyat (TL/ton)' }[v.field] ?? v.field}</td>
+                    <td className="tnum">{show(prev ?? v.value)}</td>
+                    <td className="tnum">{show(v.value)}</td>
+                    <td>{v.changed ? <span className="tag tag-warning">değişti</span> : <span className="tag tag-success">aynı</span>}</td>
+                    <td>
+                      <SourcePop name={src.name} url={src.url} table={v.table} quote={v.quote} accessed={SOURCES.accessed} note={(v as { note?: string }).note} />
+                      <span className="ml-1.5 text-[11.5px] text-ink2">{v.table}</span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        <h3 className="m-0 mb-1 mt-4 text-[13px] font-[650] text-ink">Doğrulanamayanlar (varsayım olarak kaldı)</h3>
+        <ul className="m-0 flex flex-col gap-1 pl-5 text-ink2">
+          {SOURCES.notFound.map((t, i) => (
+            <li key={i}>{t}</li>
+          ))}
+        </ul>
+        <p className="mb-0 mt-3 text-[12px] text-ink2">
+          Toprak için tek gözlem: ISRIC SoilGrids, Cihanbeyli noktasında 0-100 cm için tarla kapasitesi ile solma noktası arasında yaklaşık 50 mm su veriyor; modeldeki 130 mm varsayımının belirgin altında. Tek
+          nokta olduğu için uygulanmadı, ama varsayımın iyimser olabileceğini gösteriyor.
+        </p>
       </Card>
 
       <Card>

@@ -1,0 +1,51 @@
+{
+  "accessed": "2026-11-15",
+  "note": "Yalnızca bu tarihte sayfası açılıp içinde görülen değerler burada yer alır. 'quote' sayfada geçen ifadedir (tablo satırı ya da cümle parçası).",
+  "sources": {
+    "fao56-ch6": {
+      "name": "FAO Sulama ve Drenaj Yayını 56 (Allen ve ark., 1998), Bölüm 6",
+      "url": "https://www.fao.org/4/x0490e/x0490e0b.htm"
+    },
+    "fao56-ch8": {
+      "name": "FAO Sulama ve Drenaj Yayını 56 (Allen ve ark., 1998), Bölüm 8",
+      "url": "https://www.fao.org/4/x0490e/x0490e0e.htm"
+    },
+    "cnbce-tmo-2026": {
+      "name": "CNBC-e haberi: TMO 2026 hububat alım fiyatlarını açıkladı (TMO açıklamasını aktarır; TMO'nun kendi sayfası değil)",
+      "url": "https://www.cnbce.com/haberler/tmo-2026-hububat-alim-fiyatlarini-acikladi-h30887"
+    }
+  },
+  "values": [
+    { "crop": "misir", "field": "stages", "value": [30, 40, 50, 30], "unit": "gün", "source": "fao56-ch6", "table": "Tablo 11", "quote": "Maize (grain) | 30 | 40 | 50 | 30 | 150 | April | Spain (spr, sum.); Calif.", "changed": false },
+    { "crop": "aycicegi", "field": "stages", "value": [25, 35, 45, 25], "unit": "gün", "source": "fao56-ch6", "table": "Tablo 11", "quote": "Sunflower | 25 | 35 | 45 | 25 | 130 | April/May | Medit.; California", "changed": false },
+    { "crop": "pancar", "field": "stages", "value": [50, 40, 50, 40], "unit": "gün", "source": "fao56-ch6", "table": "Tablo 11", "quote": "Sugarbeet … 50 | 40 | 50 | 40 | 180 | April | Idaho, USA", "changed": true, "previous": [30, 45, 80, 35], "note": "Tabloda yedi pancar satırı var; nisan ekimli, karasal iklimli satır seçildi." },
+    { "crop": "mercimek", "field": "stages", "value": [25, 35, 70, 40], "unit": "gün", "source": "fao56-ch6", "table": "Tablo 11", "quote": "Lentil … 25 | 35 | 70 | 40 | 170 | Oct/Nov | Arid Region", "changed": true, "previous": [120, 40, 35, 20], "note": "Sonbahar ekimli satır seçildi; donlu kış için uzatma yapılmadı." },
+
+    { "crop": "misir", "field": "kc", "value": [0.3, 1.2, 0.5], "unit": "-", "source": "fao56-ch6", "table": "Tablo 12", "quote": "i. Cereals | 0.3 …; Maize, Field (grain) | 1.20 | 0.60-0.35", "changed": false, "note": "Kc son 0,50, tablodaki 0,60-0,35 aralığının içinde." },
+    { "crop": "bugday", "field": "kc", "value": [0.4, 1.15, 0.3], "unit": "-", "source": "fao56-ch6", "table": "Tablo 12", "quote": "Winter Wheat - with frozen soils | 0.4 | 1.15 | 0.25-0.4", "changed": false, "note": "Kc son 0,30, tablodaki 0,25-0,4 aralığının içinde." },
+    { "crop": "arpa", "field": "kc", "value": [0.3, 1.15, 0.25], "unit": "-", "source": "fao56-ch6", "table": "Tablo 12", "quote": "i. Cereals | 0.3 …; Barley | 1.15 | 0.25", "changed": false },
+    { "crop": "nohut", "field": "kc", "value": [0.4, 1.0, 0.35], "unit": "-", "source": "fao56-ch6", "table": "Tablo 12", "quote": "e. Legumes (Leguminosae) | 0.4 …; Chick pea | 1.00 | 0.35", "changed": false },
+    { "crop": "mercimek", "field": "kc", "value": [0.4, 1.1, 0.3], "unit": "-", "source": "fao56-ch6", "table": "Tablo 12", "quote": "e. Legumes (Leguminosae) | 0.4 …; Lentil | 1.10 | 0.30", "changed": false },
+    { "crop": "aycicegi", "field": "kc", "value": [0.35, 1.1, 0.35], "unit": "-", "source": "fao56-ch6", "table": "Tablo 12", "quote": "h. Oil Crops | 0.35 …; Sunflower | 1.0-1.15 | 0.35", "changed": false, "note": "Kc orta 1,10, tablodaki 1,0-1,15 aralığının içinde." },
+    { "crop": "pancar", "field": "kc", "value": [0.35, 1.2, 0.7], "unit": "-", "source": "fao56-ch6", "table": "Tablo 12", "quote": "Sugar Beet | 0.35 | 1.20 | 0.70", "changed": false },
+
+    { "crop": "misir", "field": "ky", "value": 1.25, "unit": "-", "source": "fao56-ch8", "table": "Tablo 24 (FAO 33'ten)", "quote": "Maize | 1.25", "changed": false },
+    { "crop": "bugday", "field": "ky", "value": 1.05, "unit": "-", "source": "fao56-ch8", "table": "Tablo 24 (FAO 33'ten)", "quote": "Winter wheat | 1.05", "changed": false },
+    { "crop": "aycicegi", "field": "ky", "value": 0.95, "unit": "-", "source": "fao56-ch8", "table": "Tablo 24 (FAO 33'ten)", "quote": "Sunflower | 0.95", "changed": false },
+    { "crop": "pancar", "field": "ky", "value": 1.0, "unit": "-", "source": "fao56-ch8", "table": "Tablo 24 (FAO 33'ten)", "quote": "Sugarbeet | 1.0", "changed": false },
+
+    { "crop": "bugday", "field": "priceTlTon", "value": 16500, "unit": "TL/ton", "source": "cnbce-tmo-2026", "table": "haber metni", "quote": "Ekmeklik buğday: 16 bin 500 TL", "changed": false, "note": "2026 TMO alım fiyatı; haber sayfasından. TMO'nun resmi duyurusu açılmadı." },
+    { "crop": "arpa", "field": "priceTlTon", "value": 12750, "unit": "TL/ton", "source": "cnbce-tmo-2026", "table": "haber metni", "quote": "Arpa: 12 bin 750 TL", "changed": false, "note": "2026 TMO alım fiyatı; haber sayfasından. TMO'nun resmi duyurusu açılmadı." }
+  ],
+  "notFound": [
+    "Evre süreleri: kışlık buğday, kışlık arpa ve nohut. FAO-56 Tablo 11'de donlu karasal iklim için uygun satır yok (kışlık buğday satırları: Kaliforniya, Akdeniz, Idaho); nohut satırı hiç yok.",
+    "Ekim tarihlerinin hiçbiri.",
+    "Ky: arpa, nohut, mercimek. FAO-56 Tablo 24'te bu ürünler yok.",
+    "Tam sulu verimlerin hiçbiri (TÜİK ilçe verisi alınamadı).",
+    "Fiyatlar: mısır, nohut, mercimek, ayçiçeği, şeker pancarı (aranmadı ya da bulunamadı).",
+    "TAGEM/DSİ bitki su tüketimi rehberi: PDF'e ulaşılmadı.",
+    "TÜİK ilçe ekim alanı ve verimi: sorgu arayüzü gerektirdiği için alınmadı.",
+    "Toprak: ISRIC SoilGrids beş noktadan yalnız birinde (Cihanbeyli) veri döndürdü; Karapınar ve Çumra boş, Ereğli ve Altınekin zaman aşımı. İlçe değerleri uygulanmadı.",
+    "Yeraltı suyu tahsis miktarı ve baklagil desteği: aranmadı."
+  ]
+}

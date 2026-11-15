@@ -1,6 +1,6 @@
 // Bileşen kiti: Radix tabanlı seçici, yan çekmece, onay penceresi ve ipucu. Stil, panelin kart diline uyar.
 import { Check, ChevronDown, X } from 'lucide-react';
-import { AlertDialog, Dialog, Select as RSelect, Tooltip } from 'radix-ui';
+import { AlertDialog, Dialog, Popover, Select as RSelect, Tooltip } from 'radix-ui';
 import type { ReactNode } from 'react';
 
 export const TooltipProvider = Tooltip.Provider;
@@ -17,6 +17,32 @@ export function Tip({ text, children }: { text: ReactNode; children: ReactNode }
         </Tooltip.Content>
       </Tooltip.Portal>
     </Tooltip.Root>
+  );
+}
+
+/** "kaynak" etiketi: tıklayınca kaynağın adı, tablosu, değerin geçtiği ifade ve bağlantısı görünür. */
+export function SourcePop({ name, url, table, quote, accessed, note }: { name: string; url: string; table: string; quote: string; accessed: string; note?: string }) {
+  return (
+    <Popover.Root>
+      <Popover.Trigger className="tag tag-success cursor-pointer border-0" aria-label={`Kaynak: ${name}`}>
+        kaynak
+      </Popover.Trigger>
+      <Popover.Portal>
+        <Popover.Content sideOffset={6} collisionPadding={12} className="z-[1100] w-[320px] max-w-[calc(100vw-24px)] rounded-[10px] bg-surface p-3 text-[12.5px] leading-snug text-ink shadow-[0_8px_28px_rgba(0,0,0,.16),0_0_0_1px_var(--line)]">
+          <div className="font-semibold">{name}</div>
+          <div className="mt-0.5 text-ink2">{table}</div>
+          <div className="mt-2 rounded-md bg-sunken px-2 py-1.5 font-mono text-[11.5px]">{quote}</div>
+          {note && <div className="mt-2 text-ink2">{note}</div>}
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+            <a href={url} target="_blank" rel="noreferrer" className="font-medium text-link underline underline-offset-2">
+              Kaynağı aç
+            </a>
+            <span className="text-[11px] text-ink2">erişim: {accessed.split('-').reverse().join('.')}</span>
+          </div>
+          <Popover.Arrow className="fill-surface" />
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
   );
 }
 

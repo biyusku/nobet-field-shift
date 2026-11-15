@@ -128,8 +128,9 @@ export default function CoopMap({
     setZoom(m.getZoom());
     m.on('zoomend', () => setZoom(m.getZoom()));
     m.on('moveend zoomend resize', () => setView((v) => v + 1));
-    setTimeout(() => m.invalidateSize(), 60);
+    const timer = setTimeout(() => m.invalidateSize(), 60);
     return () => {
+      clearTimeout(timer);
       m.remove();
       map.current = null;
     };
