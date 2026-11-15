@@ -44,10 +44,10 @@ Proje klasörünün tam yolunu yazın (`--` işaretinden sonrası olduğu gibi s
 claude mcp add --transport stdio nobet -- npx tsx /TAM/YOL/nasa-project/mcp/stdio.ts
 ```
 
-Bu makinede sistem Node'u yok; proje içindeki Node ile:
+Sistem Node'u yoksa (ör. projeye ayrı indirilmiş Node ile çalışılıyorsa) `npx` yerine Node'un ve tsx'in tam yolunu verin:
 
 ```bash
-claude mcp add --transport stdio nobet -- /Users/birusk/nasa-project/.tools/node/bin/node /Users/birusk/nasa-project/node_modules/tsx/dist/cli.mjs /Users/birusk/nasa-project/mcp/stdio.ts
+claude mcp add --transport stdio nobet -- /TAM/YOL/node /TAM/YOL/nasa-project/node_modules/tsx/dist/cli.mjs /TAM/YOL/nasa-project/mcp/stdio.ts
 ```
 
 Sonra Claude Code içinde `/mcp` ile bağlantıyı görün; `claude mcp list` ve `claude mcp get nobet` da durumu gösterir.
@@ -65,7 +65,7 @@ npm run mcp:http
 | `MCP_AUTH=none` (varsayılan) | Girişsiz. Araçlar salt okunur olduğu için yazma riski yok. |
 | `MCP_AUTH=key` | Her istek `Authorization: Bearer <anahtar>` ister. Anahtar yoksa ya da yanlışsa **401**. |
 | `MCP_API_KEY` | Anahtar. Koda yazılmaz, günlüğe düşmez (günlükte yalnız yöntem, yol ve durum kodu var). |
-| `MCP_ALLOWED_ORIGINS` | Tarayıcıdan gelen isteklerde izin verilen Origin ana makineleri (virgülle). Varsayılan: localhost adları ve `claude.ai`. Origin'i olmayan istek geçer; listede olmayan Origin **403**. |
+| `ALLOWED_ORIGINS` | Origin başlığı taşıyan isteklerde izin verilen kaynaklar (virgülle). Varsayılan `claude.ai`; kendi alan adı her zaman geçer. Origin'i olmayan istek geçer; listede olmayan Origin **403**. |
 | `MCP_TIMEOUT_MS` | Ağır hesap için süre sınırı, varsayılan 20000 (bkz. "Bilinen sorun"). |
 
 Anahtarlı başlatma:
@@ -102,35 +102,28 @@ claude mcp add --transport http nobet http://127.0.0.1:8787/mcp --header "Author
 
 Yayındaki sunucu için adresi `https://ALAN-ADI/mcp` yapın.
 
-## 3. Yayına alma (Vercel, sunucusuz işlev)
+## 3. Yayına alma (Railway, tek sunucu)
 
-Site statik kalır; yalnız `/mcp` yolu bir sunucusuz işlevdir. Dosyalar: `api/mcp.ts` (giriş noktası, bütün mantık `mcp/` içinde) ve `vercel.json` (`/mcp` → `/api/mcp` yönlendirmesi, `maxDuration: 60`). Vercel HTTPS'i 443'te kendisi sunar.
+**Yayın yolu Railway.** `npm start` (`mcp/start.ts`) tek bir Node süreciyle hem siteyi (`dist/`) hem MCP'yi (`/mcp`) sunar; `PORT`'u dinler, `0.0.0.0`'a bağlanır. Bilinmeyen yollar `index.html`'e düşer; `/mcp` bundan etkilenmez. Ağır hesaplardaki süre sınırı (worker) bu sunucuda da çalışır.
 
-**Bu adımlar çalıştırılmadı; Vercel'de denenmedi.** Sırayla:
-
-1. Ortam değişkenleri (Vercel panosu → Project → Settings → Environment Variables, ortam: Production):
-   - `MCP_AUTH` = `none` (girişsiz) ya da `key`
-   - `key` seçildiyse `MCP_API_KEY` = uzun rastgele bir değer (`openssl rand -hex 24`)
-   CLI ile (`npx vercel env add MCP_AUTH production`) de eklenebilir; bu komutu Vercel belgesinden bu oturumda doğrulamadım.
-2. Önizleme yayını:
+Yerelde:
 
 ```bash
-npx vercel
+npm run build && PORT=3000 npm start
 ```
 
-3. Önizleme adresinde deneyin (`<önizleme>` yerine Vercel'in verdiği adres):
+Ayarlar ve adımlar kök `README.md` → "Railway (site + MCP)". Ortam değişkenleri:
 
-```bash
-npx -y @modelcontextprotocol/inspector@2.15.0 --cli https://<önizleme>/mcp --transport http --method tools/list
-```
+| Değişken | Etki |
+|---|---|
+| `MCP_AUTH` | `none` (varsayılan) ya da `key` |
+| `MCP_API_KEY` | `key` modunda anahtar; günlüğe yazılmaz |
+| `ALLOWED_ORIGINS` | Origin başlığı taşıyan isteklerde izin verilen kaynaklar (virgülle, tam adres ya da ana makine). Boşsa `claude.ai` ve `RAILWAY_PUBLIC_DOMAIN`. Kendi alan adı her zaman geçer; Origin'i olmayan istek her zaman geçer; `*` kontrolü kapatır. |
+| `MCP_TIMEOUT_MS` | ağır hesap süre sınırı, varsayılan 20000 |
 
-4. Asıl yayın:
+**Origin hakkında.** claude.ai bağlayıcısı sunucuya tarayıcıdan değil Anthropic'in bulutundan bağlanır (support.claude.com, "Get started with custom connectors using remote MCP", 15.11.2026). Claude'un belgeleri hangi Origin değerini gönderdiğini yazmıyor; sorun giderme sayfası "aşırı katı Origin kontrolü Anthropic'in isteklerini reddeder" diyor. Bu yüzden Origin'i olmayan istek reddedilmez. Bağlayıcı 403 alırsa sunucu günlüğündeki `[mcp] POST /mcp -> 403` satırına bakın ve gelen Origin'i `ALLOWED_ORIGINS`'e ekleyin.
 
-```bash
-npx vercel --prod
-```
-
-Vercel'de denenmemiş olanlar: TypeScript işlevin `../src` ve `public/data/*.json` dosyalarını (`with { type: 'json' }`) paketleyip paketlemediği; ağır hesapların süre sınırı (orada worker kullanılmaz, sınırı `maxDuration` koyar).
+Vercel dosyaları (`../api/mcp.ts`, `../vercel.json`) depoda duruyor ama yayın yolu değil; denenmedi.
 
 ## 4. claude.ai'ye özel bağlayıcı olarak ekleme
 
@@ -177,4 +170,5 @@ npm run mcp:test
 | `runner.ts`, `worker.ts` | Ağır hesabı süre sınırıyla ayrı iş parçacığında çalıştırma |
 | `client.ts` | Deneme istemcisi (stdio ya da HTTP) |
 | `test/parity.test.ts` | Pano ile eşitlik testi |
-| `../api/mcp.ts`, `../vercel.json` | Vercel giriş noktası ve yönlendirme |
+| `start.ts`, `static.ts` | Yayın sunucusu (Railway): site + /mcp |
+| `../api/mcp.ts`, `../vercel.json` | Vercel giriş noktası (kullanılmıyor, denenmedi) |

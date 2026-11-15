@@ -3,3 +3,8 @@ dist
 .tools
 .DS_Store
 *.log
+.env
+.env.*
+!.env.example
+# masaüstü uygulamasının yerel önizleme ayarı (bu makinenin yolunu içerir)
+.claude/

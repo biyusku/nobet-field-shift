@@ -46,7 +46,9 @@ Betik (`scripts/fetch-power.mjs`) NASA POWER günlük API'sinden 1 Ekim 2004 –
 
 ## Yayınlama
 
-Sunucu yoktur; bütün hesap tarayıcıda yapılır. `npm run build` çıktısı (`dist/`) herhangi bir statik sunucuda çalışır. `base: './'` kullanıldığı için alt dizinde de çalışır. İlçe verileri (`public/data/*.json`) derlemeye dahildir; yayın sırasında NASA'ya istek atılmaz.
+**Yayın yolu: Railway.** Tek bir Node süreci (`npm start`, `mcp/start.ts`) hem siteyi (`dist/`) hem MCP sunucusunu (`/mcp`) sunar. Adımlar aşağıda "Railway" başlığında. Vercel ve Netlify bölümleri yalnız siteyi (MCP olmadan) statik yayınlamak içindir; `api/mcp.ts` ve `vercel.json` depoda duruyor ama kullanılmıyor.
+
+Sitenin hesabı tarayıcıda yapılır; sunucu yalnız dosyaları ve MCP'yi sunar. `npm run build` çıktısı (`dist/`) herhangi bir statik sunucuda çalışır. `base: './'` kullanıldığı için alt dizinde de çalışır. İlçe verileri (`public/data/*.json`) derlemeye dahildir; yayın sırasında NASA'ya istek atılmaz.
 
 Yayından önce yerelde deneyin:
 
@@ -62,9 +64,45 @@ npm run build
 npm run preview
 ```
 
-Her iki serviste de ayarlar aynıdır: derleme komutu `npm run build`, yayın dizini `dist`, Node 20 ya da üstü. Ortam değişkeni ve anahtar gerekmez.
+Tek sunucuyu yerelde deneyin (site http://localhost:3000, MCP http://localhost:3000/mcp):
 
-### Vercel
+```bash
+npm run build && PORT=3000 npm start
+```
+
+### Railway (site + MCP)
+
+Bu adımlar çalıştırılmadı. Railway belgeleri 15.11.2026'da okundu.
+
+1. Depoyu GitHub'a gönderin (git kurulu bir ortamda):
+
+```bash
+git push -u origin main
+```
+
+2. railway.com → New Project → Deploy from GitHub repo → bu depo.
+3. Servis ayarları (Settings → Build / Deploy):
+   - Build Command: `npm ci && npm run build`
+   - Start Command: `npm start`
+   - Node sürümü `package.json` içindeki `"engines": { "node": "22.x" }` alanından okunur.
+   - `railway.json` eklenmedi: Railway'in "Config as Code" özelliği belgede "deprecated" olarak işaretli. Railpack bu ayarları zaten `package-lock.json`, `build` ve `start` betiklerinden çıkarır; yukarıdaki iki komutu panoda açıkça yazmak yeterli.
+4. Değişkenler (Variables sekmesi):
+   - `MCP_AUTH` = `none` (girişsiz, varsayılan) ya da `key`
+   - `key` ise `MCP_API_KEY` = uzun rastgele değer (`openssl rand -hex 24`)
+   - `ALLOWED_ORIGINS` (isteğe bağlı) = Origin başlığı taşıyan isteklerde izin verilen kaynaklar, virgülle. Boşsa: `claude.ai` ve Railway'in verdiği alan adı (`RAILWAY_PUBLIC_DOMAIN`, otomatik). Sitenin kendi alan adı her zaman geçer. Origin başlığı **olmayan** istekler her zaman geçer (claude.ai bağlayıcısı Anthropic'in bulutundan bağlanır). `*` kontrolü kapatır.
+   - `PORT` Railway tarafından verilir; sunucu `0.0.0.0`'a bağlanır.
+5. Settings → Networking → Public Networking → **Generate Domain**. HTTPS'i Railway sağlar; adres `https://<ad>.up.railway.app` olur.
+6. Deneyin:
+
+```bash
+npx -y @modelcontextprotocol/inspector@2.15.0 --cli https://<ad>.up.railway.app/mcp --transport http --method tools/list
+```
+
+7. claude.ai → Customize → Connectors → Add custom connector → URL `https://<ad>.up.railway.app/mcp` (ayrıntı: `mcp/README.md`).
+
+Komut satırından (Railway CLI kuruluysa) aynı iş: `railway login`, `railway link`, `railway variable set MCP_AUTH=none`, `railway up`, `railway domain`.
+
+### Vercel (yalnız statik site)
 
 1. Projeyi bir Git deposuna gönderin (GitHub, GitLab ya da Bitbucket) ve vercel.com'da "Add New… → Project" ile içe aktarın. Vercel, Vite'ı kendisi tanır; tanımazsa Framework Preset: Vite, Build Command: `npm run build`, Output Directory: `dist` girin.
 2. Ya da komut satırından (ilk çalıştırmada hesap girişi ve birkaç soru sorar):
@@ -79,7 +117,7 @@ npx vercel
 npx vercel --prod
 ```
 
-### Netlify
+### Netlify (yalnız statik site)
 
 1. app.netlify.com'da "Add new site → Import an existing project" ile depoyu bağlayın; Build command: `npm run build`, Publish directory: `dist`.
 2. Depo olmadan: `npm run build` çalıştırıp `dist` klasörünü app.netlify.com/drop sayfasına sürükleyin.

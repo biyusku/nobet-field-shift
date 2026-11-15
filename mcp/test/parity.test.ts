@@ -61,6 +61,8 @@ describe('girdi doğrulaması', () => {
   it('bilinmeyen ürün, negatif dekar, geçersiz ilçe anlaşılır hata verir', () => {
     expect(() => taahhutDene('zeytin', 10)).toThrow(InputError);
     expect(() => taahhutDene('mısır', -1)).toThrow(/sıfırdan büyük/);
+    // üst sınırı aşan söz çözücüye gitmez, anlaşılır mesaj döner
+    expect(() => taahhutDene('nohut', 2000)).toThrow(/en çok yaklaşık 505 ton/);
     expect(() => uyePlani({ dekar: -5, su_hakki_mm: 300, sulama_yontemi: 'damla', bugunku_ekim: [{ urun: 'mısır', dekar: 1 }] })).toThrow(/dekar sıfırdan büyük/);
     expect(() => uyePlani({ dekar: 50, su_hakki_mm: 300, sulama_yontemi: 'damla', bugunku_ekim: [{ urun: 'mısır', dekar: 10 }], ilce: 'Ankara' })).toThrow(/Bilinmeyen ilçe/);
   });

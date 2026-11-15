@@ -14,7 +14,8 @@
     "mcp": "tsx mcp/stdio.ts",
     "mcp:http": "tsx mcp/http.ts",
     "mcp:test": "vitest run --config mcp/vitest.config.ts",
-    "mcp:deneme": "tsx mcp/client.ts"
+    "mcp:deneme": "tsx mcp/client.ts",
+    "start": "tsx mcp/start.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/node": "^2.1.2",
@@ -27,6 +28,7 @@
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "tailwind-merge": "^3.7.0",
+    "tsx": "^4.23.15",
     "zod": "^4.6.7"
   },
   "devDependencies": {
@@ -38,9 +40,11 @@
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.3.0",
     "tailwindcss": "^4.3.5",
-    "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "vite": "^8.3.8",
     "vitest": "^5.1.0"
+  },
+  "engines": {
+    "node": "22.x"
   }
 }

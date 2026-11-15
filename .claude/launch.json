@@ -1,6 +1,0 @@
-{
-  "version": "0.0.1",
-  "configurations": [
-    { "name": "nobet-dev", "runtimeExecutable": "/Users/birusk/nasa-project/.tools/node/bin/node", "runtimeArgs": ["node_modules/vite/bin/vite.js", "--port", "5173", "--strictPort"], "port": 5173 }
-  ]
-}

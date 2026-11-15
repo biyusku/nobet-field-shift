@@ -282,6 +282,8 @@ export function taahhutDene(urun: string, ton: number) {
   const c = urunBul(urun);
   pozitif('ton', ton, 1e7);
   const model = coopModel({ [c.id]: ton });
+  // üst sınırı aşan söz ya da kurulamayan plan: motorun mesajı (ör. "en çok yaklaşık 505 ton")
+  if (model.plan.status === 'error') throw new InputError(model.plan.message ?? 'Bu sözle plan kurulamadı.');
   const sc = model.scenarios;
   const worst = (bt: typeof sc.planned.backtest) => {
     const y = bt.reduce((a, b) => ((b.productionT[c.id] ?? 0) < (a.productionT[c.id] ?? 0) ? b : a));
