@@ -1,6 +1,6 @@
 # Nöbet MCP: örnek çıktılar
 
-Bağlantı: stdio (npx tsx mcp/stdio.ts) · 2026-11-15T10:13:21.559Z
+Bağlantı: stdio (npx tsx mcp/stdio.ts) · 2026-11-15T10:23:02.902Z
 
 ## Araç listesi (5)
 
@@ -14,7 +14,7 @@ Bağlantı: stdio (npx tsx mcp/stdio.ts) · 2026-11-15T10:13:21.559Z
 
 ## iklim_ozeti
 
-Girdi: `{"ilce":"Karapınar"}` · 17 ms
+Girdi: `{"ilce":"Karapınar"}` · 18 ms
 
 ```json
 {
@@ -213,7 +213,7 @@ Girdi: `{"ilce":"Karapınar"}` · 17 ms
 
 ## uye_plani
 
-Girdi: `{"dekar":100,"su_hakki_mm":300,"sulama_yontemi":"yağmurlama","bugunku_ekim":[{"urun":"mısır","dekar":70},{"urun":"buğday","dekar":30}]}` · 126 ms
+Girdi: `{"dekar":100,"su_hakki_mm":300,"sulama_yontemi":"yağmurlama","bugunku_ekim":[{"urun":"mısır","dekar":70},{"urun":"buğday","dekar":30}]}` · 133 ms
 
 ```json
 {
@@ -295,7 +295,7 @@ Girdi: `{"dekar":100,"su_hakki_mm":300,"sulama_yontemi":"yağmurlama","bugunku_e
 
 ## soz_kapasitesi
 
-Girdi: `{"esik_yil":16}` · 14004 ms
+Girdi: `{"esik_yil":16}` · 3844 ms
 
 ```json
 {
@@ -307,7 +307,7 @@ Girdi: `{"esik_yil":16}` · 14004 ms
       "bugunku_ekimle_t": 1505,
       "planli_dagitimla_t": 2639,
       "yalniz_bu_urun_t": 3146,
-      "yalniz_bu_urun_brut_gelir_tl": 78959188
+      "yalniz_bu_urun_brut_gelir_tl": 78959187
     },
     {
       "urun": "Şeker pancarı",
@@ -322,7 +322,7 @@ Girdi: `{"esik_yil":16}` · 14004 ms
       "bugunku_ekimle_t": 10,
       "planli_dagitimla_t": 234,
       "yalniz_bu_urun_t": 802,
-      "yalniz_bu_urun_brut_gelir_tl": 68901982
+      "yalniz_bu_urun_brut_gelir_tl": 68901918
     },
     {
       "urun": "Buğday (kışlık)",
@@ -336,15 +336,15 @@ Girdi: `{"esik_yil":16}` · 14004 ms
       "bugunku_ekimle_t": 239,
       "planli_dagitimla_t": 162,
       "yalniz_bu_urun_t": 1524,
-      "yalniz_bu_urun_brut_gelir_tl": 63634737
+      "yalniz_bu_urun_brut_gelir_tl": 63634686
     },
     {
       "urun": "Nohut",
-      "bugunku_ekimle_t": null,
-      "planli_dagitimla_t": null,
+      "bugunku_ekimle_t": 103,
+      "planli_dagitimla_t": 255,
       "yalniz_bu_urun_t": null,
       "yalniz_bu_urun_brut_gelir_tl": null,
-      "not": "Hesaplanamadı: Hesap 10 saniyede bitmedi; doğrusal programlama çözücüsü bu girdide takıldı. Daha küçük bir miktar ya da başka bir ürün deneyin."
+      "not": "Yalnız bu ürün senaryosu hesaplanamadı: Plan bulunamadı: kısıtlar birlikte sağlanamıyor."
     },
     {
       "urun": "Kırmızı mercimek",
@@ -403,7 +403,7 @@ Girdi: `{"esik_yil":16}` · 14004 ms
 
 ## taahhut_dene
 
-Girdi: `{"urun":"mısır","ton":2630}` · 345 ms
+Girdi: `{"urun":"mısır","ton":2630}` · 0 ms
 
 ```json
 {
@@ -1251,7 +1251,7 @@ Girdi: `{}` · 10 ms
 
 ## iklim_ozeti (hatalı girdi)
 
-Girdi: `{"ilce":"Ankara"}` · 1 ms · isError: true
+Girdi: `{"ilce":"Ankara"}` · 0 ms · isError: true
 
 ```json
 Bilinmeyen ilçe: "Ankara". Geçerli ilçeler: Karapınar, Çumra, Ereğli, Cihanbeyli, Altınekin.

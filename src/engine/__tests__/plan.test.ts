@@ -4,7 +4,7 @@ import { DEFAULT_ENGINE_CROPS as crops } from '../../data/crops';
 import { DEFAULT_EFF, DEFAULT_MEMBERS, DEFAULT_SETTINGS, DEFAULT_SOIL } from '../../data/defaults';
 import { buildCurves } from '../curves';
 import { combineFarms, evaluateFarm } from '../farm';
-import { backtest, solvePlan, summarize, type PlanInput, type PlanSettings } from '../plan';
+import { backtest, solvePlan, summarize, type PlanInput, type PlanSettings, maxProductionT } from '../plan';
 import { buildRotation, soilScore } from '../soil';
 import { FALLOW, type IrrigationMethod } from '../types';
 import { buildWeather } from '../weather';
@@ -54,12 +54,23 @@ describe('planlama (LP)', () => {
   });
 
   it('karşılanamayan taahhütte kısmi plan ve ulaşılabilir en yüksek üretim döner', () => {
-    const plan = checkConstraints(input({ commitments: { misir: 5000 } }));
+    // üst sınıra eşit söz çözücüye gider; su yüzünden tam karşılanamaz
+    const T = maxProductionT(input(), 'misir');
+    const plan = checkConstraints(input({ commitments: { misir: T } }));
     expect(plan.status).toBe('partial');
     expect(plan.commitmentFraction).toBeGreaterThan(0);
     expect(plan.commitmentFraction).toBeLessThan(1);
-    expect(plan.maxAlone.misir).toBeCloseTo(5000 * plan.commitmentFraction, 0);
+    expect(plan.maxAlone.misir).toBeCloseTo(T * plan.commitmentFraction, 0);
     expect(summarize(plan.allocations, crops).productionT.misir).toBeCloseTo(plan.maxAlone.misir, 0);
+  });
+
+  it('üst sınırı aşan söz çözücüye gitmez, anlaşılır hata döner', () => {
+    const T = maxProductionT(input(), 'misir');
+    const plan = solvePlan(input({ commitments: { misir: 5000 } }));
+    expect(5000).toBeGreaterThan(T);
+    expect(plan.status).toBe('error');
+    expect(plan.allocations).toHaveLength(0);
+    expect(plan.message).toContain(`en çok yaklaşık ${Math.floor(T).toLocaleString('tr-TR')} ton`);
   });
 
   it('en az su modu, gelir modundan fazla su ayırmaz', () => {

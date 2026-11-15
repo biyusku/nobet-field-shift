@@ -232,9 +232,9 @@ export function sozUrun(cropId: string, esik_yil: number): SozSatiri {
     urun: c.name,
     bugunku_ekimle_t: Math.floor(reachedInAtLeast(model.scenarios.today.backtest.map((y) => y.productionT[c.id] ?? 0), K)),
     planli_dagitimla_t: Math.floor(maxSafeCommitment(model.planInput, c.id, K)),
-    yalniz_bu_urun_t: Math.floor(reachedInAtLeast(single.yearly[c.id] ?? [], K)),
-    yalniz_bu_urun_brut_gelir_tl: r0(single.revenue),
-    not: c.contractOnly ? 'Yalnız pancar sözleşmesi olan üyelere ve tam sulamayla önerilir.' : c.optIn ? 'Varsayılan olarak öneri dışında (sitede ayrıca açılır); planlı değer bu yüzden 0 olabilir.' : undefined,
+    yalniz_bu_urun_t: single.plan.status === 'error' ? null : Math.floor(reachedInAtLeast(single.yearly[c.id] ?? [], K)),
+    yalniz_bu_urun_brut_gelir_tl: single.plan.status === 'error' ? null : r0(single.revenue),
+    not: single.plan.status === 'error' ? `Yalnız bu ürün senaryosu hesaplanamadı: ${single.plan.message ?? 'çözücü plan kuramadı'}` : c.contractOnly ? 'Yalnız pancar sözleşmesi olan üyelere ve tam sulamayla önerilir.' : c.optIn ? 'Varsayılan olarak öneri dışında (sitede ayrıca açılır); planlı değer bu yüzden 0 olabilir.' : undefined,
   };
 }
 

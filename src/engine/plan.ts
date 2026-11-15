@@ -210,7 +210,46 @@ export function smallParcels(allocations: Allocation[], members: Member[], setti
  * Tam sayılı değişken yerine yinelemeli: plan çözülür; eşiğin altında kalan (üye, ürün) çiftleri yasaklanıp
  * yeniden çözülür; en çok MIN_PARCEL_ROUNDS tur. Hâlâ eşik altı parça kalırsa üyenin en büyük parseline katılır.
  */
+/**
+ * Bir ürünün kooperatifte ulaşabileceği en yüksek üretim, ton: izin verilen her üyede en yüksek pay (maxShare) x alan,
+ * küçük pazarlı üründe kooperatif payı sınırıyla kırpılır, x tam sulu verim. Su hesaba katılmaz; gerçek üst sınır
+ * bunun biraz altındadır. Çözücüden önce bu sınırı aşan söz elenir: javascript-lp-solver bazı karşılanamaz
+ * sözlerde (ör. örnek kooperatifte 2.000 t nohut) dönmüyordu.
+ */
+export function maxProductionT(input: Pick<PlanInput, 'members' | 'crops' | 'settings'>, cropId: string): number {
+  const c = input.crops.find((x) => x.id === cropId);
+  if (!c) return 0;
+  const s = input.settings;
+  const active = input.members.filter((m) => m.areaDa > 0);
+  const allowed = c.optIn && !s.includeOptIn ? [] : active.filter((m) => !(c.contractOnly && !m.beetContract));
+  let area = allowed.reduce((sum, m) => sum + s.maxShare * m.areaDa, 0);
+  if (c.smallMarket && s.smallMarketCap !== null) area = Math.min(area, s.smallMarketCap * active.reduce((sum, m) => sum + m.areaDa, 0));
+  return (area * c.yieldKgDa) / 1000;
+}
+
+/** Üst sınırı aşan ilk söz için anlaşılır hata; yoksa null. */
+function overLimit(input: PlanInput): PlanResult | null {
+  for (const [id, tons] of Object.entries(input.settings.commitments)) {
+    if (!(tons > 0)) continue;
+    const limit = maxProductionT(input, id);
+    if (tons > limit + 1e-6) {
+      const name = input.crops.find((c) => c.id === id)?.name ?? id;
+      const t = Math.floor(limit).toLocaleString('tr-TR');
+      return {
+        status: 'error',
+        allocations: [],
+        commitmentFraction: 0,
+        maxAlone: { [id]: limit },
+        message: `Bu söz bu tarlalarla karşılanamaz: ${name.toLocaleLowerCase('tr')} için en çok yaklaşık ${t} ton üretilebilir (her üyede izin verilen en yüksek pay × tam sulu verim; su hesaba katılmadan).`,
+      };
+    }
+  }
+  return null;
+}
+
 export function solvePlan(input: PlanInput): PlanResult {
+  const over = overLimit(input);
+  if (over) return over;
   const banned = new Set<string>(input.banned ?? []);
   let result = solveOnce({ ...input, banned });
   for (let round = 0; round < MIN_PARCEL_ROUNDS; round++) {

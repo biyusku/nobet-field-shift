@@ -157,9 +157,13 @@ npm run mcp:test
 
 `mcp/test/parity.test.ts`: `soz_kapasitesi` ve `taahhut_dene` Pano'nun kullandığı fonksiyonlarla ve `docs/kanit-kayit.json`'daki kayıtlı Pano sayılarıyla birebir aynı (1.505 t → 2.639 t; söz 2/20, 8/20, 17/20; gelir 62.676.555 → 80.165.398 TL); girdi doğrulaması; protokol üzerinden araç listesi ve readOnlyHint; anahtarlı modda 401.
 
-## Bilinen sorun: nohut sözünde çözücü takılıyor
+## Bilinen sorun: nohut sözünde çözücü
 
-`javascript-lp-solver` örnek kooperatifte yaklaşık 2.000 ton ve üstü nohut sözü kısıtlı gelir planında dönmüyor (1.000 tonda 45 ms'de bitiyor). Bu sitenin motorundaki bir sorundur; MCP'de motor değiştirilmedi. Yerel modlarda ağır hesap ayrı bir iş parçacığında (worker) süre sınırıyla çalışır: süre dolunca iş parçacığı öldürülür ve araç anlaşılır bir hata döner. `soz_kapasitesi` bu yüzden nohut satırını `null` ve açıklamayla verir (ürün başına sınır 10 sn). Aynı fonksiyon sitede de kullanıldığı için Pano'da "Sözleşme ürünü: Nohut" seçilince sekmenin donması beklenir; tarayıcıda denenmedi.
+`javascript-lp-solver` örnek kooperatifte bazı karşılanamaz nohut sözlerinde dönmüyordu (2.000 t). Düzeltme (çözücü değiştirilmeden):
+
+- Motor, çözücüyü çağırmadan önce sözün üst sınırını denetler (`maxProductionT`: her üyede izin verilen en yüksek pay × tam sulu verim; küçük pazarlı üründe kooperatif payı sınırı). Nohut için sınır yaklaşık **505 t**; üstündeki söz çözücüye gitmez, "bu söz bu tarlalarla karşılanamaz, en çok yaklaşık 505 ton" hatası döner.
+- "Yalnız nohut" senaryosu Node'da çözücüden hata dönüyor; MCP bunu `null` ve açıklamayla verir. Tarayıcı derlemesinde aynı hesap takılıyor; sitede 5 sn sınırlı Web Worker bunu keser.
+- Yerel MCP modlarında ağır hesap yine worker'da süre sınırıyla çalışır (güvenlik payı).
 
 ## Dosyalar
 

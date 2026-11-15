@@ -1,5 +1,5 @@
 // "Söz vermeden önce": kooperatifin tarlaları ve su haklarıyla güvenle söz verilebilecek miktar.
-import { backtest, solvePlan, summarize, type PlanInput, type PlanResult } from './plan';
+import { backtest, maxProductionT, solvePlan, summarize, type PlanInput, type PlanResult } from './plan';
 
 export interface PromiseScenario {
   plan: PlanResult;
@@ -36,12 +36,11 @@ export function mixedScenario(input: PlanInput): PromiseScenario {
 
 /**
  * Tek ürün senaryosu: o üründen en çok üretimi veren plan (kalan alan ve su gelire göre doldurulur).
- * Erişilemeyecek kadar büyük bir taahhüt verilir; çözücü önce ulaşılabilen en yüksek üretimi bulur,
- * sonra o düzeyi koruyarak geliri en yükseğe çıkarır.
+ * Üst sınır (maxProductionT) kadar taahhüt verilir; su yüzünden genellikle erişilemez, çözücü önce ulaşılabilen
+ * en yüksek üretimi bulur, sonra o düzeyi koruyarak geliri en yükseğe çıkarır.
  */
 export function maxCropScenario(input: PlanInput, cropId: string): PromiseScenario {
-  const crop = input.crops.find((c) => c.id === cropId);
-  const upper = crop ? (input.members.reduce((s, m) => s + m.areaDa, 0) * crop.yieldKgDa) / 1000 : 0;
+  const upper = maxProductionT(input, cropId);
   const commitments = upper > 0 ? { [cropId]: upper } : {};
   return scenarioOf(input, solvePlan({ ...input, settings: { ...input.settings, commitments, mode: 'revenue' } }));
 }

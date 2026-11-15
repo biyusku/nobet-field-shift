@@ -10,9 +10,9 @@ import { Card, Change, H2, Note, NumInput, PageHeader, Segmented, Swatch, Tag, t
 import { COOP_NAME, DEFAULT_SAFE_YEARS } from '../data/defaults';
 import { DISTRICTS } from '../data/members';
 import { levelLabel } from '../engine/curves';
-import { plannedOutcome } from '../engine/plan';
-import { maxCropScenario, maxSafeCommitment, mixedScenario, reachedInAtLeast } from '../engine/promise';
+import { reachedInAtLeast } from '../engine/promise';
 import { da, inSuffix, int, m3, pct, tlShort, ton } from '../lib/format';
+import { CALC_LIMIT_MS, useCalc, type CalcState } from '../lib/useCalc';
 import type { MemberView, Mode, ScenarioSummary } from '../model';
 import { useStore } from '../state';
 
@@ -21,6 +21,20 @@ const CoopMap = lazy(() => import('../components/CoopMap'));
 const MODE_LABEL: Record<Mode, string> = { today: 'Bugün', scatter: 'Gelişigüzel dağıtım', planned: 'Planlı dağıtım' };
 /** Dağıtım tablosunda varsayılan olarak gösterilen üye sayısı. */
 const TABLE_PREVIEW = 5;
+/** Worker'dan gelen senaryo özeti (engine/promise PromiseScenario'nun gerekli alanları). */
+interface ScenarioLite {
+  revenue: number;
+  yearly: Record<string, number[]>;
+  status: string;
+  message?: string;
+}
+/** Hesap sürerken ya da süre sınırı aşılınca gösterilecek kısa metin; sonuç varsa null. */
+function calcNote(c: CalcState<unknown>): string | null {
+  if (c.status === 'loading') return 'hesaplanıyor…';
+  if (c.status === 'timeout') return `hesap tamamlanamadı (${CALC_LIMIT_MS / 1000} sn içinde bitmedi)`;
+  if (c.status === 'error') return `hesap tamamlanamadı: ${c.message}`;
+  return null;
+}
 const districtName = (id?: string) => DISTRICTS.find((d) => d.id === id)?.name ?? '–';
 
 /** Üst satırdaki büyük sayı: bugün → planlı. */
@@ -79,32 +93,45 @@ export function OverviewScreen() {
 
   // "Söz vermeden önce": seçili ürüne öncelik veren plan ve geliri en yükseğe çıkaran karma plan, 20 yılda denenir
   const [need, setNeed] = useState<'14' | '16' | '18'>(String(DEFAULT_SAFE_YEARS) as '16');
-  const promise = useMemo(() => {
-    if (!model) return null;
-    return { single: maxCropScenario(model.planInput, crop), mixed: mixedScenario(model.planInput) };
-  }, [model, crop]);
+  // Söz senaryoları çözücüyü çağırır; Web Worker'da 5 sn sınırla çalışır (useCalc), sekme donmaz.
+  const ctx = useMemo(
+    () => (model ? { model, weathers: s.weathers, fallbackId: s.districtId, inputs: { members: s.members, cropDefs: s.cropDefs, soil: s.soil, eff: s.eff, settings: s.settings } } : null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [model],
+  );
+  // Taslak mesajı önce kuyruğa girsin (kancalar bu sırayla çalışır).
+  const draftCalc = useCalc<{ held: number; status: string; message?: string }>(ctx, tons > 0 ? { kind: 'draft', crop, tons } : null, `${crop}|${tons}`);
+  const draft = draftCalc.status === 'done' ? draftCalc.value : null;
+  const mixedCalc = useCalc<ScenarioLite>(ctx, { kind: 'mixed' }, 'mixed');
+  const mixed = mixedCalc.status === 'done' ? mixedCalc.value : null;
+  const singleCalc = useCalc<ScenarioLite>(ctx, { kind: 'single', crop }, crop);
+  const single = singleCalc.status === 'done' ? singleCalc.value : null;
 
   // Üstteki üçüncü sayı: uygulanmış sözün ürünü için (yoksa mısır) güvenle verilebilecek söz, bugün ve planlı
   const headCrop = Object.entries(s.settings.commitments).find(([id, t]) => t > 0 && model?.cropById.has(id))?.[0] ?? 'misir';
-  const safePlanned = useMemo(() => (model ? maxSafeCommitment(model.planInput, headCrop, Number(need)) : 0), [model, headCrop, need]);
+  const safePlannedCalc = useCalc<number>(ctx, { kind: 'safe', crop: headCrop, k: Number(need) }, `${headCrop}|${need}`);
+  const safePlanned = safePlannedCalc.status === 'done' ? safePlannedCalc.value : null;
 
   // Taslak söz: "Dağıt"a basılınca kurulacak planın 20 yıllık sonucu (karşılaştırma tablosuyla aynı fonksiyon)
-  const draft = useMemo(() => (model && tons > 0 ? plannedOutcome(model.planInput, { [crop]: tons }) : null), [model, crop, tons]);
-  const safeDraft = useMemo(() => (model ? (crop === headCrop ? safePlanned : maxSafeCommitment(model.planInput, crop, Number(need))) : 0), [model, crop, headCrop, safePlanned, need]);
+  const safeDraftCalc = useCalc<number>(ctx, crop === headCrop ? null : { kind: 'safe', crop, k: Number(need) }, `${crop}|${need}`);
+  const safeDraftState = crop === headCrop ? safePlannedCalc : safeDraftCalc;
+  const safeDraft = safeDraftState.status === 'done' ? safeDraftState.value : null;
 
-  if (!model || !promise) return null;
+  if (!model) return null;
   const K = Number(need);
-  const singleYears = promise.single.yearly[crop] ?? [];
+  const singleYears = single?.yearly[crop] ?? [];
+  const singleFailed = single?.status === 'error';
   const safeSingle = Math.floor(reachedInAtLeast(singleYears, K));
   const draftHeld = draft?.held ?? 0;
-  const draftOk = tons <= 0 || draftHeld >= K;
-  const safeTons = Math.floor(safeDraft);
+  const draftError = draft?.status === 'error' ? (draft.message ?? 'Plan kurulamadı.') : null;
+  const draftOk = tons <= 0 || (draft !== null && !draftError && draftHeld >= K);
+  const safeTons = Math.floor(safeDraft ?? 0);
   const goMethod = () => {
     s.setTab('yontem');
     setTimeout(() => document.getElementById('yontem-soz')?.scrollIntoView({ block: 'start' }), 80);
   };
   const mixedRows = model.crops
-    .map((c) => ({ c, safe: Math.floor(reachedInAtLeast(promise.mixed.yearly[c.id] ?? [], K)) }))
+    .map((c) => ({ c, safe: Math.floor(reachedInAtLeast(mixed?.yearly[c.id] ?? [], K)) }))
     .filter((r) => r.safe >= 1);
   const draftCropName = (model.cropById.get(crop)?.name ?? crop).toLocaleLowerCase('tr');
   const names = new Map(model.crops.map((c) => [c.id, c.name]));
@@ -207,7 +234,7 @@ export function OverviewScreen() {
           label={`Güvenle verilebilecek ${(model.cropById.get(headCrop)?.name ?? headCrop).toLocaleLowerCase('tr')} sözü`}
           tag="hesap"
           from={`${int(Math.floor(reachedInAtLeast(sc.today.backtest.map((y) => y.productionT[headCrop] ?? 0), K)))} t`}
-          to={`${int(Math.floor(safePlanned))} t`}
+          to={safePlanned === null ? <span className="text-[14px] font-medium text-ink2">{calcNote(safePlannedCalc)}</span> : `${int(Math.floor(safePlanned))} t`}
           hint={`20 yılın en az ${K}${inSuffix(K)} ulaşılan toplam üretim`}
         />
       </div>
@@ -362,7 +389,12 @@ export function OverviewScreen() {
                 </button>
               </div>
             </div>
-            {tons > 0 && (
+            {tons > 0 && (draft === null || draftError) && (
+              <div className={`mt-2 rounded-lg px-3 py-2 text-[13px] ${draftError || draftCalc.status === 'timeout' || draftCalc.status === 'error' ? 'bg-[var(--crit-bg)] text-crit-ink' : 'bg-sunken text-ink2'}`} role="status">
+                {draftError ?? `${int(tons)} ton ${draftCropName}: ${calcNote(draftCalc)}`}
+              </div>
+            )}
+            {tons > 0 && draft !== null && !draftError && (
               <div className={`mt-2 rounded-lg px-3 py-2 text-[13px] ${draftOk ? 'bg-[var(--good-bg)] text-good-ink' : 'bg-[var(--crit-bg)] text-crit-ink'}`} role="status">
                 <b className="font-semibold">
                   {int(tons)} ton {draftCropName}: 20 yılın {draftHeld}
@@ -372,10 +404,17 @@ export function OverviewScreen() {
                   <>Planlı dağıtımla; eşiğinizi (20'de {K}) karşılıyor.</>
                 ) : (
                   <>
-                    Planlı dağıtımla; eşiğin (20'de {K}) altında: en çok <b className="font-semibold">{int(safeTons)} ton</b> söz verilebilir.{' '}
-                    <button type="button" className="link-button !text-inherit" onClick={() => setTons(safeTons)}>
-                      {int(safeTons)} ton yap
-                    </button>
+                    Planlı dağıtımla; eşiğin (20'de {K}) altında:{' '}
+                    {safeDraft === null ? (
+                      calcNote(safeDraftState)
+                    ) : (
+                      <>
+                        en çok <b className="font-semibold">{int(safeTons)} ton</b> söz verilebilir.{' '}
+                        <button type="button" className="link-button !text-inherit" onClick={() => setTons(safeTons)}>
+                          {int(safeTons)} ton yap
+                        </button>
+                      </>
+                    )}
                   </>
                 )}
               </div>
@@ -401,16 +440,28 @@ export function OverviewScreen() {
                   />
                 </label>
               </div>
+              {!mixed && <div className="rounded-lg bg-sunken p-3 text-[12.5px] text-ink2">{calcNote(mixedCalc)}</div>}
+              {mixed && (
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="rounded-lg bg-sunken p-3">
                   <div className="text-[12px] font-medium text-ink2">Yalnız {draftCropName}</div>
                   <div className="tnum mt-0.5 text-[22px] font-bold leading-tight text-ink">
-                    {int(safeSingle)} <span className="text-[13px] font-semibold text-ink2">ton</span>
+                    {!single ? (
+                      <span className="text-[13px] font-medium text-ink2">{calcNote(singleCalc)}</span>
+                    ) : singleFailed ? (
+                      <span className="text-[13px] font-medium text-ink2">hesaplanamadı</span>
+                    ) : (
+                      <>
+                        {int(safeSingle)} <span className="text-[13px] font-semibold text-ink2">ton</span>
+                      </>
+                    )}
                   </div>
-                  <div className="mt-0.5 text-[11.5px] text-ink2">Kooperatif bu ürüne öncelik verirse.</div>
-                  <div className="tnum mt-2 border-t border-line pt-2 text-[12px] text-ink2">
-                    Kooperatif brüt geliri <b className="font-semibold text-ink">{tlShort(promise.single.revenue)}</b>
-                  </div>
+                  <div className="mt-0.5 text-[11.5px] text-ink2">{singleFailed ? (single?.message ?? 'Çözücü bu ürün için plan kuramadı.') : 'Kooperatif bu ürüne öncelik verirse.'}</div>
+                  {single && !singleFailed && (
+                    <div className="tnum mt-2 border-t border-line pt-2 text-[12px] text-ink2">
+                      Kooperatif brüt geliri <b className="font-semibold text-ink">{tlShort(single.revenue)}</b>
+                    </div>
+                  )}
                 </div>
                 <div className="rounded-lg bg-sunken p-3">
                   <div className="text-[12px] font-medium text-ink2">Karma (gelir en yüksek)</div>
@@ -428,10 +479,11 @@ export function OverviewScreen() {
                     {mixedRows.length === 0 && <li className="text-ink2">Güvenle söz verilebilecek ürün yok.</li>}
                   </ul>
                   <div className="tnum mt-2 border-t border-line pt-2 text-[12px] text-ink2">
-                    Kooperatif brüt geliri <b className="font-semibold text-ink">{tlShort(promise.mixed.revenue)}</b>
+                    Kooperatif brüt geliri <b className="font-semibold text-ink">{tlShort(mixed.revenue)}</b>
                   </div>
                 </div>
               </div>
+              )}
               <p className="mb-0 mt-2 text-[11.5px] text-ink2">
                 Yılların en az {K}
                 {inSuffix(K)} ulaşılan üretim; fiyat ve verimler varsayımdır.{' '}
@@ -505,6 +557,11 @@ export function OverviewScreen() {
                   Nasıl hesaplandı?
                 </button>
               </p>
+              {model.plan.status === 'error' && (
+                <div className="mt-3">
+                  <Note tone="crit">{model.plan.message ?? 'Plan kurulamadı.'}</Note>
+                </div>
+              )}
               {model.plan.status === 'partial' && (
                 <div className="mt-3">
                   <Note tone="warn">
