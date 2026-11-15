@@ -18,6 +18,13 @@ const TYPES: Record<string, string> = {
   '.woff2': 'font/woff2',
   '.txt': 'text/plain; charset=utf-8',
   '.map': 'application/json; charset=utf-8',
+  '.pdf': 'application/pdf',
+};
+
+/** Uzantısız kısa adresler: /presentation, sunum PDF'ini tarayıcıda açar. */
+const ALIASES: Record<string, string> = {
+  '/presentation': '/presentation.pdf',
+  '/presentation/': '/presentation.pdf',
 };
 
 export function createStaticHandler(root: string) {
@@ -32,6 +39,7 @@ export function createStaticHandler(root: string) {
       'content-length': st.size,
       'cache-control': immutable ? 'public, max-age=31536000, immutable' : 'no-cache',
       'x-content-type-options': 'nosniff',
+      ...(extname(file).toLowerCase() === '.pdf' ? { 'content-disposition': 'inline; filename="Nobet-presentation.pdf"' } : {}),
     });
     if (req.method === 'HEAD') return res.end();
     createReadStream(file).pipe(res);
@@ -49,6 +57,7 @@ export function createStaticHandler(root: string) {
       res.writeHead(400);
       return res.end();
     }
+    path = ALIASES[path] ?? path;
     // klasör dışına çıkmayı engelle
     const file = normalize(join(root, path));
     if (!file.startsWith(root + sep) && file !== root) {
